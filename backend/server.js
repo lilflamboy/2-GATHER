@@ -38,6 +38,41 @@ const {
   ALLOWED_REACTION_TYPES, DEFAULT_DEV_ORIGINS,
   ADMIN_UIDS, isAdminUser, SESSION_ENGINE_REGISTRY,
 } = require("./config/constants.js");
+const {
+  escapeAngleBrackets, sanitize, sanitizeBio,
+  sanitizePhotoURL, sanitizeContentUrl,
+  sanitizeUploadFileName, sanitizeRoomMoodTag,
+  sanitizeActivityPayload, sanitizeSharedMemoryGenre,
+  sanitizeSharedMemoryMoodTag,
+} = require("./utils/sanitize.js");
+const {
+  normalizeUsername, normalizeRoomType,
+  normalizeSessionMode,
+  normalizeContentType, normalizeMetadataForSessionEngine,
+  normalizeDocumentMimeType, normalizeReadingTotalPages,
+} = require("./utils/normalize.js");
+const {
+  clampTime, clampReadingPage, uniqueStrings,
+  buildDocumentSignature,
+  deriveDocumentFileNameFromUrl,
+  createDocumentUploadId, serializeRoomDocument,
+  serializeReadingState, resolveSessionEngine,
+  resolveVideoState, addRoomHistory,
+  getProfileStoreCopy, pushBounded,
+} = require("./utils/helpers.js");
+const {
+  httpRateLimitHits, httpAuthRateLimitHits,
+  socketEventRateLimitHits, cleanupRateLimitStore,
+  isRateLimitExceeded, getRequestRateKey,
+  applyHttpRateLimit, isSocketEventRateLimited,
+  clearSocketEventRateLimits,
+} = require("./utils/rateLimit.js");
+const {
+  onlineSocketsByUid, markOnline, markOffline,
+  isOnline, socketIdsForUser,
+  touchLastSeen,
+} = require("./utils/presence.js");
+const { log, warn, error } = require("./utils/logger.js");
 
 const express = require("express");
 const http = require("http");
@@ -50,7 +85,7 @@ let mongoose = null;
 try {
   mongoose = require("mongoose");
 } catch {
-  console.warn("[db] mongoose not installed. Running with in-memory fallback.");
+  warn("[db] mongoose not installed. Running with in-memory fallback.");
 }
 
 // ─── Firebase ─────────────────────────────────────────────────────────────────
@@ -58,8 +93,8 @@ let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  } catch (error) {
-    console.error("Bad FIREBASE_SERVICE_ACCOUNT JSON:", error.message);
+  } catch (err) {
+    error("Bad FIREBASE_SERVICE_ACCOUNT JSON:", err.message);
     process.exit(1);
   }
 } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
@@ -492,7 +527,7 @@ if (mongoose) {
 async function initMongo() {
   if (!mongoose) return;
   if (!MONGODB_URI) {
-    console.warn("[db] MONGODB_URI missing. Using in-memory fallback for social features.");
+    warn("[db] MONGODB_URI missing. Using in-memory fallback for social features.");
     return;
   }
   try {
@@ -500,10 +535,10 @@ async function initMongo() {
       serverSelectionTimeoutMS: 6000,
     });
     mongoConnected = true;
-    console.log("[db] MongoDB connected");
-  } catch (error) {
+    log("[db] MongoDB connected");
+  } catch (err) {
     mongoConnected = false;
-    console.error("[db] MongoDB connection failed. Using in-memory fallback:", error.message);
+    error("[db] MongoDB connection failed. Using in-memory fallback:", err.message);
   }
 }
 
@@ -525,75 +560,6 @@ function isAllowedOrigin(origin) {
   } catch {
     return false;
   }
-}
-
-function normalizeUsername(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 20);
-}
-
-function escapeAngleBrackets(text) {
-  return String(text || "")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function sanitize(text) {
-  if (typeof text !== "string") return "";
-  return escapeAngleBrackets(text).trim().slice(0, MAX_MESSAGE_LENGTH);
-}
-
-function sanitizeBio(text) {
-  if (typeof text !== "string") return "";
-  return escapeAngleBrackets(text).trim().slice(0, MAX_BIO_LENGTH);
-}
-
-function sanitizePhotoURL(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (/^https?:\/\/\S+$/i.test(raw)) return raw.slice(0, MAX_PHOTO_URL_LENGTH);
-  if (/^data:image\/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=]+$/.test(raw)) {
-    return raw.slice(0, MAX_PHOTO_URL_LENGTH);
-  }
-  return "";
-}
-
-function sanitizeUploadFileName(value) {
-  return String(value || "")
-    .replace(/[^\w.\- ()]/g, "_")
-    .trim()
-    .slice(0, 120) || `document-${Date.now()}.pdf`;
-}
-
-function deriveDocumentFileNameFromUrl(fileUrl) {
-  try {
-    const parsed = new URL(String(fileUrl || ""));
-    const pathname = parsed.pathname || "";
-    const lastSegment = pathname.split("/").filter(Boolean).pop() || "";
-    return sanitizeUploadFileName(decodeURIComponent(lastSegment || ""));
-  } catch {
-    return "";
-  }
-}
-
-function buildDocumentSignature(fileName, fileSize) {
-  const normalizedName = sanitizeUploadFileName(fileName);
-  const normalizedSize = Math.max(0, Math.floor(Number(fileSize) || 0));
-  return `${normalizedName}:${normalizedSize}`;
-}
-
-function normalizeReadingTotalPages(value) {
-  const totalPages = Math.floor(Number(value) || 0);
-  if (!Number.isFinite(totalPages) || totalPages <= 0) return 0;
-  return Math.max(1, Math.min(READING_PAGE_MAX, totalPages));
-}
-
-function clampReadingPage(value, totalPages = 0) {
-  const page = Math.floor(Number(value) || 1);
-  const maxPage = normalizeReadingTotalPages(totalPages) || READING_PAGE_MAX;
-  return Math.max(1, Math.min(maxPage, page));
 }
 
 function normalizeRoomDocumentPayload(payload = {}) {
@@ -630,53 +596,6 @@ function normalizeRoomDocumentPayload(payload = {}) {
     signature: buildDocumentSignature(fileName, fileSize),
     totalPages: normalizeReadingTotalPages(payload.totalPages),
   };
-}
-
-function serializeRoomDocument(document) {
-  if (!document?.fileUrl) return null;
-  return {
-    fileUrl: String(document.fileUrl || ""),
-    fileName: sanitizeUploadFileName(document.fileName || ""),
-    fileSize: Math.max(0, Math.floor(Number(document.fileSize) || 0)),
-    mimeType: normalizeDocumentMimeType(document.mimeType || "application/pdf", document.fileName || ""),
-    signature: String(document.signature || buildDocumentSignature(document.fileName, document.fileSize)),
-    totalPages: normalizeReadingTotalPages(document.totalPages),
-    uploadedBy: String(document.uploadedBy || ""),
-    updatedAt: Math.max(0, Number(document.updatedAt) || Date.now()),
-  };
-}
-
-function serializeReadingState(readingState = {}, roomDocument = null) {
-  // Outgoing reading payloads are always clamped against the current document
-  // so every client receives a safe, self-consistent page/totalPages pair.
-  const totalPages = normalizeReadingTotalPages(readingState.totalPages || roomDocument?.totalPages || 0);
-  return {
-    page: clampReadingPage(readingState.page, totalPages),
-    totalPages,
-    updatedAt: Math.max(0, Number(readingState.updatedAt) || Date.now()),
-    updatedBy: String(readingState.updatedBy || ""),
-  };
-}
-
-function normalizeDocumentMimeType(value, fileName = "") {
-  const raw = String(value || "").trim().toLowerCase();
-  if (raw === "application/pdf") return "application/pdf";
-  if (raw === "text/plain") return "text/plain";
-  if (raw === "application/msword") return "application/msword";
-  if (raw === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  }
-  if (String(fileName || "").toLowerCase().endsWith(".pdf")) return "application/pdf";
-  if (String(fileName || "").toLowerCase().endsWith(".txt")) return "text/plain";
-  if (String(fileName || "").toLowerCase().endsWith(".doc")) return "application/msword";
-  if (String(fileName || "").toLowerCase().endsWith(".docx")) {
-    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-  }
-  return "";
-}
-
-function createDocumentUploadId() {
-  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function pruneExpiredDocumentUploads() {
@@ -736,15 +655,6 @@ function upsertDocumentUpload({ ownerUid, fileName, mimeType, base64Data }) {
   };
   memoryStore.uploadedDocuments.set(id, row);
   return row;
-}
-
-function clampTime(value) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(value, MAX_VIDEO_TIME));
-}
-
-function uniqueStrings(list) {
-  return [...new Set((Array.isArray(list) ? list : []).filter((item) => typeof item === "string" && item.trim()))];
 }
 
 function buildBaseProfile(identity) {
@@ -933,10 +843,6 @@ function relationshipWithGraph(graph, targetUid) {
   if (graph.incomingRequests.includes(targetUid)) return "incoming";
   if (graph.blocked.includes(targetUid)) return "blocked";
   return "none";
-}
-
-function getProfileStoreCopy(profile) {
-  return JSON.parse(JSON.stringify(profile));
 }
 
 async function getProfileByUid(uid) {
@@ -1405,54 +1311,11 @@ async function getValidatedCoupleUsers(selfUid, partnerUid) {
   return { me, partner };
 }
 
-function normalizeRoomType(roomType) {
-  const value = String(roomType || "").trim().toLowerCase();
-  if (value === "duo" || value === "family" || value === "friends") return value;
-  return "friends";
-}
-
-function normalizeSessionMode(mode) {
-  const value = String(mode || "").trim().toLowerCase();
-  if (ALLOWED_SESSION_MODES.includes(value)) return value;
-  return "watch";
-}
-
-function resolveSessionEngine(mode) {
-  const normalized = normalizeSessionMode(mode);
-  return SESSION_ENGINE_REGISTRY[normalized] || SESSION_ENGINE_REGISTRY.watch;
-}
-
-function normalizeMetadataForSessionEngine(sessionMode, metadata = {}) {
-  const engine = resolveSessionEngine(sessionMode);
-  const sanitizedUrl = sanitizeContentUrl(metadata.contentUrl || "");
-  const normalizedSourceType = normalizeContentType(metadata.sourceType || "unknown");
-  const sourceType = engine.allowedContentTypes.has(normalizedSourceType) ? normalizedSourceType : "unknown";
-  return {
-    videoName: sanitize(String(metadata.videoName || "")).slice(0, MAX_VIDEO_NAME_LENGTH),
-    duration: Math.max(0, Math.min(MAX_VIDEO_TIME, Number(metadata.duration) || 0)),
-    sourceType,
-    fileFingerprint: String(metadata.fileFingerprint || "").slice(0, 220),
-    contentUrl: sanitizedUrl,
-    engineId: engine.id,
-  };
-}
-
 function sanitizeSharedMemoryNote(note) {
   if (typeof note !== "string") return "";
   return escapeAngleBrackets(note).trim().slice(0, MAX_SHARED_MEMORY_NOTE_LENGTH);
 }
 
-function sanitizeSharedMemoryGenre(value) {
-  return sanitize(String(value || "")).slice(0, MAX_SHARED_MEMORY_GENRE_LENGTH);
-}
-
-function sanitizeSharedMemoryMoodTag(value) {
-  return sanitize(String(value || "")).slice(0, MAX_SHARED_MEMORY_MOOD_LENGTH);
-}
-
-function sanitizeRoomMoodTag(value) {
-  return sanitize(String(value || "")).slice(0, MAX_ROOM_MOOD_TAG_LENGTH);
-}
 
 function sanitizeHighlightTimestamp(value) {
   const raw = String(value || "").trim();
@@ -1471,55 +1334,6 @@ function clampSharedSessionMinutes(value) {
 function clampReactionCount(value) {
   const num = Math.floor(Number(value) || 0);
   return Math.max(0, Math.min(MAX_SHARED_MEMORY_REACTION_COUNT, num));
-}
-
-function sanitizeActivityPayload(payload) {
-  try {
-    const raw = JSON.stringify(payload || {});
-    if (raw.length <= 2500) return JSON.parse(raw);
-    return {
-      truncated: true,
-      preview: raw.slice(0, 2500),
-    };
-  } catch {
-    return {};
-  }
-}
-
-function pushBounded(list, item, maxItems) {
-  list.push(item);
-  if (list.length > maxItems) {
-    list.splice(0, list.length - maxItems);
-  }
-}
-
-function isRateLimitExceeded(store, key, windowMs, maxEvents) {
-  if (!key || !store || windowMs <= 0 || maxEvents <= 0) return false;
-
-  const now = Date.now();
-  const current = store.get(key);
-  if (!current || (now - current.firstHit) > windowMs) {
-    store.set(key, { count: 1, firstHit: now });
-    return false;
-  }
-
-  current.count += 1;
-  store.set(key, current);
-  return current.count > maxEvents;
-}
-
-function cleanupRateLimitStore(store, windowMs) {
-  const now = Date.now();
-  store.forEach((record, key) => {
-    if (!record || !Number.isFinite(record.firstHit) || (now - record.firstHit) > (windowMs * 2)) {
-      store.delete(key);
-    }
-  });
-}
-
-function getRequestRateKey(req, scope = "http") {
-  const ip = req.ip || req.socket?.remoteAddress || "unknown";
-  return `${scope}:${String(ip)}`;
 }
 
 function normalizeSharedMemoryRow(row = {}) {
@@ -1543,27 +1357,6 @@ function normalizeSharedMemoryRow(row = {}) {
     createdBy: String(row.createdBy || user1Id),
     createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),
   };
-}
-
-function normalizeContentType(value) {
-  const raw = String(value || "").trim().toLowerCase();
-  if (ALLOWED_CONTENT_TYPES.includes(raw)) return raw;
-  if (raw === "doc" || raw === "docs" || raw === "document") return "document";
-  if (raw === "pdf") return "pdf";
-  if (raw === "amazon" || raw === "primevideo" || raw === "prime_video") return "prime";
-  if (raw === "disneyplus" || raw === "disney_plus" || raw === "hotstar") return "disney";
-  if (raw === "youtube.com" || raw === "youtu.be") return "youtube";
-  if (raw === "prime" || raw === "netflix" || raw === "youtube" || raw === "local" || raw === "ott") return raw;
-  return "unknown";
-}
-
-function sanitizeContentUrl(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (/^https?:\/\/\S+$/i.test(raw)) {
-    return raw.slice(0, MAX_CONTENT_URL_LENGTH);
-  }
-  return "";
 }
 
 function normalizePlaybackStatus(value) {
@@ -3477,88 +3270,6 @@ async function getVideoSessionByRoomCode(roomCode) {
 }
 
 // ─── Presence ─────────────────────────────────────────────────────────────────
-const onlineSocketsByUid = new Map(); // uid -> Set(socketId)
-
-function markOnline(uid, socketId) {
-  // One user can have multiple active tabs/devices, so presence is tracked as
-  // a uid -> socket set rather than a single socket id.
-  const set = onlineSocketsByUid.get(uid) || new Set();
-  set.add(socketId);
-  onlineSocketsByUid.set(uid, set);
-}
-
-function markOffline(uid, socketId) {
-  const set = onlineSocketsByUid.get(uid);
-  if (!set) return false;
-  set.delete(socketId);
-  if (set.size === 0) {
-    onlineSocketsByUid.delete(uid);
-    return false;
-  }
-  return true;
-}
-
-function isOnline(uid) {
-  return onlineSocketsByUid.has(uid);
-}
-
-function socketIdsForUser(uid) {
-  const set = onlineSocketsByUid.get(uid);
-  return set ? [...set] : [];
-}
-
-async function touchLastSeen(uid) {
-  if (!uid) return;
-  if (mongoConnected) {
-    await UserProfileModel.updateOne({ uid }, { $set: { lastSeenAt: new Date() } }).catch(() => {});
-    return;
-  }
-  const profile = memoryStore.profiles.get(uid);
-  if (!profile) return;
-  profile.lastSeenAt = new Date();
-  profile.updatedAt = new Date();
-  memoryStore.profiles.set(uid, getProfileStoreCopy(profile));
-}
-
-const httpRateLimitHits = new Map();
-const httpAuthRateLimitHits = new Map();
-const socketEventRateLimitHits = new Map();
-
-setInterval(() => {
-  // Rate-limit stores are append-only within the active window, so periodic
-  // cleanup keeps long-running processes from accumulating dead counters.
-  cleanupRateLimitStore(httpRateLimitHits, HTTP_RATE_LIMIT_WINDOW_MS);
-  cleanupRateLimitStore(httpAuthRateLimitHits, HTTP_RATE_LIMIT_WINDOW_MS);
-  cleanupRateLimitStore(socketEventRateLimitHits, SOCKET_EVENT_WINDOW_MS);
-}, Math.max(5000, Math.min(60000, SOCKET_EVENT_WINDOW_MS))).unref();
-
-function applyHttpRateLimit(maxEvents, scope) {
-  return (req, res, next) => {
-    if (req.method === "OPTIONS") return next();
-    const key = getRequestRateKey(req, scope);
-    if (isRateLimitExceeded(httpRateLimitHits, key, HTTP_RATE_LIMIT_WINDOW_MS, maxEvents)) {
-      return res.status(429).json({ error: "Too many requests. Please slow down." });
-    }
-    return next();
-  };
-}
-
-function isSocketEventRateLimited(socketId, eventType) {
-  return isRateLimitExceeded(
-    socketEventRateLimitHits,
-    `${socketId}:${eventType}`,
-    SOCKET_EVENT_WINDOW_MS,
-    SOCKET_EVENT_MAX
-  );
-}
-
-function clearSocketEventRateLimits(socketId) {
-  const prefix = `${socketId}:`;
-  socketEventRateLimitHits.forEach((_, key) => {
-    if (key.startsWith(prefix)) socketEventRateLimitHits.delete(key);
-  });
-}
-
 // ─── Express ──────────────────────────────────────────────────────────────────
 const app = express();
 app.set("trust proxy", 1);
@@ -5087,7 +4798,7 @@ function expireRoom(roomCode) {
   rooms.delete(roomCode);
   markRoomInactive(roomCode).catch(() => {});
   finalizeVideoSession(roomCode, room).catch(() => {});
-  console.log(`[expired] ${roomCode}`);
+  log(`[expired] ${roomCode}`);
 }
 
 function deleteIfEmpty(roomCode) {
@@ -5112,21 +4823,6 @@ function generateCode() {
 
 function getUserList(room) {
   return [...room.users.values()].map(({ uid, name, username, photoURL }) => ({ uid, name, username, photoURL }));
-}
-
-function addRoomHistory(room, entry) {
-  if (!room || !entry) return;
-  pushBounded(
-    room.history,
-    {
-      type: String(entry.type || "event"),
-      uid: String(entry.uid || ""),
-      roomCode: String(room.roomCode || ""),
-      payload: sanitizeActivityPayload(entry.payload || {}),
-      timestamp: Date.now(),
-    },
-    MAX_ROOM_HISTORY_ITEMS
-  );
 }
 
 function clearSyncWait(roomCode) {
@@ -5342,34 +5038,6 @@ function handleSyncWait(roomCode) {
   room.syncWait.resumeSince = 0;
 }
 
-function resolveVideoState(videoState) {
-  // The server is the playback clock authority. Instead of trusting each client
-  // clock, recompute the effective time from the last synced base state.
-  const now = Date.now() / 1000;
-  const rate = (typeof videoState?.playbackRate === "number" && videoState.playbackRate > 0 && videoState.playbackRate <= 4)
-    ? videoState.playbackRate
-    : 1;
-  const baseTime = clampTime(typeof videoState?.currentTime === "number" ? videoState.currentTime : 0);
-  const lastUpdate = Number(videoState?.lastUpdate);
-  const scheduledStartAt = Number(videoState?.scheduledStartAt);
-  const effectiveStartAt = videoState?.isPlaying
-    ? (
-      Number.isFinite(scheduledStartAt) && scheduledStartAt > 0
-        ? Math.max(Number.isFinite(lastUpdate) ? lastUpdate : 0, scheduledStartAt)
-        : lastUpdate
-    )
-    : lastUpdate;
-  const elapsed = videoState?.isPlaying && Number.isFinite(effectiveStartAt) ? Math.max(0, now - effectiveStartAt) : 0;
-  const currentTime = clampTime(baseTime + elapsed * rate);
-  return {
-    currentTime,
-    isPlaying: !!videoState?.isPlaying,
-    playbackRate: rate,
-    lastUpdate: now,
-    scheduledStartAt: Number.isFinite(scheduledStartAt) && scheduledStartAt > now ? scheduledStartAt : 0,
-  };
-}
-
 async function recordOverlapForLeavingUser(room, leavingUid, roomCode) {
   if (typeof addMemoryEvent !== "function") return;
   const leftAt = Date.now();
@@ -5444,8 +5112,8 @@ io.use(async (socket, next) => {
     };
 
     return next();
-  } catch (error) {
-    console.error("Token verification failed:", error.message);
+  } catch (err) {
+    error("Token verification failed:", err.message);
     return next(new Error("Authentication failed"));
   }
 });
@@ -5456,7 +5124,7 @@ io.on("connection", (socket) => {
   markOnline(uid, socket.id);
   touchLastSeen(uid, { mongoConnected, UserProfileModel, memoryStore });
 
-  console.log(`[connect] uid=${uid} socket=${socket.id}`);
+  log(`[connect] uid=${uid} socket=${socket.id}`);
 
   function shouldDropSocketEvent(eventType) {
     // Socket rate limiting is per-socket and per-event so rapid chat spam does
@@ -5590,9 +5258,9 @@ io.on("connection", (socket) => {
       if (typeof ack === "function") ack({ ok: true, roomCode });
 
       io.to(roomCode).emit("user_count_update", { count: 1, users: getUserList(room) });
-      console.log(`[create_room] ${roomCode} uid=${uid}`);
-    } catch (error) {
-      console.error("[create_room]", error);
+      log(`[create_room] ${roomCode} uid=${uid}`);
+    } catch (err) {
+      error("[create_room]", err);
       socket.emit("error", { message: "Failed to create room" });
       if (typeof ack === "function") ack({ ok: false, error: "Failed to create room" });
     }
@@ -5700,9 +5368,9 @@ io.on("connection", (socket) => {
         users: getUserList(room),
       });
 
-      console.log(`[join_room] ${code} uid=${uid} rejoin=${isRejoin}`);
-    } catch (error) {
-      console.error("[join_room]", error);
+      log(`[join_room] ${code} uid=${uid} rejoin=${isRejoin}`);
+    } catch (err) {
+      error("[join_room]", err);
       socket.emit("error", { message: "Failed to join room" });
       if (typeof ack === "function") ack({ ok: false, error: "Failed to join room" });
     }
@@ -6685,7 +6353,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", (reason) => {
-    console.log(`[disconnect] uid=${uid} reason=${reason}`);
+    log(`[disconnect] uid=${uid} reason=${reason}`);
     clearSocketEventRateLimits(socket.id);
 
     const stillOnline = markOffline(uid, socket.id);
@@ -6729,8 +6397,8 @@ io.on("connection", (socket) => {
 
       try {
         await recordOverlapForLeavingUser(liveRoom, uid, roomCode);
-      } catch (error) {
-        console.error("[memory] overlap save failed:", error.message);
+      } catch (err) {
+        error("[memory] overlap save failed:", err.message);
       }
 
       if (liveRoom.createdBy === uid && liveRoom.sessionMode !== "music") {
@@ -6811,16 +6479,16 @@ async function start() {
   await initMongo();
 
   httpServer.listen(PORT, () => {
-    console.log(`Lumiere server running on port ${PORT}`);
-    console.log(`Client origin: ${CLIENT_ORIGIN}`);
+    log(`Lumiere server running on port ${PORT}`);
+    log(`Client origin: ${CLIENT_ORIGIN}`);
     if (CLIENT_ORIGINS.length > 1) {
-      console.log(`Allowed origins: ${CLIENT_ORIGINS.join(", ")}`);
+      log(`Allowed origins: ${CLIENT_ORIGINS.join(", ")}`);
     }
   });
 }
 
-start().catch((error) => {
-  console.error("Server start failed:", error);
+start().catch((err) => {
+  error("Server start failed:", err);
   process.exit(1);
 });
 
@@ -6840,4 +6508,6 @@ const shutdown = async () => {
 
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
-process.on("unhandledRejection", (error) => console.error("Unhandled rejection:", error));
+process.on("unhandledRejection", (err) => {
+  return error("Unhandled rejection:", err);
+});

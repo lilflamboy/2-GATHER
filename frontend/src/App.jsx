@@ -37,6 +37,17 @@ import {
   ROOM_MOOD_OPTIONS, SESSION_PRESET_MESSAGES,
   ROOM_TYPE_LABELS, SESSION_MODE_LABELS,
 } from "./config/roomModes";
+import { fmt, formatDurationLabel } from "./utils/media";
+import {
+  normalizeCode, isHttpUrl, isYoutubeUrl,
+  isPdfUrl, isBlobUrl,
+  isDirectMediaUrl,
+} from "./utils/url";
+import {
+  guessDocumentFileName, buildDocumentSignature,
+  isSharedUploadUrl,
+} from "./utils/document";
+import { getBufferedAheadSeconds } from "./utils/buffer";
 import {
   Film, MessageSquare, LogOut, Copy, Check,
   Play, Pause, SkipBack, SkipForward, Maximize, Minimize,
@@ -50,65 +61,6 @@ const YOUTUBE_REMOTE_GUARD_MS = 1400;
 const YOUTUBE_LOCAL_CONTROL_DEBOUNCE_MS = 900;
 const YOUTUBE_NATIVE_SEEK_DEBOUNCE_MS = 1400;
 const YOUTUBE_SCHEDULE_BUFFER_MS = 120;
-
-const normalizeCode = (s) => s.trim().toUpperCase();
-
-const fmt = (s) => {
-  if (!s || isNaN(s)) return "0:00";
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
-};
-
-const formatDurationLabel = (seconds) => {
-  const value = Math.max(0, Number(seconds) || 0);
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.floor((value % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-};
-
-const isHttpUrl = (value) => /^https?:\/\/\S+$/i.test(String(value || "").trim());
-const isYoutubeUrl = (value) => /youtu\.?be|youtube\.com/i.test(String(value || ""));
-const isPdfUrl = (value) => /\.pdf(\?|#|$)/i.test(String(value || ""));
-const isBlobUrl = (value) => /^blob:/i.test(String(value || "").trim());
-const isDirectMediaUrl = (value) => /\.(mp4|webm|ogg|m3u8|mp3|wav|aac|m4a)(\?|#|$)/i.test(String(value || ""));
-
-const guessDocumentFileName = (value) => {
-  try {
-    const parsed = new URL(String(value || ""));
-    const segment = parsed.pathname.split("/").filter(Boolean).pop() || "";
-    return decodeURIComponent(segment || "").trim() || "shared-document.pdf";
-  } catch {
-    return "shared-document.pdf";
-  }
-};
-
-const buildDocumentSignature = (fileName, fileSize) => `${String(fileName || "shared-document.pdf").trim()}:${Math.max(0, Math.floor(Number(fileSize) || 0))}`;
-
-const isSharedUploadUrl = (value) => {
-  try {
-    const parsed = new URL(String(value || ""));
-    return /\/api\/uploads\/document\/[^/]+$/i.test(parsed.pathname || "");
-  } catch {
-    return false;
-  }
-};
-
-const getBufferedAheadSeconds = (media) => {
-  if (!media || !media.buffered || media.buffered.length === 0) return 0;
-  const now = Math.max(0, Number(media.currentTime) || 0);
-  for (let i = 0; i < media.buffered.length; i += 1) {
-    const start = Number(media.buffered.start(i)) || 0;
-    const end = Number(media.buffered.end(i)) || 0;
-    if (now >= start && now <= end) {
-      return Math.max(0, end - now);
-    }
-    if (start > now && start - now <= 0.35) {
-      return Math.max(0, end - now);
-    }
-  }
-  return 0;
-};
 
 let youtubeApiPromise = null;
 
