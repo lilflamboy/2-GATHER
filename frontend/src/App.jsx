@@ -28,134 +28,28 @@ import CoReadingPdfViewer, { getPdfPageCountFromArrayBuffer } from "./CoReadingP
 import { getSessionEngine } from "./engines/index.js";
 import { extractYouTubeId } from "./engines/engineUtils.js";
 import {
+  SERVER_URL, MAX_MESSAGES, MAX_VIDEO_TIME,
+  SESSION_KEY, USERNAME_KEY, PUSH_PREF_KEY,
+  QUICK_EMOJIS, ICE_CONFIG,
+} from "./config/constants";
+import {
+  PRIVATE_ROOM_MODES, SESSION_MODES,
+  ROOM_MOOD_OPTIONS, SESSION_PRESET_MESSAGES,
+  ROOM_TYPE_LABELS, SESSION_MODE_LABELS,
+} from "./config/roomModes";
+import {
   Film, MessageSquare, LogOut, Copy, Check,
   Play, Pause, SkipBack, SkipForward, Maximize, Minimize,
   Users, UserPlus, Bell, Wifi, WifiOff, Upload, Send, X, ChevronRight,
   AlertCircle, Menu, Mic, MicOff, Video, VideoOff, Phone, PhoneOff,
   Volume2, VolumeX, Bookmark, GripHorizontal, AtSign, Clock,
-  Heart, Lock, Headphones, BookOpen, GraduationCap, Library, Link2, FileText,
+  Lock, Headphones, Library, Link2, FileText,
 } from "lucide-react";
-
-const DEFAULT_BACKEND_HOST = typeof window !== "undefined" ? window.location.hostname : "localhost";
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || `http://${DEFAULT_BACKEND_HOST}:5001`;
-const MAX_MESSAGES = 200;
-const MAX_VIDEO_TIME = 86400;
-const SESSION_KEY = "lumiere_room";
-const USERNAME_KEY = "lumiere_username";
-const PUSH_PREF_KEY = "lumiere_push_notifications";
-const QUICK_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
-
-const ICE_CONFIG = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-  ],
-};
 
 const YOUTUBE_REMOTE_GUARD_MS = 1400;
 const YOUTUBE_LOCAL_CONTROL_DEBOUNCE_MS = 900;
 const YOUTUBE_NATIVE_SEEK_DEBOUNCE_MS = 1400;
 const YOUTUBE_SCHEDULE_BUFFER_MS = 120;
-
-const PRIVATE_ROOM_MODES = [
-  {
-    key: "couple",
-    label: "Couple mode",
-    roomType: "duo",
-    maxParticipants: 2,
-    icon: Heart,
-    blurb: "Designed for two. Deep sync + private analytics.",
-    hoverHint: "Best for late-night movies, anniversaries, and memory timelines.",
-  },
-  {
-    key: "best_friend",
-    label: "Best-friend mode",
-    roomType: "friends",
-    maxParticipants: 2,
-    icon: Users,
-    blurb: "Invite-only room for you and one friend.",
-    hoverHint: "Fast reactions, inside jokes, and replayed highlights.",
-  },
-  {
-    key: "family",
-    label: "Family room mode",
-    roomType: "family",
-    maxParticipants: 8,
-    icon: Users,
-    blurb: "Invite your close family circle.",
-    hoverHint: "Shared room for watch nights, classes, and reading circles.",
-  },
-];
-
-const SESSION_MODES = [
-  { key: "watch", label: "Watch", icon: Film, blurb: "Movies, shows, and videos in sync.", hoverHint: "Classic watch-party mode with reactions and timestamps." },
-  { key: "music", label: "Music mode", icon: Headphones, blurb: "Turn devices into synchronized speakers.", hoverHint: "Schedule playback across local audio, YouTube, and podcast links." },
-  { key: "podcast", label: "Podcast sync", icon: Headphones, blurb: "Listen together with synced playback.", hoverHint: "Paste YouTube or audio links and discuss in real time." },
-  { key: "reading", label: "Co-reading", icon: BookOpen, blurb: "Read and discuss page-by-page moments.", hoverHint: "Paste a PDF/doc link and annotate key moments together." },
-  { key: "study", label: "Study session", icon: GraduationCap, blurb: "Live class-style focus rooms.", hoverHint: "Host-led sessions: teacher explains, students ask and track progress." },
-];
-
-const ROOM_MOOD_OPTIONS = [
-  { key: "", label: "No mood" },
-  { key: "chill", label: "Chill" },
-  { key: "romantic", label: "Romantic" },
-  { key: "focused", label: "Focused" },
-  { key: "energetic", label: "Energetic" },
-];
-
-const SESSION_PRESET_MESSAGES = {
-  watch: [
-    { emoji: "🍿", text: "Best scene so far!", category: "reaction" },
-    { emoji: "😮", text: "Wait what just happened?!", category: "reaction" },
-    { emoji: "😂", text: "I can't stop laughing", category: "reaction" },
-    { emoji: "📍", text: "Save this moment", category: "bookmark" },
-    { emoji: "❤️", text: "This hits so hard with you here", category: "couple" },
-    { emoji: "🔥", text: "This scene goes crazy", category: "friends" },
-  ],
-  music: [
-    { emoji: "🎵", text: "This drop is perfectly synced", category: "sync" },
-    { emoji: "🔁", text: "Replay that section", category: "bookmark" },
-    { emoji: "🔥", text: "This track sounds huge together", category: "reaction" },
-    { emoji: "🎚️", text: "Tiny drift corrected", category: "debug" },
-    { emoji: "💿", text: "Load the matching local file", category: "source" },
-  ],
-  podcast: [
-    { emoji: "🎧", text: "Audio sync feels perfect", category: "sync" },
-    { emoji: "🧠", text: "That point was brilliant", category: "insight" },
-    { emoji: "📍", text: "Bookmark this timestamp", category: "bookmark" },
-    { emoji: "❓", text: "Can we replay that section?", category: "study" },
-    { emoji: "💬", text: "This topic reminds me of us", category: "couple" },
-  ],
-  reading: [
-    { emoji: "📄", text: "Let's discuss this page", category: "page" },
-    { emoji: "🖍️", text: "Highlight this line", category: "highlight" },
-    { emoji: "❓", text: "I have a question here", category: "study" },
-    { emoji: "🧩", text: "This paragraph connects everything", category: "insight" },
-    { emoji: "📍", text: "Remember this passage", category: "bookmark" },
-  ],
-  study: [
-    { emoji: "🧑‍🏫", text: "Teacher note: focus on this concept", category: "teacher" },
-    { emoji: "✋", text: "I have a doubt, can we pause?", category: "student" },
-    { emoji: "✅", text: "Checkpoint done", category: "progress" },
-    { emoji: "📍", text: "Bookmark this explanation", category: "bookmark" },
-    { emoji: "⏱️", text: "Let's do a 25-minute focus sprint", category: "focus" },
-  ],
-};
-
-const ROOM_TYPE_LABELS = {
-  duo: "Couple",
-  friends: "Friends",
-  family: "Family",
-};
-
-const SESSION_MODE_LABELS = {
-  watch: "Watch",
-  music: "Music",
-  podcast: "Podcast",
-  reading: "Co-reading",
-  study: "Study",
-};
 
 const normalizeCode = (s) => s.trim().toUpperCase();
 
