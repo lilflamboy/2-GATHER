@@ -66,6 +66,7 @@ export function useSocket({
       roomCode:rc,
       users:u,
       videoState,
+      serverTime,
       audioState,
       mediaType,
       mediaMeta,
@@ -101,7 +102,7 @@ export function useSocket({
       setRoomContentType(joinedContentType||mediaType||videoMetadata?.sourceType||"unknown");
       setRoomCreatedBy(joinedCreatedBy||"");
       setRoomMaxParticipants(Math.max(2,Number(maxParticipants)||6));
-      setInitialVideoState(videoState||null);
+      setInitialVideoState(videoState?{...videoState,serverTime:Number(serverTime)||Date.now()/1000}:null);
       setInitialAudioState(audioState||null);
       setInitialMessages((msgs||[]).map(m=>({...m,reactions:m.reactions||{}})));
       setInitialVideoMetadata(videoMetadata?{...videoMetadata,fileFingerprint:videoMetadata.fileFingerprint||mediaMeta?.fileSignature||""}:null);

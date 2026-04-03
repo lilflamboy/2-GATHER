@@ -193,6 +193,7 @@ function RoomView({
   const [friendStatusByUid,setFriendStatusByUid]=useState({});
   const [docUploading,setDocUploading]=useState(false);
   const [closePickerSignal,setClosePickerSignal]=useState(0);
+  const [brokenAvatarUids,setBrokenAvatarUids]=useState({});
   const modeLabel=ROOM_TYPE_LABELS[roomType]||"Friends";
   const sessionLabel=SESSION_MODE_LABELS[sessionMode]||"Watch";
   // Session engines let one screen support watch/music/podcast/reading/study
@@ -217,6 +218,41 @@ function RoomView({
       videoScheduleTimeoutRef.current=null;
     }
   },[]);
+  const markAvatarBroken=useCallback((uid)=>{
+    if(!uid)return;
+    setBrokenAvatarUids(prev=>prev[uid]?prev:{...prev,[uid]:true});
+  },[]);
+  const renderUserAvatar=useCallback((participant,sizeClass,textClass,altLabel="")=>{
+    const safeUid=String(participant?.uid||"");
+    const label=altLabel||participant?.name||participant?.username||"User";
+    const initial=(participant?.name||participant?.username||label||"U").trim()[0]?.toUpperCase()||"U";
+    const showPhoto=!!participant?.photoURL&&!brokenAvatarUids[safeUid];
+    return showPhoto
+      ?<img
+        src={participant.photoURL}
+        alt={label}
+        onError={()=>markAvatarBroken(safeUid)}
+        className={`${sizeClass} rounded-full border border-zinc-700 object-cover`}
+      />
+      :<div className={`${sizeClass} rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center ${textClass} text-amber-400 font-semibold`}>
+        {initial}
+      </div>;
+  },[brokenAvatarUids,markAvatarBroken]);
+  const resolveMessageAuthor=useCallback((message)=>{
+    if(!message||message.uid==="system"){
+      return message;
+    }
+    const liveUser=users.find(entry=>entry.uid===message.uid);
+    if(!liveUser){
+      return message;
+    }
+    return {
+      ...message,
+      senderName: message.senderName||liveUser.name||"",
+      senderUsername: message.senderUsername||liveUser.username||"",
+      photoURL: message.photoURL||liveUser.photoURL||"",
+    };
+  },[users]);
   const clearScheduledAudioStart=useCallback(()=>{
     if(audioScheduleTimeoutRef.current){
       clearTimeout(audioScheduleTimeoutRef.current);
@@ -361,6 +397,7 @@ function RoomView({
   const {inCall,micOn,camOn,localStreamRef,remoteStreams,joinCall,leaveCall,toggleMic,toggleCam}=
     useWebRTC({socket,roomCode,myUid:user.uid,users,addToast});
   const otherUsers=users.filter(u=>u.uid!==user.uid);
+  const otherUserIdsKey=otherUsers.map(target=>target.uid).sort().join("|");
   const hostUid=roomCreatedBy||"";
   const hostUser=users.find(u=>u.uid===hostUid);
   const isHost=!hostUid||user.uid===hostUid;
@@ -429,6 +466,14 @@ function RoomView({
   },[sharedDocument]);
 
   useEffect(()=>{
+    setUsers(initialUsers||[]);
+  },[initialUsers]);
+
+  useEffect(()=>{
+    setBrokenAvatarUids({});
+  },[users]);
+
+  useEffect(()=>{
     const nextPage=Math.max(1, Math.floor(Number(initialReadingState?.page ?? initialReadingPage) || 1));
     // Whenever the room snapshot changes, re-seed the local reading controls
     // from the host-provided document and page state.
@@ -442,6 +487,34 @@ function RoomView({
     audioSyncStateRef.current=initialAudioState||null;
     pendingAudioSyncRef.current=initialAudioState||null;
   },[initialAudioState]);
+
+  useEffect(()=>{
+    if(isMusicMode||!initialVideoState){
+      return;
+    }
+    pendingSeek.current=initialVideoState;
+    if(!videoLoaded){
+      return;
+    }
+    applySyncRef.current(
+      initialVideoState,
+      "",
+      Number(initialVideoState.serverTime)||Date.now()/1000
+    );
+    pendingSeek.current=null;
+  },[initialVideoState,isMusicMode,videoLoaded]);
+
+  useEffect(()=>{
+    if(!isMusicMode||!initialAudioState){
+      return;
+    }
+    pendingAudioSyncRef.current=initialAudioState;
+    audioSyncStateRef.current=initialAudioState;
+    if(!videoLoaded){
+      return;
+    }
+    applyAudioSyncRef.current({ audioState: initialAudioState });
+  },[initialAudioState,isMusicMode,videoLoaded]);
 
   useEffect(()=>{
     const nextSignature=String(initialVideoMetadata?.fileFingerprint||"");
@@ -694,6 +767,51 @@ function RoomView({
       setFriendBusyByUid(prev=>({...prev,[target.uid]:false}));
     }
   },[onSendFriendRequest,onRespondFriendRequest,friendStatusByUid]);
+
+  useEffect(()=>{
+    let cancelled=false;
+
+    const syncRoomFriendStatuses=async()=>{
+      if(!auth.currentUser||otherUsers.length===0){
+        setFriendStatusByUid({});
+        return;
+      }
+
+      try{
+        const token=await auth.currentUser.getIdToken();
+        const res=await fetch(`${SERVER_URL}/api/friends`,{
+          headers:{Authorization:`Bearer ${token}`},
+        });
+        if(!res.ok)return;
+        const data=await res.json().catch(()=>({}));
+        if(cancelled)return;
+
+        const friendsSet=new Set((Array.isArray(data?.friends)?data.friends:[]).map(item=>item?.uid).filter(Boolean));
+        const incomingSet=new Set((Array.isArray(data?.incomingRequests)?data.incomingRequests:[]).map(item=>item?.uid).filter(Boolean));
+        const outgoingSet=new Set((Array.isArray(data?.outgoingRequests)?data.outgoingRequests:[]).map(item=>item?.uid).filter(Boolean));
+
+        const nextStatuses={};
+        // Preload room-member friendship state so the header/menu renders "Friends"
+        // immediately instead of waiting for the user to click "Add Friend" first.
+        otherUsers.forEach(target=>{
+          if(friendsSet.has(target.uid)){
+            nextStatuses[target.uid]="already_friends";
+          }else if(incomingSet.has(target.uid)){
+            nextStatuses[target.uid]="needs_accept";
+          }else if(outgoingSet.has(target.uid)){
+            nextStatuses[target.uid]="already_requested";
+          }
+        });
+
+        setFriendStatusByUid(nextStatuses);
+      }catch{
+        // Keep whatever room-level status we already have if the sync request fails.
+      }
+    };
+
+    syncRoomFriendStatuses();
+    return()=>{cancelled=true;};
+  },[otherUserIdsKey,user.uid]);
 
   useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
@@ -2253,6 +2371,16 @@ function RoomView({
     return "Add friend";
   };
 
+  const singleOtherUser=otherUsers.length===1?otherUsers[0]:null;
+  const singleOtherUserStatus=singleOtherUser?(friendStatusByUid[singleOtherUser.uid]||""):"";
+  const allOtherUsersAreFriends=otherUsers.length>0&&otherUsers.every(target=>friendStatusByUid[target.uid]==="already_friends");
+  // For 1:1 rooms we can mirror the exact relationship label in the header button.
+  // In larger rooms, showing "Friends" only makes sense when everyone in the room already is.
+  const roomFriendButtonLabel=singleOtherUser
+    ?getFriendStatusLabel(singleOtherUserStatus)
+    :(allOtherUsersAreFriends?"Friends":"Add Friend");
+  const roomFriendButtonSettled=singleOtherUserStatus==="already_friends"||allOtherUsersAreFriends;
+
   return(
     <div className={`h-dvh min-h-screen flex flex-col overflow-hidden relative ${isReadingMode?"bg-zinc-50":"bg-screen"}`}>
       {!isReadingMode&&<div className="grain-overlay"/>}
@@ -2398,11 +2526,15 @@ function RoomView({
                       setShowHeaderNotifications(false);
                       setShowFriendMenu(v=>!v);
                     }}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border border-amber-500/35 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
-                    title="Send friend request"
+                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                      roomFriendButtonSettled
+                        ?"border-zinc-600 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800"
+                        :"border-amber-500/35 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20"
+                    }`}
+                    title={singleOtherUserStatus==="needs_accept"?"Accept friend request":"View room people"}
                   >
                     <UserPlus size={12}/>
-                    <span className="hidden md:inline">Add Friend</span>
+                    <span className="hidden md:inline">{roomFriendButtonLabel}</span>
                   </button>
                   {showFriendMenu&&(
                     <div className="absolute right-0 mt-2 w-72 max-w-[80vw] rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-2 z-40">
@@ -2415,10 +2547,7 @@ function RoomView({
                           const label=`@${target.username||target.name||"friend"}`;
                           return(
                             <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
-                              {target.photoURL
-                                ?<img src={target.photoURL} alt={target.name||label} className="w-7 h-7 rounded-full border border-zinc-700"/>
-                                :<div className="w-7 h-7 rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center text-[11px] text-amber-300 font-semibold">{(target.name||label)[0]}</div>
-                              }
+                              {renderUserAvatar(target,"w-7 h-7","text-[11px]",target.name||label)}
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs text-zinc-200 truncate">{label}</p>
                                 <p className="text-[11px] text-zinc-500 truncate">{target.name||"Viewer"}</p>
@@ -3205,10 +3334,7 @@ function RoomView({
             <div className={`px-4 py-2 border-b flex items-center gap-1.5 flex-wrap ${isReadingMode?"border-zinc-300/60":"border-zinc-700/40"}`}>
               {users.map(u=>(
                 <div key={u.uid} title={`@${u.username||u.name}`}>
-                  {u.photoURL
-                    ?<img src={u.photoURL} alt={u.name} className="w-6 h-6 rounded-full border border-zinc-700"/>
-                    :<div className="w-6 h-6 rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center text-[10px] text-amber-400 font-semibold">{u.name?.[0]}</div>
-                  }
+                  {renderUserAvatar(u,"w-6 h-6","text-[10px]",u.name)}
                 </div>
               ))}
             </div>
@@ -3220,7 +3346,7 @@ function RoomView({
               {messages.map((m,i)=>(
                 <ChatMessage
                   key={m.id||i}
-                  msg={m}
+                  msg={resolveMessageAuthor(m)}
                   myUid={user.uid}
                   onReact={handleReact}
                   onBookmarkSeek={handleBookmarkSeek}

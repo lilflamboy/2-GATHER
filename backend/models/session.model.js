@@ -75,7 +75,7 @@ try {
   const watchSessionSchema = new mongoose.Schema(
     {
       roomCode: { type: String, required: true, index: true }, // Room share code the completed session came from.
-      roomId: { type: String, default: "", index: true }, // Optional immutable room/session identifier used for dedupe when available.
+      roomId: { type: String, default: "" }, // Optional immutable room/session identifier used for dedupe when available; the partial unique index below is the only roomId index we keep to avoid duplicate-index warnings.
       roomType: { type: String, enum: ["duo", "family", "friends"], default: "friends", index: true }, // Social room shape the session took place in.
       sessionMode: { type: String, enum: ALLOWED_SESSION_MODES, default: "watch", index: true }, // Mode used for the completed session: watch, podcast, music, reading, or study.
       participants: { type: [String], required: true, index: true }, // All participant uids involved in the session, used for history queries.

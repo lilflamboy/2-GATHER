@@ -74,7 +74,6 @@ try {
   // These indexes support pair lookups, dashboard fetches, and "pending
   // requests for me" queries without scanning the full relationship set.
   coupleSpaceSchema.index({ users: 1 })
-  relationshipSchema.index({ users: 1 })
   relationshipSchema.index({ requesterUid: 1, status: 1, updatedAt: -1 })
   relationshipSchema.index({ recipientUid: 1, status: 1, updatedAt: -1 })
 

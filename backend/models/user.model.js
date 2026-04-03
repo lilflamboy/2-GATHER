@@ -50,9 +50,6 @@ try {
     { timestamps: true }
   )
 
-  // Username lookups are hot in onboarding and search, so keep a dedicated
-  // sparse unique index in addition to the inline schema declaration.
-  userProfileSchema.index({ username: 1 }, { unique: true, sparse: true })
   // Email should only be unique when present, which is why the partial filter
   // ignores empty-string placeholder values.
   userProfileSchema.index(

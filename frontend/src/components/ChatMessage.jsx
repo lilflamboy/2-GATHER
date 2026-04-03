@@ -4,6 +4,7 @@ import EmojiPickerPortal from "./EmojiPickerPortal";
 function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
   const [showPicker,setShowPicker]=useState(false);
   const [pickerPos,setPickerPos]=useState({top:0,left:0});
+  const [avatarFailed,setAvatarFailed]=useState(false);
   const bubbleRef=useRef(null);
   const isMe=msg.uid===myUid;
   const isBookmark=msg.type==="bookmark";
@@ -12,8 +13,9 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
   const reactions=Object.entries(msg.reactions||{}).filter(([,uids])=>uids.length>0);
   const senderLabel=msg.senderUsername||msg.senderName||"user";
   const avatarInitial=(msg.senderName||msg.senderUsername||"U").trim()[0]?.toUpperCase()||"U";
-  const avatarEl=msg.photoURL
-    ?<img src={msg.photoURL} alt={senderLabel} className="w-7 h-7 rounded-full border border-zinc-700 object-cover"/>
+  const hasAvatar=!!msg.photoURL&&!avatarFailed;
+  const avatarEl=hasAvatar
+    ?<img src={msg.photoURL} alt={senderLabel} onError={()=>setAvatarFailed(true)} className="w-7 h-7 rounded-full border border-zinc-700 object-cover"/>
     :<div className="w-7 h-7 rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center text-[11px] text-amber-300 font-semibold">
       {avatarInitial}
     </div>;
@@ -21,6 +23,10 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
   useEffect(()=>{
     if(showPicker)setShowPicker(false);
   },[closePickerSignal]);
+
+  useEffect(()=>{
+    setAvatarFailed(false);
+  },[msg.photoURL]);
 
   if(isSystem){
     const variant = msg.meta?.variant;

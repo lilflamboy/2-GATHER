@@ -6,7 +6,9 @@
  */
 "use strict";
 
-require("dotenv").config();
+// Always resolve the backend env file from this directory so `node backend/server.js`
+// and root-level `npm start` both load the same Firebase/Mongo credentials.
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const {
   PORT, CLIENT_ORIGIN, CLIENT_ORIGINS, NODE_ENV,
@@ -308,7 +310,7 @@ io.use(async (socket, next) => {
       uid: identity.uid,
       name: profile.displayName || identity.name,
       username: profile.username || requestedUsername || normalizeUsername(identity.email.split("@")[0]) || "user",
-      photoURL: profile.photoURL || identity.photoURL || "",
+      photoURL: sanitizePhotoURL(profile.photoURL || identity.photoURL || ""),
       email: profile.email || identity.email,
     };
 
