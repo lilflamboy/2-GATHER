@@ -9,7 +9,7 @@
 require("dotenv").config();
 
 const {
-  PORT, CLIENT_ORIGIN, CLIENT_ORIGINS, MONGODB_URI, NODE_ENV,
+  PORT, CLIENT_ORIGIN, CLIENT_ORIGINS, NODE_ENV,
   JSON_BODY_LIMIT, ROOM_EXPIRY_MS, MAX_MESSAGE_LENGTH,
   MAX_ROOM_USERS, MAX_VIDEO_TIME, SYNC_WAIT_THRESHOLD,
   SYNC_RESUME_THRESHOLD, SYNC_WAIT_GRACE_MS,
@@ -73,6 +73,18 @@ const {
   touchLastSeen,
 } = require("./utils/presence.js");
 const { log, warn, error } = require("./utils/logger.js");
+const { memoryStore } = require("./models/memoryStore.js");
+const {
+  initMongo, getMongoConnected,
+  UserProfileModel, MemoryEventModel,
+  CoupleSpaceModel, RelationshipModel,
+  RoomModel, RoomParticipantModel,
+  InviteModel, ActivityEventModel,
+  VideoSessionModel, ChatArchiveModel,
+  SharedMemoryModel, NotificationModel,
+  WatchSessionModel, SessionReactionModel,
+  MilestoneModel, InsightModel,
+} = require("./models/db.js");
 
 const express = require("express");
 const http = require("http");
@@ -80,13 +92,6 @@ const { Server } = require("socket.io");
 const admin = require("firebase-admin");
 const helmet = require("helmet");
 const cors = require("cors");
-
-let mongoose = null;
-try {
-  mongoose = require("mongoose");
-} catch {
-  warn("[db] mongoose not installed. Running with in-memory fallback.");
-}
 
 // ─── Firebase ─────────────────────────────────────────────────────────────────
 let serviceAccount;
@@ -106,441 +111,6 @@ admin.initializeApp(
     ? { credential: admin.credential.cert(serviceAccount) }
     : { credential: admin.credential.applicationDefault() }
 );
-
-// ─── DB Setup ─────────────────────────────────────────────────────────────────
-let mongoConnected = false;
-let UserProfileModel = null;
-let MemoryEventModel = null;
-let CoupleSpaceModel = null;
-let RelationshipModel = null;
-let RoomModel = null;
-let RoomParticipantModel = null;
-let InviteModel = null;
-let ActivityEventModel = null;
-let VideoSessionModel = null;
-let ChatArchiveModel = null;
-let SharedMemoryModel = null;
-let NotificationModel = null;
-let WatchSessionModel = null;
-let SessionReactionModel = null;
-let MilestoneModel = null;
-let InsightModel = null;
-
-const memoryStore = {
-  // This mirrors the main Mongo-backed entities so the app can still run when
-  // mongoose is unavailable during local development or transient DB outages.
-  profiles: new Map(), // uid -> profile
-  memoryEvents: [], // { users:[uidA,uidB], seconds, occurredAt }
-  coupleSpaces: new Map(), // pairKey -> { pairKey, users:[uidA,uidB], watchlist:[] }
-  relationships: new Map(), // pairKey -> relationship row
-  rooms: new Map(), // roomCode -> metadata row
-  roomParticipants: new Map(), // roomCode__uid -> participant row
-  invites: [], // invite rows
-  notifications: [], // notification rows
-  activityEvents: [], // activity rows
-  videoSessions: new Map(), // roomCode -> session metadata
-  chatMessages: [], // optional persistent chat rows
-  sharedMemories: [], // shared memory rows
-  watchSessions: [], // long-term session rows
-  sessionReactions: [], // reaction rows
-  milestones: new Map(), // pairKey__type -> milestone row
-  insights: [], // yearly relationship insights
-  uploadedDocuments: new Map(), // documentId -> { id, ownerUid, fileName, mimeType, bytes, base64Data, createdAt, expiresAt }
-};
-
-if (mongoose) {
-  const userProfileSchema = new mongoose.Schema(
-    {
-      uid: { type: String, required: true, unique: true, index: true },
-      username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
-      displayName: { type: String, default: "" },
-      photoURL: { type: String, default: "" },
-      email: { type: String, default: "" },
-      phoneNumber: { type: String, default: "" },
-      bio: { type: String, default: "" },
-      friends: { type: [String], default: [] },
-      incomingRequests: { type: [String], default: [] },
-      outgoingRequests: { type: [String], default: [] },
-      settings: {
-        inviteNotifications: { type: Boolean, default: true },
-        memoryNudges: { type: Boolean, default: true },
-        showOnlineStatus: { type: Boolean, default: true },
-      },
-      totalWatchTime: { type: Number, default: 0 },
-      totalSessions: { type: Number, default: 0 },
-      streakCount: { type: Number, default: 0 },
-      lastSessionAt: { type: Date, default: null },
-      preferences: {
-        favoriteGenres: { type: [String], default: [] },
-        activeTimeSlots: { type: [String], default: [] },
-      },
-      lastSeenAt: { type: Date, default: Date.now },
-    },
-    { timestamps: true }
-  );
-
-  const memoryEventSchema = new mongoose.Schema(
-    {
-      users: { type: [String], required: true, index: true }, // exactly 2 user ids sorted
-      seconds: { type: Number, required: true },
-      occurredAt: { type: Date, required: true, default: Date.now, index: true },
-      roomCode: { type: String, default: "" },
-    },
-    { timestamps: true }
-  );
-
-  const watchlistItemSchema = new mongoose.Schema(
-    {
-      id: { type: String, required: true },
-      title: { type: String, required: true },
-      url: { type: String, default: "" },
-      notes: { type: String, default: "" },
-      done: { type: Boolean, default: false },
-      addedBy: { type: String, required: true },
-      createdAt: { type: Date, default: Date.now },
-      updatedAt: { type: Date, default: Date.now },
-    },
-    { _id: false }
-  );
-
-  const coupleSpaceSchema = new mongoose.Schema(
-    {
-      pairKey: { type: String, required: true, unique: true, index: true },
-      users: { type: [String], required: true },
-      watchlist: { type: [watchlistItemSchema], default: [] },
-      updatedAt: { type: Date, default: Date.now },
-    },
-    { timestamps: true }
-  );
-
-  const relationshipSchema = new mongoose.Schema(
-    {
-      pairKey: { type: String, required: true, unique: true, index: true },
-      users: { type: [String], required: true, index: true }, // sorted 2-user pair
-      requesterUid: { type: String, default: "", index: true },
-      recipientUid: { type: String, default: "", index: true },
-      status: { type: String, enum: ["pending", "accepted", "rejected", "blocked"], default: "pending", index: true },
-      relationshipType: { type: String, enum: ["couple", "friends", "family"], default: "friends", index: true },
-      totalWatchTime: { type: Number, default: 0 },
-      totalSessions: { type: Number, default: 0 },
-      longestSession: { type: Number, default: 0 },
-      streak: { type: Number, default: 0 },
-      firstWatchedAt: { type: Date, default: null },
-      lastWatchedAt: { type: Date, default: null },
-      topGenres: { type: [String], default: [] },
-      activeTimeSlots: { type: [String], default: [] },
-      lastSessionMode: { type: String, enum: ALLOWED_SESSION_MODES, default: "watch" },
-      requestedBy: { type: String, default: "", index: true },
-      lastActionBy: { type: String, default: "", index: true },
-      lastActionAt: { type: Date, default: Date.now },
-    },
-    { timestamps: true }
-  );
-
-  const roomSchema = new mongoose.Schema(
-    {
-      roomCode: { type: String, required: true, unique: true, index: true },
-      roomType: { type: String, enum: ["duo", "family", "friends"], default: "friends", index: true },
-      sessionMode: { type: String, enum: ALLOWED_SESSION_MODES, default: "watch", index: true },
-      createdBy: { type: String, required: true, index: true },
-      isActive: { type: Boolean, default: true, index: true },
-      roomPasswordHash: { type: String, default: "" },
-      maxParticipants: { type: Number, default: MAX_ROOM_USERS },
-      moodTag: { type: String, default: "", index: true },
-      contentUrl: { type: String, default: "" },
-      contentType: { type: String, enum: ALLOWED_CONTENT_TYPES, default: "unknown", index: true },
-      playbackStatus: { type: String, enum: ["idle", "playing", "paused"], default: "idle", index: true },
-      baseTime: { type: Number, default: 0 },
-      startedAt: { type: Date, default: null },
-      permissions: {
-        play: { type: Boolean, default: true },
-        pause: { type: Boolean, default: true },
-        seek: { type: Boolean, default: true },
-        skip: { type: Boolean, default: true },
-      },
-      createdAt: { type: Date, default: Date.now, index: true },
-      expiresAt: { type: Date, default: Date.now, index: true },
-      closedAt: { type: Date, default: null },
-      lastActivityAt: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const roomParticipantSchema = new mongoose.Schema(
-    {
-      roomCode: { type: String, required: true, index: true },
-      userId: { type: String, required: true, index: true },
-      joinedAt: { type: Date, required: true, default: Date.now, index: true },
-      leftAt: { type: Date, default: null },
-      role: { type: String, default: "member" },
-      isActive: { type: Boolean, default: true, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const inviteSchema = new mongoose.Schema(
-    {
-      fromUid: { type: String, required: true, index: true },
-      toUid: { type: String, required: true, index: true },
-      roomCode: { type: String, required: true, index: true },
-      status: { type: String, enum: ["sent", "seen", "accepted", "expired"], default: "sent", index: true },
-      createdAt: { type: Date, default: Date.now, index: true },
-      respondedAt: { type: Date, default: null },
-    },
-    { timestamps: true }
-  );
-
-  const activityEventSchema = new mongoose.Schema(
-    {
-      uid: { type: String, required: true, index: true },
-      type: { type: String, required: true, index: true },
-      roomCode: { type: String, default: "", index: true },
-      targetUid: { type: String, default: "", index: true },
-      payload: { type: mongoose.Schema.Types.Mixed, default: {} },
-      occurredAt: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const videoSessionSchema = new mongoose.Schema(
-    {
-      roomCode: { type: String, required: true, unique: true, index: true },
-      videoName: { type: String, default: "" },
-      duration: { type: Number, default: 0 },
-      sourceType: { type: String, enum: ALLOWED_CONTENT_TYPES, default: "unknown" },
-      fileFingerprint: { type: String, default: "" },
-      contentUrl: { type: String, default: "" },
-      startedAt: { type: Date, default: Date.now },
-      endedAt: { type: Date, default: null },
-      totalWatchTime: { type: Number, default: 0 },
-      updatedBy: { type: String, default: "", index: true },
-    },
-    { timestamps: true }
-  );
-
-  const chatArchiveSchema = new mongoose.Schema(
-    {
-      roomCode: { type: String, required: true, index: true },
-      messageId: { type: String, required: true, unique: true },
-      uid: { type: String, required: true, index: true },
-      senderName: { type: String, default: "" },
-      senderUsername: { type: String, default: "" },
-      text: { type: String, default: "" },
-      type: { type: String, default: "text" },
-      timestamp: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const sharedMemorySchema = new mongoose.Schema(
-    {
-      pairKey: { type: String, required: true, index: true },
-      user1Id: { type: String, required: true, index: true },
-      user2Id: { type: String, required: true, index: true },
-      roomCode: { type: String, default: "", index: true },
-      date: { type: Date, default: Date.now, index: true },
-      memoryNote: { type: String, default: "" },
-      sessionMode: { type: String, enum: ALLOWED_SESSION_MODES, default: "watch", index: true },
-      genre: { type: String, default: "" },
-      moodTag: { type: String, default: "" },
-      highlightTimestamp: { type: String, default: "" },
-      sessionMinutes: { type: Number, default: 0 },
-      reactionCount: { type: Number, default: 0 },
-      createdBy: { type: String, required: true, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const sessionHighlightSchema = new mongoose.Schema(
-    {
-      timestamp: { type: Number, default: 0 },
-      type: { type: String, enum: ALLOWED_REACTION_TYPES, default: "reaction" },
-      userUid: { type: String, default: "" },
-      reactionType: { type: String, enum: ALLOWED_REACTION_TYPES, default: "reaction" },
-      emoji: { type: String, default: "" },
-      createdAt: { type: Date, default: Date.now },
-    },
-    { _id: false }
-  );
-
-  const watchSessionSchema = new mongoose.Schema(
-    {
-      roomCode: { type: String, required: true, index: true },
-      roomId: { type: String, default: "", index: true },
-      roomType: { type: String, enum: ["duo", "family", "friends"], default: "friends", index: true },
-      sessionMode: { type: String, enum: ALLOWED_SESSION_MODES, default: "watch", index: true },
-      participants: { type: [String], required: true, index: true },
-      relationshipId: { type: String, default: "", index: true },
-      relationshipType: { type: String, enum: ALLOWED_RELATIONSHIP_TYPES, default: "group", index: true },
-      contentUrl: { type: String, default: "" },
-      contentTitle: { type: String, default: "" },
-      contentType: { type: String, enum: ALLOWED_CONTENT_TYPES, default: "unknown", index: true },
-      genre: { type: String, default: "" },
-      moodTag: { type: String, default: "", index: true },
-      duration: { type: Number, default: 0 },
-      startedAt: { type: Date, default: Date.now, index: true },
-      endedAt: { type: Date, default: Date.now, index: true },
-      reactionsCount: { type: Number, default: 0 },
-      highlights: { type: [sessionHighlightSchema], default: [] },
-      createdBy: { type: String, default: "", index: true },
-    },
-    { timestamps: true }
-  );
-
-  const sessionReactionSchema = new mongoose.Schema(
-    {
-      sessionId: { type: String, default: "", index: true },
-      roomCode: { type: String, default: "", index: true },
-      userUid: { type: String, required: true, index: true },
-      messageId: { type: String, default: "", index: true },
-      timestamp: { type: Number, default: 0 },
-      reactionType: { type: String, enum: ALLOWED_REACTION_TYPES, default: "reaction", index: true },
-      emoji: { type: String, default: "" },
-      createdAt: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const milestoneSchema = new mongoose.Schema(
-    {
-      relationshipId: { type: String, default: "", index: true },
-      pairKey: { type: String, default: "", index: true },
-      users: { type: [String], default: [], index: true },
-      type: { type: String, required: true, index: true },
-      achievedAt: { type: Date, default: Date.now, index: true },
-      payload: { type: mongoose.Schema.Types.Mixed, default: {} },
-    },
-    { timestamps: true }
-  );
-
-  const insightSchema = new mongoose.Schema(
-    {
-      relationshipId: { type: String, default: "", index: true },
-      pairKey: { type: String, default: "", index: true },
-      users: { type: [String], default: [], index: true },
-      year: { type: Number, required: true, index: true },
-      summaryText: { type: String, default: "" },
-      favoriteGenre: { type: String, default: "" },
-      watchPattern: { type: String, default: "" },
-      moodTrend: { type: String, default: "" },
-      generatedAt: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  const notificationSchema = new mongoose.Schema(
-    {
-      recipientUid: { type: String, required: true, index: true },
-      senderUid: { type: String, default: "", index: true },
-      type: { type: String, required: true, index: true },
-      referenceId: { type: String, default: "", index: true },
-      roomCode: { type: String, default: "", index: true },
-      payload: { type: mongoose.Schema.Types.Mixed, default: {} },
-      actionRequired: { type: Boolean, default: false, index: true },
-      isRead: { type: Boolean, default: false, index: true },
-      readAt: { type: Date, default: null },
-      createdAt: { type: Date, default: Date.now, index: true },
-    },
-    { timestamps: true }
-  );
-
-  userProfileSchema.index({ username: 1 }, { unique: true, sparse: true });
-  userProfileSchema.index(
-    { email: 1 },
-    {
-      unique: true,
-      partialFilterExpression: { email: { $type: "string", $ne: "" } },
-    }
-  );
-  userProfileSchema.index(
-    { phoneNumber: 1 },
-    {
-      unique: true,
-      partialFilterExpression: { phoneNumber: { $type: "string", $ne: "" } },
-    }
-  );
-  memoryEventSchema.index({ users: 1, occurredAt: -1 });
-  coupleSpaceSchema.index({ users: 1 });
-  relationshipSchema.index({ users: 1 });
-  relationshipSchema.index({ requesterUid: 1, status: 1, updatedAt: -1 });
-  relationshipSchema.index({ recipientUid: 1, status: 1, updatedAt: -1 });
-  roomParticipantSchema.index({ roomCode: 1, userId: 1 }, { unique: true });
-  inviteSchema.index({ toUid: 1, createdAt: -1 });
-  activityEventSchema.index({ uid: 1, occurredAt: -1 });
-  chatArchiveSchema.index({ roomCode: 1, timestamp: -1 });
-  sharedMemorySchema.index({ pairKey: 1, date: -1 });
-  watchSessionSchema.index({ participants: 1, endedAt: -1 });
-  watchSessionSchema.index({ relationshipId: 1, endedAt: -1 });
-  watchSessionSchema.index({ roomCode: 1, endedAt: -1 });
-  watchSessionSchema.index(
-    { roomId: 1 },
-    {
-      unique: true,
-      sparse: true,
-      partialFilterExpression: { roomId: { $type: "string", $ne: "" } },
-    }
-  );
-  sessionReactionSchema.index({ sessionId: 1, createdAt: -1 });
-  sessionReactionSchema.index({ roomCode: 1, createdAt: -1 });
-  sessionReactionSchema.index({ userUid: 1, createdAt: -1 });
-  milestoneSchema.index({ pairKey: 1, achievedAt: -1 });
-  milestoneSchema.index(
-    { pairKey: 1, type: 1 },
-    {
-      unique: true,
-      sparse: true,
-      partialFilterExpression: { pairKey: { $type: "string", $ne: "" }, type: { $type: "string", $ne: "" } },
-    }
-  );
-  milestoneSchema.index({ users: 1, achievedAt: -1 });
-  insightSchema.index({ pairKey: 1, generatedAt: -1 });
-  insightSchema.index(
-    { pairKey: 1, year: 1 },
-    {
-      unique: true,
-      sparse: true,
-      partialFilterExpression: { pairKey: { $type: "string", $ne: "" } },
-    }
-  );
-  insightSchema.index({ users: 1, year: -1 });
-  notificationSchema.index({ recipientUid: 1, isRead: 1, createdAt: -1 });
-  notificationSchema.index({ recipientUid: 1, actionRequired: 1, createdAt: -1 });
-
-  UserProfileModel = mongoose.models.UserProfile || mongoose.model("UserProfile", userProfileSchema);
-  MemoryEventModel = mongoose.models.MemoryEvent || mongoose.model("MemoryEvent", memoryEventSchema);
-  CoupleSpaceModel = mongoose.models.CoupleSpace || mongoose.model("CoupleSpace", coupleSpaceSchema);
-  RelationshipModel = mongoose.models.Relationship || mongoose.model("Relationship", relationshipSchema);
-  RoomModel = mongoose.models.Room || mongoose.model("Room", roomSchema);
-  RoomParticipantModel = mongoose.models.RoomParticipant || mongoose.model("RoomParticipant", roomParticipantSchema);
-  InviteModel = mongoose.models.Invite || mongoose.model("Invite", inviteSchema);
-  ActivityEventModel = mongoose.models.ActivityEvent || mongoose.model("ActivityEvent", activityEventSchema);
-  VideoSessionModel = mongoose.models.VideoSession || mongoose.model("VideoSession", videoSessionSchema);
-  ChatArchiveModel = mongoose.models.ChatArchive || mongoose.model("ChatArchive", chatArchiveSchema);
-  SharedMemoryModel = mongoose.models.SharedMemory || mongoose.model("SharedMemory", sharedMemorySchema);
-  WatchSessionModel = mongoose.models.WatchSession || mongoose.model("WatchSession", watchSessionSchema);
-  SessionReactionModel = mongoose.models.SessionReaction || mongoose.model("SessionReaction", sessionReactionSchema);
-  MilestoneModel = mongoose.models.Milestone || mongoose.model("Milestone", milestoneSchema);
-  InsightModel = mongoose.models.Insight || mongoose.model("Insight", insightSchema);
-  NotificationModel = mongoose.models.Notification || mongoose.model("Notification", notificationSchema);
-}
-
-async function initMongo() {
-  if (!mongoose) return;
-  if (!MONGODB_URI) {
-    warn("[db] MONGODB_URI missing. Using in-memory fallback for social features.");
-    return;
-  }
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 6000,
-    });
-    mongoConnected = true;
-    log("[db] MongoDB connected");
-  } catch (err) {
-    mongoConnected = false;
-    error("[db] MongoDB connection failed. Using in-memory fallback:", err.message);
-  }
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function isPrivateLanHost(hostname) {
@@ -790,7 +360,7 @@ function buildFriendGraphFromRows(selfUid, rows = []) {
 async function listRelationshipRowsForUser(uid) {
   const selfUid = String(uid || "").trim();
   if (!selfUid) return [];
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return RelationshipModel.find({ users: selfUid }).sort({ updatedAt: -1 }).lean();
   }
   return [...memoryStore.relationships.values()]
@@ -803,7 +373,7 @@ async function listFriendGraph(uid) {
   const selfUid = String(uid || "").trim();
   if (!selfUid) return createEmptyFriendGraph();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const rows = await listRelationshipRowsForUser(selfUid);
     const graph = buildFriendGraphFromRows(selfUid, rows);
     if (graph.friends.length || graph.incomingRequests.length || graph.outgoingRequests.length || graph.blocked.length) {
@@ -847,7 +417,7 @@ function relationshipWithGraph(graph, targetUid) {
 
 async function getProfileByUid(uid) {
   if (!uid) return null;
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return UserProfileModel.findOne({ uid }).lean();
   }
   const cached = memoryStore.profiles.get(uid);
@@ -857,7 +427,7 @@ async function getProfileByUid(uid) {
 async function saveProfile(profile) {
   const normalized = normalizeProfile(profile);
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await UserProfileModel.updateOne(
       { uid: normalized.uid },
       { $set: normalized, $setOnInsert: { createdAt: new Date() } },
@@ -904,7 +474,7 @@ async function listProfilesByUids(uids) {
   const ids = uniqueStrings(uids);
   if (ids.length === 0) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return UserProfileModel.find({ uid: { $in: ids } }).lean();
   }
 
@@ -918,7 +488,7 @@ async function isUsernameAvailable(username, uidToIgnore = "") {
   const normalized = normalizeUsername(username);
   if (!USERNAME_REGEX.test(normalized)) return false;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const existing = await UserProfileModel.findOne({ username: normalized }).lean();
     return !existing || existing.uid === uidToIgnore;
   }
@@ -967,7 +537,7 @@ async function searchProfiles(query, selfUid, limit = 12) {
   const q = String(query || "").trim();
   if (q.length < 2) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     return UserProfileModel.find(
       {
@@ -1008,7 +578,7 @@ async function sendFriendRequest(fromUid, toUid) {
     error.status = 404;
     throw error;
   }
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const existing = await getRelationshipRow(fromUid, toUid);
     if (existing?.status === "blocked") {
       const error = new Error("Friend request is blocked for this user");
@@ -1066,7 +636,7 @@ async function respondFriendRequest(targetUid, requesterUid, action) {
     throw error;
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const existing = await getRelationshipRow(targetUid, requesterUid);
     const requesterId = String(existing?.requesterUid || existing?.requestedBy || "");
     if (!existing || existing.status !== "pending" || requesterId !== requesterUid) {
@@ -1111,7 +681,7 @@ async function addMemoryEvent(uidA, uidB, seconds, roomCode = "") {
     roomCode: String(roomCode || "").slice(0, 32),
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await MemoryEventModel.create(payload);
     return;
   }
@@ -1122,7 +692,7 @@ async function addMemoryEvent(uidA, uidB, seconds, roomCode = "") {
 async function listMemoryEventsForUser(uid) {
   if (!uid) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return MemoryEventModel.find({ users: uid }).sort({ occurredAt: -1 }).limit(5000).lean();
   }
 
@@ -1234,7 +804,7 @@ async function getCoupleSpaceByUsers(uidA, uidB, createIfMissing = false) {
   if (!users) return null;
   const pairKey = users.join("__");
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     let space = await CoupleSpaceModel.findOne({ pairKey }).lean();
     if (!space && createIfMissing) {
       await CoupleSpaceModel.create({ pairKey, users, watchlist: [], updatedAt: new Date() });
@@ -1272,7 +842,7 @@ async function saveCoupleSpace(space) {
     normalized.pairKey = pairKeyFromUsers(normalized.users[0], normalized.users[1]) || "";
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await CoupleSpaceModel.updateOne(
       { pairKey: normalized.pairKey },
       { $set: normalized, $setOnInsert: { createdAt: new Date() } },
@@ -1517,7 +1087,7 @@ async function getRelationshipRow(uidA, uidB) {
   const users = sortedPairUsers(uidA, uidB);
   if (!users) return null;
   const key = users.join("__");
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return RelationshipModel.findOne({ pairKey: key }).lean();
   }
   const cached = memoryStore.relationships.get(key);
@@ -1551,7 +1121,7 @@ async function setRelationshipState(uidA, uidB, status, actorUid) {
     updatedAt: now,
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RelationshipModel.updateOne(
       { pairKey: payload.pairKey },
       { $set: payload, $setOnInsert: { createdAt: now } },
@@ -1577,7 +1147,7 @@ async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") 
   const nextType = normalizeRelationshipType(relationshipType, "friends");
   const now = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RelationshipModel.updateOne(
       { pairKey },
       {
@@ -1608,7 +1178,7 @@ async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") 
 async function getRelationshipByPairKey(pairKey) {
   const key = String(pairKey || "").trim();
   if (!key) return null;
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return RelationshipModel.findOne({ pairKey: key }).lean();
   }
   const cached = memoryStore.relationships.get(key);
@@ -1657,7 +1227,7 @@ async function listWatchSessionsForUser(uid, { partnerUid = "", limit = 40, year
     rangeEnd = new Date(Date.UTC(queryYear + 1, 0, 1, 0, 0, 0));
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = partner
       ? { participants: { $all: [selfUid, partner] } }
       : { participants: selfUid };
@@ -1699,7 +1269,7 @@ async function listWatchSessionsForRelationship(pairKey, { year = null, limit = 
     rangeEnd = new Date(Date.UTC(queryYear + 1, 0, 1, 0, 0, 0));
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = { relationshipId: key };
     if (rangeStart && rangeEnd) {
       query.endedAt = { $gte: rangeStart, $lt: rangeEnd };
@@ -1728,7 +1298,7 @@ async function createWatchSession(payload = {}) {
     return null;
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     if (normalized.roomId) {
       const existingByRoomId = await WatchSessionModel.findOne({ roomId: normalized.roomId }).lean();
       if (existingByRoomId) return normalizeWatchSessionRow(existingByRoomId);
@@ -1774,7 +1344,7 @@ async function recordSessionReaction(payload = {}) {
   if (!normalized.userUid) return null;
   if (!normalized.roomCode && !normalized.sessionId) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const doc = await SessionReactionModel.create({
       sessionId: normalized.sessionId,
       roomCode: normalized.roomCode,
@@ -1803,7 +1373,7 @@ async function listRoomReactions(roomCode, { startedAt = null, endedAt = null, l
   const rangeStart = startedAt ? new Date(startedAt) : null;
   const rangeEnd = endedAt ? new Date(endedAt) : null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = { roomCode: normalizedCode };
     if (rangeStart || rangeEnd) {
       query.createdAt = {};
@@ -1836,7 +1406,7 @@ async function countRoomReactions(roomCode, { startedAt = null, endedAt = null }
   const rangeStart = startedAt ? new Date(startedAt) : null;
   const rangeEnd = endedAt ? new Date(endedAt) : null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = { roomCode: normalizedCode };
     if (rangeStart || rangeEnd) {
       query.createdAt = {};
@@ -1862,7 +1432,7 @@ async function attachSessionIdToRoomReactions({ roomCode, sessionId, startedAt, 
   const rangeStart = startedAt ? new Date(startedAt) : null;
   const rangeEnd = endedAt ? new Date(endedAt) : null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = {
       roomCode: normalizedCode,
       $or: [{ sessionId: "" }, { sessionId: { $exists: false } }],
@@ -1900,7 +1470,7 @@ async function upsertMilestone(payload = {}) {
   const normalized = normalizeMilestoneRow(payload);
   if (!normalized.pairKey || !normalized.type) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await MilestoneModel.updateOne(
       { pairKey: normalized.pairKey, type: normalized.type },
       {
@@ -1938,7 +1508,7 @@ async function listMilestonesForUser(uid, partnerUid = "") {
   if (partner) {
     const pairKey = pairKeyFromUsers(selfUid, partner);
     if (!pairKey) return [];
-    if (mongoConnected) {
+    if (getMongoConnected()) {
       const rows = await MilestoneModel.find({ pairKey }).sort({ achievedAt: -1 }).limit(120).lean();
       return rows.map((row) => normalizeMilestoneRow(row));
     }
@@ -1948,7 +1518,7 @@ async function listMilestonesForUser(uid, partnerUid = "") {
       .map((row) => normalizeMilestoneRow(row));
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const rows = await MilestoneModel.find({ users: selfUid }).sort({ achievedAt: -1 }).limit(200).lean();
     return rows.map((row) => normalizeMilestoneRow(row));
   }
@@ -1963,7 +1533,7 @@ async function upsertInsight(payload = {}) {
   const normalized = normalizeInsightRow(payload);
   if (!normalized.pairKey || !normalized.year) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await InsightModel.updateOne(
       { pairKey: normalized.pairKey, year: normalized.year },
       {
@@ -2004,7 +1574,7 @@ async function getInsightForPairYear(pairKey, year) {
   const targetYear = Math.max(2000, Math.min(2200, Math.floor(Number(year) || new Date().getFullYear())));
   if (!key) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const row = await InsightModel.findOne({ pairKey: key, year: targetYear }).lean();
     return row ? normalizeInsightRow(row) : null;
   }
@@ -2019,7 +1589,7 @@ async function listInsightsForUser(uid, { year = null, limit = 40 } = {}) {
   const safeLimit = Math.max(1, Math.min(200, Number(limit) || 40));
   const normalizedYear = Number.isFinite(Number(year)) ? Math.floor(Number(year)) : null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = { users: selfUid };
     if (normalizedYear && normalizedYear >= 2000 && normalizedYear <= 2200) {
       query.year = normalizedYear;
@@ -2184,7 +1754,7 @@ async function refreshRelationshipAnalytics(relationshipRow, sessionRow) {
   };
 
   const next = { ...relationshipRow, ...payload };
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RelationshipModel.updateOne(
       { pairKey },
       { $set: payload }
@@ -2298,7 +1868,7 @@ async function logActivity({ uid, type, roomCode = "", targetUid = "", payload =
     occurredAt: now,
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await ActivityEventModel.create(normalized).catch(() => {});
     return;
   }
@@ -2317,7 +1887,7 @@ async function createInviteRecord({ fromUid, toUid, roomCode, status = "sent" })
   };
   if (!normalized.fromUid || !normalized.toUid || !normalized.roomCode) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return InviteModel.create(normalized);
   }
 
@@ -2372,7 +1942,7 @@ async function createNotification({
 
   if (!normalized.recipientUid || !normalized.type) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const doc = await NotificationModel.create({
       recipientUid: normalized.recipientUid,
       senderUid: normalized.senderUid,
@@ -2401,7 +1971,7 @@ async function listNotificationsForUser(uid, { limit = 40, unreadOnly = false } 
   const safeLimit = Math.max(1, Math.min(120, Number(limit) || 40));
   if (!recipientUid) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = { recipientUid };
     if (unreadOnly) query.isRead = false;
     const rows = await NotificationModel.find(query)
@@ -2425,7 +1995,7 @@ async function markNotificationRead(notificationId, uid) {
   if (!id || !recipientUid) return false;
   const readAt = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const result = await NotificationModel.updateOne(
       { _id: id, recipientUid },
       { $set: { isRead: true, readAt } }
@@ -2448,7 +2018,7 @@ async function markAllNotificationsRead(uid) {
   if (!recipientUid) return 0;
   const readAt = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const result = await NotificationModel.updateMany(
       { recipientUid, isRead: false },
       { $set: { isRead: true, readAt } }
@@ -2468,7 +2038,7 @@ async function markAllNotificationsRead(uid) {
 async function countUnreadNotifications(uid) {
   const recipientUid = String(uid || "").trim();
   if (!recipientUid) return 0;
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return NotificationModel.countDocuments({ recipientUid, isRead: false });
   }
   return memoryStore.notifications.filter((item) => item.recipientUid === recipientUid && !item.isRead).length;
@@ -2481,7 +2051,7 @@ async function markNotificationsReadByReference({ recipientUid, type = "", refer
   if (!uid || !ref) return 0;
   const readAt = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = {
       recipientUid: uid,
       referenceId: ref,
@@ -2543,7 +2113,7 @@ async function upsertRoomMetadata({
     closedAt: null,
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: payload.roomCode },
       { $set: payload, $setOnInsert: { createdAt: now } },
@@ -2567,7 +2137,7 @@ async function markRoomInactive(roomCode) {
   if (!normalizedCode) return;
   const now = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: normalizedCode },
       { $set: { isActive: false, closedAt: now, lastActivityAt: now } }
@@ -2592,7 +2162,7 @@ async function updateRoomContentState(roomCode, { contentUrl = "", contentType =
     lastActivityAt: new Date(),
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: normalizedCode },
       { $set: updates }
@@ -2617,7 +2187,7 @@ async function updateRoomCreator(roomCode, createdBy) {
     lastActivityAt: new Date(),
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: normalizedCode },
       { $set: updates }
@@ -2644,7 +2214,7 @@ async function updateRoomPlaybackState(roomCode, { playbackStatus = "idle", base
     updates.startedAt = new Date(startedAt);
   }
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: normalizedCode },
       { $set: updates }
@@ -2666,7 +2236,7 @@ async function touchRoomActivity(roomCode) {
   if (!normalizedCode) return;
   const now = new Date();
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomModel.updateOne(
       { roomCode: normalizedCode },
       { $set: { lastActivityAt: now } }
@@ -2694,7 +2264,7 @@ async function upsertRoomParticipant(roomCode, userId, updates = {}) {
     isActive: updates.isActive !== false,
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await RoomParticipantModel.updateOne(
       { roomCode: normalizedCode, userId: normalizedUid },
       { $set: payload, $setOnInsert: { createdAt: now } },
@@ -2745,7 +2315,7 @@ async function saveVideoSessionMetadata({
   };
   if (!normalized.roomCode) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await VideoSessionModel.updateOne(
       { roomCode: normalized.roomCode },
       {
@@ -2808,7 +2378,7 @@ async function finalizeVideoSession(roomCode, roomSnapshot = null) {
   const endedAt = new Date();
   let videoSession = null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const existing = await VideoSessionModel.findOne({ roomCode: normalizedCode }).lean();
     if (existing && !existing.endedAt) {
       const startedAtMs = existing.startedAt ? new Date(existing.startedAt).getTime() : Date.now();
@@ -2839,7 +2409,7 @@ async function finalizeVideoSession(roomCode, roomSnapshot = null) {
   const roomId = roomMeta?._id ? String(roomMeta._id) : "";
   const dedupeWindowStart = new Date(Date.now() - 36 * 60 * 60 * 1000);
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     if (roomId) {
       const existingByRoomId = await WatchSessionModel.findOne({ roomId }).lean();
       if (existingByRoomId) return normalizeWatchSessionRow(existingByRoomId);
@@ -2983,7 +2553,7 @@ async function archiveChatMessage(roomCode, msg) {
     timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
   };
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     await ChatArchiveModel.updateOne(
       { messageId: payload.messageId },
       { $set: payload },
@@ -3038,7 +2608,7 @@ async function createSharedMemory({
     date: date ? new Date(date) : new Date(),
   });
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const doc = await SharedMemoryModel.create({
       pairKey: payload.pairKey,
       user1Id: payload.user1Id,
@@ -3067,7 +2637,7 @@ async function listSharedMemoriesForUser(uid, partnerUid = "") {
   const partner = String(partnerUid || "").trim();
   const pairKey = partner ? pairKeyFromUsers(selfUid, partner) : null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const query = pairKey
       ? { pairKey }
       : { $or: [{ user1Id: selfUid }, { user2Id: selfUid }] };
@@ -3090,7 +2660,7 @@ async function getProjectOverview(uid) {
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     const [
       users,
       rooms,
@@ -3220,7 +2790,7 @@ async function listActivityForUser(uid, limit = 40) {
   const safeLimit = Math.max(1, Math.min(120, Number(limit) || 40));
   if (!selfUid) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return ActivityEventModel.find({ uid: selfUid }).sort({ occurredAt: -1 }).limit(safeLimit).lean();
   }
 
@@ -3235,7 +2805,7 @@ async function getRoomMetadataByCode(roomCode) {
   const normalizedCode = String(roomCode || "").trim().toUpperCase();
   if (!normalizedCode) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return RoomModel.findOne({ roomCode: normalizedCode }).lean();
   }
 
@@ -3247,7 +2817,7 @@ async function listRoomParticipantsByCode(roomCode) {
   const normalizedCode = String(roomCode || "").trim().toUpperCase();
   if (!normalizedCode) return [];
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return RoomParticipantModel.find({ roomCode: normalizedCode }).sort({ joinedAt: 1 }).lean();
   }
 
@@ -3261,7 +2831,7 @@ async function getVideoSessionByRoomCode(roomCode) {
   const normalizedCode = String(roomCode || "").trim().toUpperCase();
   if (!normalizedCode) return null;
 
-  if (mongoConnected) {
+  if (getMongoConnected()) {
     return VideoSessionModel.findOne({ roomCode: normalizedCode }).lean();
   }
 
@@ -3294,8 +2864,8 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     uptime: process.uptime(),
-    mongoConnected,
-    inMemoryFallback: !mongoConnected,
+    mongoConnected: getMongoConnected(),
+    inMemoryFallback: !getMongoConnected(),
   });
 });
 
@@ -3504,7 +3074,7 @@ app.get("/api/users/search", requireHttpAuth, async (req, res) => {
   const users = await searchProfiles(q, req.authUser.uid, 14);
   const result = users.map((profile) => ({
     ...publicProfile(profile),
-    relationship: mongoConnected ? relationshipWithGraph(friendGraph, profile.uid) : relationshipWith(me, profile.uid),
+    relationship: getMongoConnected() ? relationshipWithGraph(friendGraph, profile.uid) : relationshipWith(me, profile.uid),
   }));
 
   return res.json({ users: result });
@@ -4200,7 +3770,7 @@ app.get("/api/room-history/:roomCode", requireHttpAuth, async (req, res) => {
 
     let activities = [];
     let chat = [];
-    if (mongoConnected) {
+    if (getMongoConnected()) {
       [activities, chat] = await Promise.all([
         ActivityEventModel.find({ roomCode }).sort({ occurredAt: -1 }).limit(120).lean(),
         ChatArchiveModel.find({ roomCode }).sort({ timestamp: -1 }).limit(120).lean(),
@@ -5122,7 +4692,7 @@ io.use(async (socket, next) => {
 io.on("connection", (socket) => {
   const { uid, name, username, photoURL } = socket.user;
   markOnline(uid, socket.id);
-  touchLastSeen(uid, { mongoConnected, UserProfileModel, memoryStore });
+  touchLastSeen(uid, { mongoConnected: getMongoConnected(), UserProfileModel, memoryStore });
 
   log(`[connect] uid=${uid} socket=${socket.id}`);
 
@@ -6358,7 +5928,7 @@ io.on("connection", (socket) => {
 
     const stillOnline = markOffline(uid, socket.id);
     if (!stillOnline) {
-      touchLastSeen(uid, { mongoConnected, UserProfileModel, memoryStore });
+      touchLastSeen(uid, { mongoConnected: getMongoConnected(), UserProfileModel, memoryStore });
     }
 
     const roomCode = socket.currentRoom;
@@ -6495,9 +6065,9 @@ start().catch((err) => {
 const shutdown = async () => {
   rooms.forEach((_, code) => expireRoom(code));
 
-  if (mongoose && mongoConnected) {
+  if (getMongoConnected() && UserProfileModel?.db?.close) {
     try {
-      await mongoose.connection.close();
+      await UserProfileModel.db.close();
     } catch {
       // noop
     }
