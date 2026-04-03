@@ -1,3 +1,9 @@
+/**
+ * Handles temporary document upload and download endpoints for shared reading.
+ * Uploads are base64-encoded PDFs stored in memory with a TTL, which is why
+ * the JSON body limit is set above the actual file-size limit to account for
+ * base64 expansion during transport.
+ */
 'use strict'
 
 const express = require('express')
@@ -17,12 +23,23 @@ const { buildDocumentSignature } =
 const { rooms } =
   require('../sockets/roomStore.js')
 
+/**
+ * POST /api/uploads/document
+ * Validates and stores a temporary room-scoped PDF upload.
+ * @requires auth - Yes.
+ * @body {string} roomCode - The room the document belongs to.
+ * @body {string} fileName - The uploaded file name.
+ * @body {string} mimeType - The claimed MIME type.
+ * @body {string} base64Data - The base64-encoded PDF payload.
+ * @returns {object} - Upload metadata including the temporary document URL, signature, and expiry time.
+ */
 router.post('/uploads/document', requireHttpAuth, async (req, res) => {
   try {
     const roomCode = String(req.body?.roomCode || '').trim().toUpperCase()
     const fileName = String(req.body?.fileName || '').trim()
     const mimeType = String(req.body?.mimeType || '').trim()
     const base64Data = String(req.body?.base64Data || '').trim()
+    // Validate the required room and payload fields before doing membership or storage work.
     if (!roomCode) {
       return res.status(400).json({ error: 'roomCode is required' })
     }
@@ -30,6 +47,7 @@ router.post('/uploads/document', requireHttpAuth, async (req, res) => {
       return res.status(400).json({ error: 'base64Data is required' })
     }
 
+    // Security fix: only current or historical room participants may upload room documents.
     const liveRoom = rooms.get(roomCode)
     let canAccessRoom = !!(liveRoom && liveRoom.users.has(req.authUser.uid))
     if (!canAccessRoom) {
@@ -40,6 +58,7 @@ router.post('/uploads/document', requireHttpAuth, async (req, res) => {
       return res.status(403).json({ error: 'You do not have access to this room document' })
     }
 
+    // Store the temporary upload and return the embed-friendly metadata the client needs.
     const uploaded = upsertDocumentUpload({
       ownerUid: req.authUser.uid,
       roomCode,
@@ -66,11 +85,19 @@ router.post('/uploads/document', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * GET /api/uploads/document/:documentId
+ * Streams a temporary uploaded document back to an authorized room participant.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {buffer} - The raw PDF bytes plus headers that support inline browser embedding.
+ */
 router.get('/uploads/document/:documentId', requireHttpAuth, async (req, res) => {
   const documentId = String(req.params.documentId || '').trim()
   const row = getUploadedDocumentById(documentId)
   if (!row) return res.status(404).send('Document not found or expired')
 
+  // Security fix: downloads require owner access or room participation, not just knowledge of the ID.
   let canAccessDocument = row.ownerUid === req.authUser.uid
   if (!canAccessDocument && row.roomCode) {
     const liveRoom = rooms.get(String(row.roomCode || '').trim().toUpperCase())
@@ -86,6 +113,7 @@ router.get('/uploads/document/:documentId', requireHttpAuth, async (req, res) =>
 
   try {
     const buffer = Buffer.from(row.base64Data, 'base64')
+    // Set headers for safe inline PDF embedding and expose document metadata to the client.
     res.removeHeader('X-Frame-Options')
     res.removeHeader('Content-Security-Policy')
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')

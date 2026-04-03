@@ -1,3 +1,8 @@
+/**
+ * Handles friendship, relationship, and room-invite routes.
+ * The friend graph model tracks confirmed friends, incoming requests,
+ * outgoing requests, blocked relationships, and pair-level relationship tags.
+ */
 'use strict'
 
 const express = require('express')
@@ -36,6 +41,13 @@ const { getIo } =
 const { rooms } =
   require('../sockets/roomStore.js')
 
+/**
+ * GET /api/friends
+ * Returns the authenticated user's friend graph grouped by friends and requests.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Friends, incoming requests, and outgoing requests with privacy-aware online status.
+ */
 router.get('/friends', requireHttpAuth, async (req, res) => {
   const [me, friendGraph] = await Promise.all([
     getProfileByUid(req.authUser.uid),
@@ -49,6 +61,11 @@ router.get('/friends', requireHttpAuth, async (req, res) => {
     listProfilesByUids(friendGraph.outgoingRequests),
   ])
 
+  /**
+   * Adds privacy-aware presence data to a public profile.
+   * @param {object} profile - The stored friend profile.
+   * @returns {object} The public profile plus online visibility state.
+   */
   const withPresence = (profile) => ({
     ...publicProfile(profile),
     online: isOnlineVisible(profile, req.authUser.uid),
@@ -61,12 +78,20 @@ router.get('/friends', requireHttpAuth, async (req, res) => {
   })
 })
 
+/**
+ * POST /api/friends/request
+ * Sends a friend request or reports the current relationship state.
+ * @requires auth - Yes.
+ * @body {string} targetUid - The user to be friended.
+ * @returns {object} - A status describing whether the request was created, already exists, or needs acceptance.
+ */
 router.post('/friends/request', requireHttpAuth, async (req, res) => {
   try {
     const targetUid = String(req.body?.targetUid || '').trim()
     const result = await sendFriendRequest(req.authUser.uid, targetUid)
     const io = getIo()
 
+    // New pending requests create a durable notification and a real-time socket event for the target user.
     if (result.status === 'requested') {
       const referenceId = pairKeyFromUsers(req.authUser.uid, targetUid) || ''
       await createNotification({
@@ -84,6 +109,7 @@ router.post('/friends/request', requireHttpAuth, async (req, res) => {
       })
     }
 
+    // Record the social action for the caller's activity timeline.
     await logActivity({
       uid: req.authUser.uid,
       targetUid,
@@ -100,6 +126,14 @@ router.post('/friends/request', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * POST /api/friends/respond
+ * Accepts or rejects an incoming friend request.
+ * @requires auth - Yes.
+ * @body {string} requesterUid - The original requester.
+ * @body {string} action - Either `accept` or `reject`.
+ * @returns {object} - A status confirming which action was applied.
+ */
 router.post('/friends/respond', requireHttpAuth, async (req, res) => {
   try {
     const requesterUid = String(req.body?.requesterUid || '').trim()
@@ -121,6 +155,7 @@ router.post('/friends/respond', requireHttpAuth, async (req, res) => {
       })
     })
 
+    // Accepted requests also create a persistent acceptance notification and friend-added socket event.
     if (action === 'accept') {
       const mePublic = publicProfile(result.target)
       await createNotification({
@@ -145,6 +180,7 @@ router.post('/friends/respond', requireHttpAuth, async (req, res) => {
       })
     }
 
+    // Record the response so it appears in the caller's activity history.
     await logActivity({
       uid: req.authUser.uid,
       targetUid: requesterUid,
@@ -161,18 +197,29 @@ router.post('/friends/respond', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * POST /api/friends/invite-room
+ * Sends a room invite to an existing friend.
+ * @requires auth - Yes.
+ * @body {string} friendUid - The friend being invited.
+ * @body {string} roomCode - The target live room.
+ * @returns {object} - Delivery status, delivery count, and mute information when invites are disabled.
+ */
 router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
   try {
     const friendUid = String(req.body?.friendUid || '').trim()
     const roomCode = String(req.body?.roomCode || '').trim().toUpperCase()
+    // Validate the required friend and room identifiers before doing relationship checks.
     if (!friendUid || !roomCode) {
       return res.status(400).json({ error: 'friendUid and roomCode are required' })
     }
+    // Security fix: only users currently in a room may invite others into it.
     const room = rooms.get(roomCode)
     if (!room || !room.users.has(req.authUser.uid)) {
       return res.status(403).json({ error: 'You can only invite friends to rooms you are currently in' })
     }
 
+    // Load both sides of the invite and confirm the target is actually a friend.
     const [me, friend] = await Promise.all([
       getProfileByUid(req.authUser.uid),
       getProfileByUid(friendUid),
@@ -184,12 +231,14 @@ router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
     if (!friend) {
       return res.status(404).json({ error: 'Friend not found' })
     }
+    // Respect the recipient's invite-notification preference before creating deliveries.
     if (friend.settings?.inviteNotifications === false) {
       return res.json({ delivered: false, deliveries: 0, mutedByFriend: true })
     }
 
     const sockets = socketIdsForUser(friendUid)
     const io = getIo()
+    // Create both a durable invite record and a durable notification before emitting sockets.
     await createInviteRecord({
       fromUid: req.authUser.uid,
       toUid: friendUid,
@@ -219,6 +268,7 @@ router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
       })
     })
 
+    // Record invite delivery counts for the caller's activity feed.
     await logActivity({
       uid: req.authUser.uid,
       targetUid: friendUid,
@@ -236,15 +286,24 @@ router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * GET /api/relationships
+ * Returns accepted and pending relationship rows for the authenticated user.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Relationship analytics, tags, partner identity, and privacy-aware online state.
+ */
 router.get('/relationships', requireHttpAuth, async (req, res) => {
   try {
     const uid = req.authUser.uid
     const rows = await listRelationshipRowsForUser(uid)
 
+    // Load every partner profile once so relationships can be enriched without repeated lookups.
     const partnerUids = uniqueStrings(rows.map((row) => row.users.find((item) => item !== uid)).filter(Boolean))
     const partnerProfiles = await listProfilesByUids(partnerUids)
     const profileByUid = new Map(partnerProfiles.map((profile) => [profile.uid, profile]))
 
+    // Return analytics-ready relationship rows with a small public partner payload.
     const relationships = rows.map((row) => {
       const partnerUid = row.users.find((item) => item !== uid) || ''
       const partner = profileByUid.get(partnerUid)
@@ -286,10 +345,19 @@ router.get('/relationships', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * PATCH /api/relationships/tag
+ * Updates the relationship type tag for an accepted pair.
+ * @requires auth - Yes.
+ * @body {string} partnerUid - The other user in the relationship.
+ * @body {string} relationshipType - The new normalized relationship type.
+ * @returns {object} - The updated relationship tag summary.
+ */
 router.patch('/relationships/tag', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.body?.partnerUid || '').trim()
     const relationshipType = normalizeRelationshipType(req.body?.relationshipType || 'friends', 'friends')
+    // Validate the partner and prevent nonsensical self-tagging.
     if (!partnerUid) {
       return res.status(400).json({ error: 'partnerUid is required' })
     }
@@ -302,6 +370,7 @@ router.patch('/relationships/tag', requireHttpAuth, async (req, res) => {
       return res.status(403).json({ error: 'Only accepted relationships can be tagged' })
     }
 
+    // Persist the new relationship tag and broadcast the change to the partner's live sessions.
     const updated = await setRelationshipType(req.authUser.uid, partnerUid, relationshipType, req.authUser.uid)
     if (!updated) {
       return res.status(500).json({ error: 'Could not update relationship tag' })

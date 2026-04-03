@@ -1,3 +1,8 @@
+/**
+ * Exposes read-only HTTP endpoints for persisted room data.
+ * Most room actions happen over sockets because they are collaborative and
+ * real-time, while these routes provide snapshot-style history retrieval.
+ */
 'use strict'
 
 const express = require('express')
@@ -9,6 +14,13 @@ const { requireHttpAuth } =
 const { getRoomHistorySnapshot } =
   require('../services/room.service.js')
 
+/**
+ * GET /api/room-history/:roomCode
+ * Returns the persisted and live history snapshot for one room.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Room metadata, participant history, video-session data, activity, chat, and live history.
+ */
 router.get('/room-history/:roomCode', requireHttpAuth, async (req, res) => {
   try {
     const payload = await getRoomHistorySnapshot(req.params.roomCode, req.authUser.uid)

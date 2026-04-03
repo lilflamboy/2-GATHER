@@ -1,3 +1,8 @@
+/**
+ * Handles shared couple-space watchlist endpoints.
+ * The watchlist is jointly owned by both users in the pair and lives inside
+ * the couple-space record rather than in a separate collection.
+ */
 'use strict'
 
 const express = require('express')
@@ -31,9 +36,17 @@ const {
   MAX_WATCHLIST_NOTES_LENGTH,
 } = require('../config/constants.js')
 
+/**
+ * GET /api/couple-space
+ * Returns the shared couple-space payload for the caller and a partner.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - The partner's public profile plus the mapped couple-space watchlist state.
+ */
 router.get('/couple-space', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.query.partnerUid || '').trim()
+    // Require an explicit partner UID so the couple space can be resolved unambiguously.
     if (!partnerUid) {
       return res.status(400).json({ error: 'partnerUid is required' })
     }
@@ -57,6 +70,16 @@ router.get('/couple-space', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * POST /api/couple-space/item
+ * Adds a new item to the shared couple-space watchlist.
+ * @requires auth - Yes.
+ * @body {string} partnerUid - The other participant in the couple space.
+ * @body {string} title - The watchlist item title.
+ * @body {string} url - Optional http/https content URL.
+ * @body {string} notes - Optional free-form notes.
+ * @returns {object} - The refreshed partner and couple-space payload after insertion.
+ */
 router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.body?.partnerUid || '').trim()
@@ -64,6 +87,7 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
     const rawUrl = String(req.body?.url || '').trim()
     const url = sanitizeContentUrl(rawUrl).slice(0, MAX_WATCHLIST_URL_LENGTH)
     const notes = sanitize(String(req.body?.notes || '')).slice(0, MAX_WATCHLIST_NOTES_LENGTH)
+    // Validate the shared-watchlist fields, including the security fix that allows only http/https URLs.
     if (!partnerUid) return res.status(400).json({ error: 'partnerUid is required' })
     if (!title) return res.status(400).json({ error: 'title is required' })
     if (rawUrl && !url) return res.status(400).json({ error: 'url must be a valid http or https URL' })
@@ -71,6 +95,7 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
     const { me, partner } = await getValidatedCoupleUsers(req.authUser.uid, partnerUid)
     const space = await getCoupleSpaceByUsers(req.authUser.uid, partnerUid, true)
     const watchlist = Array.isArray(space.watchlist) ? [...space.watchlist] : []
+    // Enforce the shared watchlist item limit before inserting a new entry.
     if (watchlist.length >= MAX_WATCHLIST_ITEMS) {
       return res.status(400).json({ error: `Watchlist limit reached (${MAX_WATCHLIST_ITEMS})` })
     }
@@ -96,6 +121,7 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
     const mapped = mapCoupleSpace(saved, req.authUser.uid)
     const io = getIo()
 
+    // Notify the partner's live sockets that the shared space changed.
     socketIdsForUser(partnerUid).forEach((socketId) => {
       io?.to(socketId).emit('couple_space_updated', {
         partnerUid: req.authUser.uid,
@@ -113,6 +139,7 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
     })
 
     return res.json({
+      // Return the partner as a public profile plus privacy-aware presence state.
       partner: { ...publicProfile(partner), online: isOnlineVisible(partner, req.authUser.uid) },
       space: mapped,
     })
@@ -124,11 +151,21 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * PATCH /api/couple-space/item
+ * Updates, toggles, or removes an existing couple-space watchlist item.
+ * @requires auth - Yes.
+ * @body {string} partnerUid - The other participant in the couple space.
+ * @body {string} itemId - The watchlist item identifier.
+ * @body {string} action - One of `toggle_done`, `remove`, or `edit`.
+ * @returns {object} - The refreshed partner and couple-space payload after the mutation.
+ */
 router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.body?.partnerUid || '').trim()
     const itemId = String(req.body?.itemId || '').trim()
     const action = String(req.body?.action || '').trim()
+    // Validate the target item and allowed mutation verb before touching the watchlist.
     if (!partnerUid || !itemId || !action) {
       return res.status(400).json({ error: 'partnerUid, itemId and action are required' })
     }
@@ -140,11 +177,13 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
     const space = await getCoupleSpaceByUsers(req.authUser.uid, partnerUid, true)
     let watchlist = Array.isArray(space.watchlist) ? [...space.watchlist] : []
     const itemIndex = watchlist.findIndex((item) => String(item.id) === itemId)
+    // Fail fast when the requested watchlist item does not exist.
     if (itemIndex === -1) {
       return res.status(404).json({ error: 'Watchlist item not found' })
     }
 
     const currentItem = normalizeWatchlistItem(watchlist[itemIndex])
+    // Handle removal, done toggling, and edit updates in one shared mutation route.
     if (action === 'remove') {
       watchlist = watchlist.filter((item) => String(item.id) !== itemId)
     } else if (action === 'toggle_done') {
@@ -157,6 +196,7 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
       const nextTitle = sanitize(String(req.body?.title || currentItem.title)).slice(0, MAX_WATCHLIST_TITLE_LENGTH)
       const rawUrl = String(req.body?.url ?? currentItem.url).trim()
       const nextUrl = sanitizeContentUrl(rawUrl).slice(0, MAX_WATCHLIST_URL_LENGTH)
+      // Edits re-run the same title and URL validation rules used on create.
       if (!nextTitle) {
         return res.status(400).json({ error: 'title is required' })
       }
@@ -181,6 +221,7 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
     const mapped = mapCoupleSpace(saved, req.authUser.uid)
     const io = getIo()
 
+    // Push a realtime update to the partner so both sides stay in sync.
     socketIdsForUser(partnerUid).forEach((socketId) => {
       io?.to(socketId).emit('couple_space_updated', {
         partnerUid: req.authUser.uid,
@@ -199,6 +240,7 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
     })
 
     return res.json({
+      // Return the canonical mapped couple-space plus partner presence information.
       partner: { ...publicProfile(partner), online: isOnlineVisible(partner, req.authUser.uid) },
       space: mapped,
     })

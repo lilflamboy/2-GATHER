@@ -1,3 +1,8 @@
+/**
+ * Handles memory statistics and shared-memory note endpoints.
+ * Raw memory events accumulate watch time between two users, while shared
+ * memories are authored notes that capture a meaningful moment from a session.
+ */
 'use strict'
 
 const express = require('express')
@@ -35,6 +40,13 @@ const { isOnlineVisible, socketIdsForUser } =
 const { getIo } =
   require('../sockets/socketHub.js')
 
+/**
+ * GET /api/memories
+ * Returns aggregated memory totals for the authenticated user.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Summary watch-time totals plus per-friend breakdowns.
+ */
 router.get('/memories', requireHttpAuth, async (req, res) => {
   try {
     const events = await listMemoryEventsForUser(req.authUser.uid)
@@ -47,6 +59,13 @@ router.get('/memories', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * GET /api/shared-memories
+ * Returns shared memory notes for the authenticated user, optionally filtered by partner.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Newest-first shared memory items enriched with partner identity and presence.
+ */
 router.get('/shared-memories', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.query.partnerUid || '').trim()
@@ -55,6 +74,7 @@ router.get('/shared-memories', requireHttpAuth, async (req, res) => {
     const profiles = await listProfilesByUids(otherUids)
     const profileByUid = new Map(profiles.map((profile) => [profile.uid, profile]))
 
+    // Serialize each memory with a compact partner payload instead of returning raw profile documents.
     const items = rows.map((row) => {
       const partnerId = row.user1Id === req.authUser.uid ? row.user2Id : row.user1Id
       const partner = profileByUid.get(partnerId)
@@ -95,6 +115,22 @@ router.get('/shared-memories', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * POST /api/shared-memories
+ * Creates a new shared memory note between the caller and a partner.
+ * @requires auth - Yes.
+ * @body {string} partnerUid - The other participant in the memory.
+ * @body {string} roomCode - Optional related room code.
+ * @body {string} memoryNote - The authored note text.
+ * @body {string} date - Optional memory date.
+ * @body {string} sessionMode - The session mode for the memory.
+ * @body {string} genre - Optional genre tag.
+ * @body {string} moodTag - Optional mood tag.
+ * @body {string} highlightTimestamp - Optional timestamp label.
+ * @body {number} sessionMinutes - Session length in minutes.
+ * @body {number} reactionCount - Number of reactions captured.
+ * @returns {object} - The created shared-memory item with partner identity data.
+ */
 router.post('/shared-memories', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.body?.partnerUid || '').trim()
@@ -108,6 +144,7 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
     const sessionMinutes = clampSharedSessionMinutes(req.body?.sessionMinutes)
     const reactionCount = clampReactionCount(req.body?.reactionCount)
 
+    // Validate the required pair and note fields before creating the shared-memory record.
     if (!partnerUid) return res.status(400).json({ error: 'partnerUid is required' })
     if (!memoryNote) return res.status(400).json({ error: 'memoryNote is required' })
 
@@ -128,6 +165,7 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
     })
     const io = getIo()
 
+    // Record the authored shared memory in the caller's activity history.
     await logActivity({
       uid: req.authUser.uid,
       targetUid: partnerUid,
@@ -143,6 +181,7 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
         reactionCount,
       },
     })
+    // Respect the partner's memoryNudges preference before sending notifications or socket pushes.
     if (partner.settings?.memoryNudges !== false) {
       await createNotification({
         recipientUid: partnerUid,
@@ -163,6 +202,7 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
         })
       })
     }
+    // The addMemoryEvent argument order fix is `(uidA, uidB, seconds, roomCode)`.
     await addMemoryEvent(
       req.authUser.uid,
       partnerUid,

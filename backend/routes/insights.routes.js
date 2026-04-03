@@ -1,3 +1,8 @@
+/**
+ * Handles watch-session history, milestones, and yearly relationship insights.
+ * Insights and milestones are generated from completed watch sessions and are
+ * either read directly or lazily regenerated when a pair/year summary is missing.
+ */
 'use strict'
 
 const express = require('express')
@@ -26,10 +31,18 @@ const { uniqueStrings } =
 const { isOnlineVisible, isOnline } =
   require('../utils/presence.js')
 
+/**
+ * GET /api/watch-sessions
+ * Returns completed watch sessions for the caller, optionally filtered to one partner and year.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Session history with participant identity data, highlights, and content metadata.
+ */
 router.get('/watch-sessions', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.query.partnerUid || '').trim()
     const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
+    // When partner-scoped, validate that the caller is allowed to view that couple context.
     if (partnerUid) {
       await getValidatedCoupleUsers(req.authUser.uid, partnerUid)
     }
@@ -46,6 +59,7 @@ router.get('/watch-sessions', requireHttpAuth, async (req, res) => {
     const profiles = await listProfilesByUids(otherUids)
     const profileByUid = new Map(profiles.map((profile) => [profile.uid, profile]))
 
+    // Enrich each participant with a public profile view plus privacy-aware presence state.
     return res.json({
       items: rows.map((row) => ({
         id: row.id,
@@ -91,9 +105,17 @@ router.get('/watch-sessions', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * GET /api/milestones
+ * Returns milestone records for the caller, optionally narrowed to one partner pair.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Milestone items describing achievements such as first session or long-term thresholds.
+ */
 router.get('/milestones', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.query.partnerUid || '').trim()
+    // Pair-scoped milestone lookups require the same couple-space access validation as insights.
     if (partnerUid) {
       await getValidatedCoupleUsers(req.authUser.uid, partnerUid)
     }
@@ -117,6 +139,13 @@ router.get('/milestones', requireHttpAuth, async (req, res) => {
   }
 })
 
+/**
+ * GET /api/insights
+ * Returns yearly relationship insights for the caller or one specific partner pair.
+ * @requires auth - Yes.
+ * @body {none} - No request body.
+ * @returns {object} - Either a single pair/year insight or a list of yearly insights for the caller.
+ */
 router.get('/insights', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.query.partnerUid || '').trim()
@@ -126,6 +155,7 @@ router.get('/insights', requireHttpAuth, async (req, res) => {
       ? Math.max(2000, Math.min(2200, Math.floor(rawYear)))
       : new Date().getFullYear()
 
+    // Pair-specific insight reads resolve the normalized pairKey from the authenticated user and partner.
     if (partnerUid) {
       await getValidatedCoupleUsers(req.authUser.uid, partnerUid)
       const pairKey = pairKeyFromUsers(req.authUser.uid, partnerUid)
@@ -133,6 +163,7 @@ router.get('/insights', requireHttpAuth, async (req, res) => {
         return res.status(400).json({ error: 'Invalid partner relationship' })
       }
 
+      // Regenerate the pair/year insight on demand if it has not been materialized yet.
       let insight = await getInsightForPairYear(pairKey, year)
       if (!insight) {
         const relationshipRow = await getRelationshipByPairKey(pairKey)
