@@ -8,9 +8,13 @@ const { memoryStore } =
   require('../models/memoryStore.js')
 const { pairKeyFromUsers } =
   require('./relationship.service.js')
+const { listWatchSessionsForRelationship } =
+  require('./session.service.js')
 const {
   uniqueStrings, getProfileStoreCopy, pushBounded,
 } = require('../utils/helpers.js')
+const { normalizeSessionMode } =
+  require('../utils/normalize.js')
 const {
   sanitizeActivityPayload, sanitize,
   sanitizeSharedMemoryGenre,
@@ -57,6 +61,54 @@ function normalizeInsightRow(row = {}) {
 
 function milestoneStoreKey(pairKey, type) {
   return `${String(pairKey || "")}__${normalizeMilestoneType(type)}`
+}
+
+function timeSlotFromDate(value) {
+  const date = value ? new Date(value) : null
+  if (!date || Number.isNaN(date.getTime())) return 'unknown'
+  const hour = date.getHours()
+  if (hour >= 22 || hour < 5) return 'late_night'
+  if (hour >= 18) return 'evening'
+  if (hour >= 12) return 'afternoon'
+  return 'morning'
+}
+
+function topLabelsFromCounter(counterMap, limit = 5) {
+  return [...counterMap.entries()]
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1]
+      return a[0].localeCompare(b[0])
+    })
+    .slice(0, Math.max(1, limit))
+    .map(([label]) => label)
+}
+
+function summarizeMoodTrend(rows = []) {
+  const moodCounter = new Map()
+  rows.forEach((row) => {
+    const mood = sanitize(String(row.moodTag || '')).toLowerCase()
+    if (!mood) return
+    moodCounter.set(mood, (moodCounter.get(mood) || 0) + 1)
+  })
+  const topMood = topLabelsFromCounter(moodCounter, 1)[0] || 'steady'
+  return topMood.replace(/_/g, ' ')
+}
+
+function summarizeWatchPattern(rows = []) {
+  const slotCounter = new Map()
+  const modeCounter = new Map()
+  rows.forEach((session) => {
+    const slot = timeSlotFromDate(session.startedAt || session.endedAt || session.createdAt)
+    if (slot && slot !== 'unknown') {
+      slotCounter.set(slot, (slotCounter.get(slot) || 0) + 1)
+    }
+    const mode = normalizeSessionMode(session.sessionMode || 'watch')
+    modeCounter.set(mode, (modeCounter.get(mode) || 0) + 1)
+  })
+
+  const topSlot = topLabelsFromCounter(slotCounter, 1)[0] || 'mixed-hours'
+  const topMode = topLabelsFromCounter(modeCounter, 1)[0] || 'watch'
+  return `${topSlot} / ${topMode}`
 }
 
 async function upsertMilestone(payload = {}) {
@@ -176,6 +228,44 @@ async function getInsightForPairYear(pairKey, year) {
   return row ? normalizeInsightRow(row) : null
 }
 
+async function regenerateRelationshipInsight(relationshipRow, year = new Date().getFullYear()) {
+  const pairKey = String(relationshipRow?.pairKey || '')
+  if (!pairKey) return null
+  const users = uniqueStrings(Array.isArray(relationshipRow?.users) ? relationshipRow.users : [])
+  const targetYear = Math.max(2000, Math.min(2200, Math.floor(Number(year) || new Date().getFullYear())))
+  const sessions = await listWatchSessionsForRelationship(pairKey, { year: targetYear, limit: 1200 })
+  if (sessions.length === 0) return null
+
+  const genreCounter = new Map()
+  let totalDuration = 0
+  sessions.forEach((session) => {
+    const genre = sanitizeSharedMemoryGenre(session.genre || '')
+    if (genre) genreCounter.set(genre, (genreCounter.get(genre) || 0) + 1)
+    totalDuration += Math.max(0, Number(session.duration) || 0)
+  })
+
+  const favoriteGenre = topLabelsFromCounter(genreCounter, 1)[0] || 'mixed'
+  const watchPattern = summarizeWatchPattern(sessions)
+  const moodTrend = summarizeMoodTrend(sessions)
+  const sessionHours = Math.round((totalDuration / 3600) * 10) / 10
+  const summaryText = sanitize(
+    `In ${targetYear}, this relationship logged ${sessions.length} shared sessions (${sessionHours}h). `
+    + `Top genre: ${favoriteGenre}. Pattern: ${watchPattern}. Mood trend: ${moodTrend}.`
+  ).slice(0, MAX_INSIGHT_SUMMARY_LENGTH)
+
+  return upsertInsight({
+    relationshipId: pairKey,
+    pairKey,
+    users,
+    year: targetYear,
+    summaryText,
+    favoriteGenre,
+    watchPattern,
+    moodTrend,
+    generatedAt: new Date(),
+  })
+}
+
 async function listInsightsForUser(uid, { year = null, limit = 40 } = {}) {
   const selfUid = String(uid || "").trim()
   if (!selfUid) return []
@@ -213,9 +303,14 @@ module.exports = {
   normalizeMilestoneRow,
   normalizeInsightRow,
   milestoneStoreKey,
+  timeSlotFromDate,
+  topLabelsFromCounter,
+  summarizeMoodTrend,
+  summarizeWatchPattern,
   upsertMilestone,
   listMilestonesForUser,
   upsertInsight,
   getInsightForPairYear,
+  regenerateRelationshipInsight,
   listInsightsForUser,
 }

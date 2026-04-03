@@ -12,11 +12,18 @@ const {
 const { sanitize } =
   require('../utils/sanitize.js')
 const {
+  ALLOWED_RELATIONSHIP_TYPES,
   MAX_WATCHLIST_ITEMS,
   MAX_WATCHLIST_TITLE_LENGTH,
   MAX_WATCHLIST_URL_LENGTH,
   MAX_WATCHLIST_NOTES_LENGTH,
 } = require('../config/constants.js')
+
+function normalizeRelationshipType(value, fallback = 'friends') {
+  const raw = String(value || '').trim().toLowerCase()
+  if (ALLOWED_RELATIONSHIP_TYPES.includes(raw)) return raw
+  return ALLOWED_RELATIONSHIP_TYPES.includes(fallback) ? fallback : 'friends'
+}
 
 function sortedPairUsers(uidA, uidB) {
   if (!uidA || !uidB || uidA === uidB) return null
@@ -219,6 +226,7 @@ async function getRelationshipByPairKey(pairKey) {
 }
 
 module.exports = {
+  normalizeRelationshipType,
   sortedPairUsers,
   pairKeyFromUsers,
   normalizeWatchlistItem,
