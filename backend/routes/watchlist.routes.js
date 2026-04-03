@@ -21,7 +21,7 @@ const { sanitize } =
 const { isOnline, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
-  require('../realtime/socketHub.js')
+  require('../sockets/socketHub.js')
 const {
   MAX_WATCHLIST_ITEMS,
   MAX_WATCHLIST_TITLE_LENGTH,

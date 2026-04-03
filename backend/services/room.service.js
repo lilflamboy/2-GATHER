@@ -11,7 +11,7 @@ const { getProfileStoreCopy } =
 const { getVideoSessionByRoomCode } =
   require('./session.service.js')
 const { rooms } =
-  require('../realtime/roomStore.js')
+  require('../sockets/roomStore.js')
 
 async function getRoomMetadataByCode(roomCode) {
   const normalizedCode = String(roomCode || '').trim().toUpperCase()

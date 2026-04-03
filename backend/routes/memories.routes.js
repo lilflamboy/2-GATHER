@@ -33,7 +33,7 @@ const {
 const { isOnline, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
-  require('../realtime/socketHub.js')
+  require('../sockets/socketHub.js')
 
 router.get('/memories', requireHttpAuth, async (req, res) => {
   try {

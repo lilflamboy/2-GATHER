@@ -154,10 +154,10 @@ const {
 const admin = require("./config/firebase.js");
 const { requireHttpAuth } = require("./middleware/auth.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
-const { setIo } = require("./realtime/socketHub.js");
+const { setIo } = require("./sockets/socketHub.js");
 const {
   rooms, pendingRoomUserDisconnects,
-} = require("./realtime/roomStore.js");
+} = require("./sockets/roomStore.js");
 const uploadsRouter = require("./routes/uploads.routes.js");
 const profileRouter = require("./routes/profile.routes.js");
 const friendsRouter = require("./routes/friends.routes.js");

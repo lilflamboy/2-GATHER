@@ -32,7 +32,7 @@ const { uniqueStrings } =
 const { isOnline, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
-  require('../realtime/socketHub.js')
+  require('../sockets/socketHub.js')
 
 router.get('/friends', requireHttpAuth, async (req, res) => {
   const [me, friendGraph] = await Promise.all([
