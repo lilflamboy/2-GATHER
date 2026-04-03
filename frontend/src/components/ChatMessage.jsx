@@ -1,11 +1,23 @@
+/**
+ * ChatMessage renders one room timeline entry. Messages may be plain text,
+ * bookmark jumps, system notices, or reactions attached to a normal message.
+ */
 import { useState, useRef, useEffect } from "react";
 import EmojiPickerPortal from "./EmojiPickerPortal";
 
+/**
+ * Renders one chat row with avatar, message bubble, reactions, and optional bookmark behavior.
+ * @param {{msg: object, myUid: string, onReact: (messageId: string, emoji: string) => void, onBookmarkSeek: (seekTime: number) => void, closePickerSignal: number}} props - Message data plus reaction/bookmark callbacks.
+ * @returns {JSX.Element} The message row.
+ */
 function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
+  // Local UI state tracks whether the picker is open and where the portal should anchor.
   const [showPicker,setShowPicker]=useState(false);
   const [pickerPos,setPickerPos]=useState({top:0,left:0});
+  // avatarFailed flips on <img> error so the message falls back to initials instead of a broken icon.
   const [avatarFailed,setAvatarFailed]=useState(false);
   const bubbleRef=useRef(null);
+  // Message type flags drive the specialized render branches below.
   const isMe=msg.uid===myUid;
   const isBookmark=msg.type==="bookmark";
   const isSystem=msg.type==="system";
@@ -20,14 +32,17 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
       {avatarInitial}
     </div>;
 
+  // Closing another picker anywhere in the chat increments closePickerSignal and collapses this one.
   useEffect(()=>{
     if(showPicker)setShowPicker(false);
   },[closePickerSignal]);
 
+  // Reset the broken-avatar fallback if a fresher photo URL arrives for this message author.
   useEffect(()=>{
     setAvatarFailed(false);
   },[msg.photoURL]);
 
+  // System messages render as timeline separators rather than regular speech bubbles.
   if(isSystem){
     const variant = msg.meta?.variant;
     const variantClass =
@@ -118,6 +133,7 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
           {/* Reaction pills — shown below bubble */}
           {canReact&&reactions.length>0&&(
             <div className={`flex flex-wrap items-center gap-1 mt-1 ${isMe?"mr-8":"ml-8"}`}>
+              {/* Reaction counts reflect the server-owned emoji map for this message. */}
               {reactions.map(([emoji,uids])=>(
                 <button key={emoji} onClick={()=>onReact(msg.id,emoji)}
                   className={`flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full border transition-all active:scale-95

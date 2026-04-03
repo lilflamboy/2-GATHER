@@ -1,3 +1,12 @@
+/**
+ * RoomPendingView is a lightweight transition screen shown while the app is
+ * creating or joining a room and waiting for the backend to answer.
+ */
+/**
+ * Renders the interim room-connection state.
+ * @param {{label?: string, onCancel?: () => void}} props - Progress label and cancel callback.
+ * @returns {JSX.Element} The pending room screen.
+ */
 function RoomPendingView({label="Joining room...",onCancel}){
   return(
     <div className="min-h-screen bg-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -10,6 +19,7 @@ function RoomPendingView({label="Joining room...",onCancel}){
             <p className="text-zinc-500 text-xs">Hang tight, connecting to the room.</p>
           </div>
         </div>
+        {/* Cancel lets the user bail out of a stuck room transition and return to the lobby. */}
         <button
           type="button"
           onClick={onCancel}

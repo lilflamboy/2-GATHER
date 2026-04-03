@@ -1,3 +1,8 @@
+/**
+ * DashboardView is Lumiere's authenticated control center. It bundles profile
+ * editing, friends, couple-space watchlists, shared memories, relationship
+ * intelligence, notifications, activity, metadata, and settings into one place.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Film,
@@ -59,6 +64,11 @@ const GENRE_HINTS = [
   { genre: "Drama", terms: ["drama", "emotional", "heartbreak", "family"] },
 ];
 
+/**
+ * Formats seconds into a compact dashboard duration label.
+ * @param {number} seconds - Raw seconds to format.
+ * @returns {string} A human-readable duration like "45m" or "2h 10m".
+ */
 function fmtDuration(seconds) {
   const value = Math.max(0, Number(seconds) || 0);
   const hours = Math.floor(value / 3600);
@@ -67,6 +77,11 @@ function fmtDuration(seconds) {
   return `${mins}m`;
 }
 
+/**
+ * Converts a timestamp into a relative time label for feeds.
+ * @param {string|number|Date} value - Timestamp-like input.
+ * @returns {string} Relative time such as "5m ago" or a fallback date.
+ */
 function fmtRelativeTime(value) {
   const at = value ? new Date(value).getTime() : 0;
   if (!at) return "";
@@ -78,16 +93,31 @@ function fmtRelativeTime(value) {
   return new Date(value).toLocaleDateString();
 }
 
+/**
+ * Clamps a numeric value into a 0-100 percentage range.
+ * @param {number} value - Percent-like input.
+ * @returns {number} The clamped integer percentage.
+ */
 function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
 }
 
+/**
+ * Normalizes a date-like value into a UTC day key.
+ * @param {string|number|Date} value - Date source to normalize.
+ * @returns {string} ISO YYYY-MM-DD key or an empty string.
+ */
 function normalizeDayKey(value) {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return "";
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * Computes the current consecutive-day streak from dated items.
+ * @param {Array<{date?: string, createdAt?: string}>} items - Memory-like items with dates.
+ * @returns {number} Current streak length in days.
+ */
 function computeStreakDays(items = []) {
   // Streaks are based on unique UTC day keys so multiple memories on one day
   // still count as a single streak step.
@@ -107,6 +137,11 @@ function computeStreakDays(items = []) {
   return streak;
 }
 
+/**
+ * Derives a fallback genre from a memory note when the backend did not store one.
+ * @param {{genre?: string, memoryNote?: string}} memory - Shared-memory record.
+ * @returns {string} Explicit or inferred genre label.
+ */
 function guessGenre(memory) {
   const explicit = String(memory?.genre || "").trim();
   if (explicit) return explicit;
@@ -115,6 +150,11 @@ function guessGenre(memory) {
   return hit?.genre || "Unknown";
 }
 
+/**
+ * Builds the narrative sentence shown in the intelligence tab.
+ * @param {{year: number, topPartnerLabel: string, totalHours: number, topGenre: string, streakDays: number, modeLabel: string}} input - Already-derived relationship stats.
+ * @returns {string} Story copy summarizing the year.
+ */
 function buildYearStory({ year, topPartnerLabel, totalHours, topGenre, streakDays, modeLabel }) {
   // This produces the "story" sentence shown in the intelligence view from
   // already-derived dashboard stats instead of fetching separate copy from the API.
@@ -128,6 +168,11 @@ function buildYearStory({ year, topPartnerLabel, totalHours, topGenre, streakDay
   ].join(" ");
 }
 
+/**
+ * Maps an activity event into a human-readable label.
+ * @param {object} item - Activity feed item.
+ * @returns {string} Display label for the activity row.
+ */
 function activityLabel(item) {
   const targetName = item?.target?.username ? `@${item.target.username}` : (item?.target?.displayName || "friend");
   switch (item?.type) {
@@ -156,6 +201,11 @@ function activityLabel(item) {
   }
 }
 
+/**
+ * Maps a notification record into user-facing text.
+ * @param {object} item - Persistent notification record.
+ * @returns {string} Human-readable notification text.
+ */
 function notificationLabel(item) {
   const sender = item?.sender?.username ? `@${item.sender.username}` : (item?.sender?.displayName || "Someone");
   switch (String(item?.type || "")) {
@@ -174,6 +224,11 @@ function notificationLabel(item) {
   }
 }
 
+/**
+ * Reads an uploaded image file into a data URL.
+ * @param {File} file - Browser file object.
+ * @returns {Promise<string>} Data URL for previewing or resizing.
+ */
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -183,6 +238,11 @@ function readFileAsDataUrl(file) {
   });
 }
 
+/**
+ * Loads an image element from a data URL or remote source.
+ * @param {string} src - Image source URL/data URL.
+ * @returns {Promise<HTMLImageElement>} Loaded image element.
+ */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -192,6 +252,11 @@ function loadImage(src) {
   });
 }
 
+/**
+ * Converts an uploaded image into a constrained profile-photo data URL.
+ * @param {File} file - Selected image file.
+ * @returns {Promise<string>} Compressed profile photo data URL.
+ */
 async function toProfilePhotoDataUrl(file) {
   // Profile photos are resized/compressed client-side so the profile PATCH
   // request stays small enough to persist as a data URL.
@@ -228,6 +293,11 @@ async function toProfilePhotoDataUrl(file) {
   return output;
 }
 
+/**
+ * Renders a dashboard toggle row for boolean settings.
+ * @param {{checked: boolean, onChange: () => void, label: string, help: string}} props - Toggle state and labels.
+ * @returns {JSX.Element} The toggle button row.
+ */
 function Toggle({ checked, onChange, label, help }) {
   return (
     <button
@@ -250,6 +320,11 @@ function Toggle({ checked, onChange, label, help }) {
   );
 }
 
+/**
+ * Renders the dashboard sidebar tab navigation.
+ * @param {{tabs: Array, tab: string, onSelectTab: (tab: string) => void, onlineFriends: Array, activeRoomCode?: string, className?: string}} props - Sidebar tabs and account summary values.
+ * @returns {JSX.Element} The sidebar.
+ */
 function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCode, className = "" }) {
   return (
     <aside className={`glass-panel p-3 h-fit ${className}`.trim()}>
@@ -284,6 +359,12 @@ function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCod
   );
 }
 
+/**
+ * Renders the authenticated dashboard with tabs for profile, friends, watchlist,
+ * memories, insights, notifications, activity, metadata, and settings.
+ * @param {{username: string, apiClient: (path: string, options?: object) => Promise<any>, onBack: () => void, onSignOut: () => void, onInviteFriend?: (uid: string) => Promise<void>, invites?: Array, onAcceptInvite?: (invite: object) => void, addToast?: (message: string, type?: string) => void, onProfileUpdated?: (profile: object|null) => void, activeRoomCode?: string, initialTab?: string, pushEnabled?: boolean, onTogglePushNotifications?: (enabled: boolean) => void, showMetadata?: boolean}} props - Dashboard data loaders and action callbacks.
+ * @returns {JSX.Element} The full dashboard surface.
+ */
 export default function DashboardView({
   username,
   apiClient,
@@ -371,6 +452,7 @@ export default function DashboardView({
   const [watchNotes, setWatchNotes] = useState("");
   // Metadata is only surfaced for admin users, so the tab list is filtered here
   // instead of branching throughout the render tree.
+  // Memoize the tab list so the sidebar only recalculates when metadata visibility changes.
   const tabs = useMemo(
     () => (showMetadata ? TABS : TABS.filter((item) => item.key !== "metadata")),
     [showMetadata]
@@ -380,6 +462,7 @@ export default function DashboardView({
     notificationsUnread
   );
 
+  // Close the compact header notification popover when clicking away or pressing Escape.
   useEffect(() => {
     if (!showHeaderNotifications) return;
     // Header popovers are dismissed with outside-click and Escape to keep the
@@ -402,6 +485,7 @@ export default function DashboardView({
     };
   }, [showHeaderNotifications]);
 
+  // Apply the same outside-click behavior to the mobile sidebar drawer.
   useEffect(() => {
     if (!showMobileSidebar) return;
     const onPointer = (event) => {
@@ -422,17 +506,20 @@ export default function DashboardView({
     };
   }, [showMobileSidebar]);
 
+  // If metadata access is removed while the user is on that tab, push them back to profile.
   useEffect(() => {
     if (!showMetadata && tab === "metadata") {
       setTab("profile");
     }
   }, [showMetadata, tab]);
 
+  // Honor the parent-provided initial tab when opening the dashboard from different entry points.
   useEffect(() => {
     if (!initialTab) return;
     setTab(initialTab);
   }, [initialTab]);
 
+  // Notifications are loaded separately so header refreshes do not need the full dashboard bootstrap.
   const loadNotifications = useCallback(async ({ silent = false } = {}) => {
     try {
       const res = await apiClient("/api/notifications?limit=80");
@@ -445,6 +532,7 @@ export default function DashboardView({
     }
   }, [apiClient, addToast]);
 
+  // Bootstrap the dashboard's source data from the main profile/friends/memory endpoints.
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -518,6 +606,7 @@ export default function DashboardView({
     }
   }, [apiClient, addToast, showMetadata, onProfileUpdated]);
 
+  // Reload when the component mounts or when child actions bump the refresh tick.
   useEffect(() => {
     loadData();
   }, [loadData, refreshTick]);
@@ -540,8 +629,10 @@ export default function DashboardView({
     return () => clearInterval(timer);
   }, [apiClient, loadNotifications]);
 
+  // Surface online-only friends for the sidebar status card and invite affordances.
   const onlineFriends = useMemo(() => friends.filter((friend) => friend.online), [friends]);
 
+  // Search is memoized so the debounce effect can reuse a stable function reference.
   const runSearch = useCallback(async () => {
     const q = search.trim();
     if (q.length < 2) {
@@ -567,6 +658,7 @@ export default function DashboardView({
     return () => clearTimeout(timer);
   }, [runSearch]);
 
+  // Couple Space data is partner-specific, so fetch it only for the active partner.
   const loadCoupleSpace = useCallback(async (partnerUid) => {
     if (!partnerUid) return;
     setCoupleLoading(true);
@@ -585,6 +677,7 @@ export default function DashboardView({
     }
   }, [apiClient, addToast]);
 
+  // Default the partner selectors to the first friend once the friends list arrives.
   useEffect(() => {
     if (!couplePartnerUid && friends.length > 0) {
       setCouplePartnerUid(friends[0].uid);
@@ -597,12 +690,14 @@ export default function DashboardView({
     }
   }, [friends, memoryPartnerUid]);
 
+  // Only load Couple Space when that tab is active, the partner is known, and refresh tick changes.
   useEffect(() => {
     if (tab !== "couple") return;
     if (!couplePartnerUid) return;
     loadCoupleSpace(couplePartnerUid);
   }, [tab, couplePartnerUid, loadCoupleSpace, refreshTick]);
 
+  // Friend request actions are thin wrappers around the backend state machine.
   const onSendRequest = async (targetUid) => {
     try {
       await apiClient("/api/friends/request", {
@@ -629,6 +724,7 @@ export default function DashboardView({
     }
   };
 
+  // Notification read handlers update local UI state optimistically after the server confirms.
   const onMarkNotificationRead = async (notificationId) => {
     if (!notificationId || notificationBusy) return;
     setNotificationBusy(true);
@@ -662,6 +758,7 @@ export default function DashboardView({
     }
   };
 
+  // Room-invite notifications can be turned back into the normal invite-accept flow.
   const onJoinRoomFromNotification = async (item) => {
     if (!item?.roomCode) return;
     onAcceptInvite?.({
@@ -678,6 +775,7 @@ export default function DashboardView({
     }
   };
 
+  // Profile photo selection does client-side processing before the profile PATCH call.
   const onPickProfilePhoto = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -700,6 +798,7 @@ export default function DashboardView({
     addToast("Photo removed. Click Save profile to apply.", "info");
   };
 
+  // Profile save persists display name, bio, and processed photo URL together.
   const onSaveProfile = async (event) => {
     event.preventDefault();
     setSavingProfile(true);
@@ -722,6 +821,7 @@ export default function DashboardView({
     }
   };
 
+  // Settings toggles are modeled as a partial settings object PATCH.
   const onToggleSetting = async (key) => {
     const nextSettings = {
       ...(profile?.settings || {}),
@@ -739,6 +839,7 @@ export default function DashboardView({
     }
   };
 
+  // Friend invites are delegated back to the app-level room action so dashboard and room share one flow.
   const onInvite = async (friendUid) => {
     try {
       await onInviteFriend(friendUid);
@@ -748,6 +849,7 @@ export default function DashboardView({
     }
   };
 
+  // Relationship tags let the user relabel accepted friends as couple/family/friend.
   const onUpdateRelationshipTag = async (partnerUid, relationshipType) => {
     if (!partnerUid) return;
     setTagUpdatingUid(partnerUid);
@@ -774,6 +876,7 @@ export default function DashboardView({
     }
   };
 
+  // Couple Space watchlist actions mutate the shared partner-scoped watchlist.
   const onAddWatchlistItem = async (event) => {
     event.preventDefault();
     if (!couplePartnerUid) {
@@ -830,6 +933,7 @@ export default function DashboardView({
     }
   };
 
+  // Shared memories are user-authored notes layered on top of the raw watch-time relationship data.
   const onAddSharedMemory = async (event) => {
     event.preventDefault();
     if (!memoryPartnerUid) {
@@ -881,6 +985,7 @@ export default function DashboardView({
     () => notifications.filter((item) => !["friend_request", "room_invite"].includes(String(item.type || ""))),
     [notifications]
   );
+  // Memoize the derived "relationship intelligence" model so the heavy computations only rerun when source data changes.
   const relationshipIntel = useMemo(() => {
     // This memo is the "analytics layer" of the dashboard: it turns saved
     // memories + session summaries into compatibility cards and yearly stories.
@@ -1055,6 +1160,7 @@ export default function DashboardView({
     <div className="min-h-screen bg-screen relative overflow-hidden">
       <div className="grain-overlay" />
 
+      {/* Header keeps global navigation, compact notifications, and sign-out in one consistent place. */}
       <header className="relative z-40 px-4 sm:px-6 py-4 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -1212,6 +1318,7 @@ export default function DashboardView({
             <div className="h-56 flex items-center justify-center text-zinc-500 text-sm">Loading settings...</div>
           ) : (
             <>
+              {/* Profile tab handles editable identity fields and photo updates. */}
               {tab === "profile" && (
                 <div>
                   <div className="flex items-center gap-3 mb-4">
@@ -1288,6 +1395,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Friends tab covers search, incoming requests, accepted friends, and invite actions. */}
               {tab === "friends" && (
                 <div className="space-y-5">
                   <div>
@@ -1407,6 +1515,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Couple tab owns the partner-specific watchlist and invite-partner controls. */}
               {tab === "couple" && (
                 <div className="space-y-4">
                   {friends.length === 0 && (
@@ -1529,6 +1638,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Memories tab combines aggregate watch-time summaries with shared memory note creation. */}
               {tab === "memories" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -1692,6 +1802,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Intelligence tab derives story cards, compatibility, milestones, and timeline views from saved memories. */}
               {tab === "intelligence" && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
@@ -1816,6 +1927,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Notifications tab expands the compact header feed into a full inbox with room-join actions. */}
               {tab === "notifications" && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
@@ -1923,6 +2035,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Activity tab is the user's personal audit/history feed. */}
               {tab === "activity" && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
@@ -1954,6 +2067,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Metadata is admin-only project overview data kept separate from standard user settings. */}
               {tab === "metadata" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -2009,6 +2123,7 @@ export default function DashboardView({
                 </div>
               )}
 
+              {/* Settings tab exposes privacy toggles, browser push preference, and sign-out. */}
               {tab === "settings" && (
                 <div className="space-y-4">
                   <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-3 text-sm text-zinc-400">
@@ -2065,19 +2180,22 @@ export default function DashboardView({
       </main>
 
       {showMobileSidebar && (
-        <div className="lg:hidden fixed inset-x-0 top-[4.2rem] bottom-0 z-40">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
-          <div ref={mobileMenuRef} className="absolute left-3 right-3 top-3">
-            <DashboardSidebar
-              tabs={tabs}
-              tab={tab}
-              onSelectTab={selectTab}
-              onlineFriends={onlineFriends}
-              activeRoomCode={activeRoomCode}
-              className="max-h-[calc(100dvh-6rem)] overflow-y-auto"
-            />
+        <>
+          {/* Mobile wraps the sidebar in an overlay drawer instead of a persistent left column. */}
+          <div className="lg:hidden fixed inset-x-0 top-[4.2rem] bottom-0 z-40">
+            <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
+            <div ref={mobileMenuRef} className="absolute left-3 right-3 top-3">
+              <DashboardSidebar
+                tabs={tabs}
+                tab={tab}
+                onSelectTab={selectTab}
+                onlineFriends={onlineFriends}
+                activeRoomCode={activeRoomCode}
+                className="max-h-[calc(100dvh-6rem)] overflow-y-auto"
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

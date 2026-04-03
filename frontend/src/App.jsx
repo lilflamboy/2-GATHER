@@ -1,14 +1,20 @@
+/**
+ * App is the thin frontend entrypoint after the refactor. It delegates auth,
+ * socket, room, friends, lobby stats, and toast state to hooks, then chooses
+ * which top-level view to render based on the current session state.
+ */
+// React hooks used here only coordinate top-level lifecycle and cross-view wiring.
 import { useEffect, useRef } from "react";
+// Firebase auth is read here so App can gate top-level views on the active session.
 import { auth } from "./firebase.js";
+// Views render the major application surfaces selected by the top-level state machine.
 import DashboardView from "./views/DashboardView.jsx";
-import Toasts from "./components/Toasts";
-import UsernameSetup from "./components/UsernameSetup";
-import RoomErrorBoundary from "./components/RoomErrorBoundary";
 import LandingView from "./views/LandingView";
 import VerifyEmailView from "./views/VerifyEmailView";
 import RoomPendingView from "./views/RoomPendingView";
 import LobbyView from "./views/LobbyView";
 import RoomView from "./views/RoomView";
+// Hooks encapsulate API auth, sockets, auth session state, lobby stats, and room orchestration.
 import useToast from "./hooks/useToast";
 import { useApiClient } from "./hooks/useApiClient";
 import { useSocket } from "./hooks/useSocket";
@@ -18,19 +24,33 @@ import { useLobbyStats } from "./hooks/useLobbyStats";
 import { useRoomState } from "./hooks/useRoomState";
 import { useRoomActions } from "./hooks/useRoomActions";
 import { useAuthSession } from "./hooks/useAuthSession";
+// These small components stay in App because they frame every other view.
+import Toasts from "./components/Toasts";
+import UsernameSetup from "./components/UsernameSetup";
+import RoomErrorBoundary from "./components/RoomErrorBoundary";
 
+/**
+ * Wires together the global hooks and selects the active top-level screen.
+ * @returns {JSX.Element} The current app view plus the global toast layer.
+ */
 export default function App(){
+  // Toast state is global so every view and hook can surface feedback consistently.
   const { toasts, addToast, removeToast } = useToast();
+  // apiClient injects the Firebase token into authenticated REST calls.
   const { apiClient } = useApiClient();
+  // Room state owns the current view, room snapshot, and pending-room transition data.
   const room = useRoomState({ addToast });
+  // Refs let auth/session hooks call the latest push/socket functions without re-registering listeners.
   const pushNotifyRef = useRef(() => {});
   const socketApiRef = useRef({
     connectSocket: () => {},
     cleanupSocket: () => {},
     socketRef: { current: null },
   });
+  // Friend and lobby-stat hooks feed lobby/dashboard surfaces and side panels.
   const friends = useFriends({ apiClient, addToast });
   const lobbyStats = useLobbyStats({ addToast });
+  // Auth session decides whether the user sees login, email verification, username setup, lobby, or room screens.
   const authSession = useAuthSession({
     addToast,
     apiClient,
@@ -56,12 +76,14 @@ export default function App(){
     setIncomingInvites: room.setIncomingInvites,
     setSavedCode: room.setSavedCode,
   });
+  // Browser push preference is kept separately because it depends on browser permission APIs.
   const { browserPushEnabled, pushNotify, setPushNotifications } = usePushNotifications({
     addToast,
     avatarUrl: authSession.avatarUrl,
   });
   pushNotifyRef.current = pushNotify;
 
+  // The socket hook owns the single live Socket.IO connection shared across room flows.
   const socket = useSocket({
     addToast,
     apiClient,
@@ -92,12 +114,14 @@ export default function App(){
     setIncomingInvites: room.setIncomingInvites,
     setIncomingFriendRequests: friends.setIncomingFriendRequests,
   });
+  // Expose the latest socket helpers to auth/session logic that may need to reconnect or clean up outside render.
   socketApiRef.current = {
     connectSocket: socket.connectSocket,
     cleanupSocket: socket.cleanupSocket,
     socketRef: socket.socketRef,
   };
 
+  // Room actions translate lobby/dashboard button clicks into room joins, leaves, invites, and socket emits.
   const roomActions = useRoomActions({
     addToast,
     apiClient,
@@ -134,6 +158,7 @@ export default function App(){
     clearPendingTimer: room.clearPendingTimer,
   });
 
+  // Refresh friend requests and lobby stats when an authenticated user lands back in the lobby.
   useEffect(()=>{
     if(!authSession.user||room.view!=="lobby")return;
     auth.currentUser?.getIdToken()
@@ -145,12 +170,14 @@ export default function App(){
       .catch(()=>{});
   },[authSession.user,room.view,friends.syncIncomingFriendRequests,lobbyStats.syncLobbyMemoryStats]);
 
+  // The loading gate stays first so no intermediate auth view flashes before Firebase finishes restoring the session.
   if(authSession.authLoading)return(
     <div className="min-h-screen bg-screen flex items-center justify-center">
       <div className="grain-overlay"/><div className="relative z-10 text-amber-400 animate-pulse text-3xl">L</div>
     </div>
   );
 
+  // Email verification must take precedence over lobby/room rendering for unverified accounts.
   if(authSession.user&&authSession.emailVerificationRequired){
     return(
       <>
@@ -166,6 +193,7 @@ export default function App(){
     );
   }
 
+  // Username setup comes next because the app requires a permanent public username before entering the social flows.
   if(authSession.user&&authSession.needUsername){
     return<UsernameSetup displayName={authSession.user.displayName} onDone={authSession.handleUsernameSet}/>;
   }
@@ -173,7 +201,9 @@ export default function App(){
   return(
     <>
       <Toasts toasts={toasts} removeToast={removeToast}/>
+      {/* Signed-out users stay on the public landing/auth screen. */}
       {!authSession.user&&<LandingView addToast={addToast}/>}
+      {/* The lobby is the authenticated home screen and the only place rooms are created or joined. */}
       {authSession.user&&room.view==="lobby"&&(
         <LobbyView avatarUrl={authSession.avatarUrl} username={authSession.username} onCreateRoom={roomActions.handleCreateRoom}
           onJoinRoom={roomActions.handleJoinRoom} onSignOut={authSession.handleSignOut} savedRoomCode={room.savedCode}
@@ -184,6 +214,7 @@ export default function App(){
           onRespondFriendRequest={friends.handleRespondFriendRequest}
           invites={room.incomingInvites} onAcceptInvite={roomActions.handleAcceptInvite}/>
       )}
+      {/* Settings/dashboard is the account-management surface layered off the lobby. */}
       {authSession.user&&room.view==="settings"&&(
         <DashboardView
           username={authSession.username}
@@ -202,6 +233,7 @@ export default function App(){
           showMetadata={authSession.isAdmin}
         />
       )}
+      {/* room_pending is the explicit transition state while create/join requests are in flight. */}
       {authSession.user&&room.view==="room_pending"&&(
         <RoomPendingView
           label={room.roomPendingLabel}
@@ -211,6 +243,7 @@ export default function App(){
           }}
         />
       )}
+      {/* If the view says "room" but no room code exists yet, show a neutral connecting state instead of a broken room shell. */}
       {authSession.user&&room.view==="room"&&!room.roomCode&&(
         <RoomPendingView
           label="Connecting to room..."
@@ -220,6 +253,7 @@ export default function App(){
           }}
         />
       )}
+      {/* Only RoomView is wrapped in an error boundary because it is the only high-complexity realtime surface with many async subsystems. */}
       {authSession.user&&room.view==="room"&&room.roomCode&&(
         <RoomErrorBoundary onReset={roomActions.handleLeave}>
           <RoomView user={authSession.user} username={authSession.username} socket={socket.socketRef.current}

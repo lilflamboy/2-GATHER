@@ -1,5 +1,14 @@
+/**
+ * VerifyEmailView is shown after sign-up when a Firebase account exists but the
+ * user has not yet confirmed their email address.
+ */
 import { Film } from "lucide-react";
 
+/**
+ * Renders the email-verification holding screen.
+ * @param {{user: {email?: string}|null, onRefresh: () => void, onResend: () => void, onSignOut: () => void, loading: boolean}} props - Auth user plus verification actions.
+ * @returns {JSX.Element} The verification prompt.
+ */
 function VerifyEmailView({user,onRefresh,onResend,onSignOut,loading}){
   return(
     <div className="min-h-screen bg-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -13,6 +22,7 @@ function VerifyEmailView({user,onRefresh,onResend,onSignOut,loading}){
           We sent a verification link to <span className="text-zinc-200">{user?.email}</span>.
           Please verify your email before entering Lumiere.
         </p>
+        {/* Resend sends another verification email, while refresh re-checks Firebase for verification status. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             onClick={onResend}

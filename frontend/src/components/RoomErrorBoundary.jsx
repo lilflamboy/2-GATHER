@@ -1,5 +1,14 @@
+/**
+ * RoomErrorBoundary catches render/runtime failures inside RoomView and swaps in
+ * a recovery screen. React error boundaries must be class components, which is
+ * why this file intentionally uses the legacy class API instead of hooks.
+ */
 import { Component } from "react";
 
+/**
+ * Error boundary for the realtime room experience.
+ * @extends Component<{children: React.ReactNode, onReset?: () => void}, {error: Error|null}>
+ */
 class RoomErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -10,10 +19,20 @@ class RoomErrorBoundary extends Component {
     return { error };
   }
 
+  /**
+   * Captures the thrown error for logging and diagnostics.
+   * @param {Error} error - The runtime error thrown by a descendant.
+   * @param {{componentStack?: string}} info - React component stack information.
+   * @returns {void}
+   */
   componentDidCatch(error, info) {
     console.error("[room-error-boundary]", error, info);
   }
 
+  /**
+   * Renders either the child room UI or the fallback recovery screen.
+   * @returns {JSX.Element|React.ReactNode} The active child tree or fallback shell.
+   */
   render() {
     if (!this.state.error) {
       return this.props.children;
@@ -34,6 +53,7 @@ class RoomErrorBoundary extends Component {
             </pre>
           )}
           <div className="mt-5 flex flex-wrap gap-3">
+            {/* Reload offers a full app reset, while onReset returns the user to the lobby. */}
             <button
               type="button"
               onClick={()=>window.location.reload()}

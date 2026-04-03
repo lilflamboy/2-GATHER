@@ -1,12 +1,25 @@
+/**
+ * Username setup is shown on first login when the authenticated profile still
+ * needs a permanent public username. Usernames are limited to 3-20 characters
+ * and may only contain letters, numbers, and underscores.
+ */
 import { useState } from "react";
 import { AtSign } from "lucide-react";
 
+/**
+ * Prompts a newly signed-in user to choose their permanent username.
+ * @param {{displayName: string, onDone: (username: string) => Promise<boolean|void>}} props - Suggested display name and claim callback.
+ * @returns {JSX.Element} The username setup form.
+ */
 function UsernameSetup({displayName, onDone}){
+  // Seed the input with a cleaned version of the display name so first-time
+  // users usually only need a tiny edit before claiming a username.
   const suggested = (displayName||"").toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9_]/g,"").slice(0,18);
   const [value,setValue]=useState(suggested);
   const [error,setError]=useState("");
   const [submitting,setSubmitting]=useState(false);
 
+  // Validate client-side first so obviously invalid usernames never hit the API.
   const validate = v => {
     if(!v) return "Username is required";
     if(v.length<3) return "At least 3 characters";
@@ -17,6 +30,8 @@ function UsernameSetup({displayName, onDone}){
 
   const handleSubmit = async e => {
     e.preventDefault();
+    // The claim flow keeps the user on this screen until the server confirms
+    // the username is both valid and still available.
     const err=validate(value.trim());
     if(err){setError(err);return;}
     setSubmitting(true);
@@ -44,6 +59,7 @@ function UsernameSetup({displayName, onDone}){
           <h1 className="font-display text-3xl text-zinc-100">Choose your username</h1>
           <p className="text-zinc-500 text-sm text-center">This is how friends will see you.<br/>You can't change it later.</p>
         </div>
+        {/* The form keeps feedback inline so the user understands why a claim failed. */}
         <form onSubmit={handleSubmit} className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
           <div>
             <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus-within:border-amber-500/60 transition-colors">

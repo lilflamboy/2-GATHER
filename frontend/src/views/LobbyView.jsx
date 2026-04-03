@@ -1,3 +1,8 @@
+/**
+ * LobbyView is the signed-in home screen. It lets the user create private
+ * rooms, join by code, open the dashboard, and review incoming invites or
+ * friend requests before entering a session.
+ */
 import { useState, useEffect } from "react";
 import {
   Film, LogOut, Users, ChevronRight,
@@ -11,6 +16,11 @@ import {
 } from "../config/roomModes";
 import HeaderNotifications from "../components/HeaderNotifications";
 
+/**
+ * Renders the authenticated lobby/home screen.
+ * @param {{avatarUrl?: string, username: string, onCreateRoom?: (payload: object) => void, onJoinRoom?: (code: string) => void, onSignOut?: () => void, savedRoomCode?: string, onOpenDashboard?: (tab?: string) => void, memoryStats?: object, invites?: Array, friendRequests?: Array, friendRequestBusyByUid?: Record<string, boolean>, onRespondFriendRequest?: (uid: string, action: string) => void, onAcceptInvite?: (invite: object) => void, socketConnected?: boolean}} props - Lobby state, room actions, and notification data.
+ * @returns {JSX.Element} The post-auth lobby view.
+ */
 function LobbyView({
   avatarUrl,
   username,
@@ -27,6 +37,7 @@ function LobbyView({
   onAcceptInvite,
   socketConnected,
 }){
+  // Local lobby state tracks the room creation form and the join-code input.
   const [code,setCode]=useState(savedRoomCode||"");
   const [privateMode,setPrivateMode]=useState("couple");
   const [sessionMode,setSessionMode]=useState("watch");
@@ -44,6 +55,7 @@ function LobbyView({
 
   const resourcePlaceholder = engineUi.resourcePlaceholder || "Optional resource URL";
 
+  // Keep the YouTube preview id aligned with the current watch-mode resource input.
   useEffect(()=>{
     if(sessionMode!=="watch"){
       setYoutubeVideoId("");
@@ -52,6 +64,7 @@ function LobbyView({
     setYoutubeVideoId(extractYouTubeId(resourceUrl));
   },[resourceUrl,sessionMode]);
 
+  // Build the normalized room-create payload the backend/socket layer expects.
   const createRoom=()=>{
     const rawUrl=resourceUrl.trim();
     const resolved=selectedSessionEngine.resolveResourceFromUrl?.(rawUrl);
@@ -77,6 +90,7 @@ function LobbyView({
           <span className="font-display text-xl text-zinc-100">Lumiere</span>
         </div>
         <div className="flex items-center gap-3">
+          {/* Dashboard shortcuts and notifications stay in the header for quick access from the home screen. */}
           <button
             type="button"
             onClick={()=>onOpenDashboard?.("memories")}
@@ -110,6 +124,7 @@ function LobbyView({
       </header>
       <main className="relative z-10 flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-10">
         <div className="w-full max-w-5xl flex flex-col gap-6">
+          {/* Hero + memory pulse summarize the account before the user creates or joins a room. */}
           <section className="flex flex-col gap-4 text-center max-w-3xl mx-auto w-full">
             <div className="text-center">
               <h2 className="font-display text-3xl text-zinc-100 mb-1">Shared Experience</h2>
@@ -137,7 +152,9 @@ function LobbyView({
               </div>
             )}
             {invites.length>0&&(
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-2">
+              <>
+                {/* Live invites are actionable from the lobby without opening the dashboard first. */}
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex flex-col gap-2">
                 <p className="text-emerald-300 text-sm font-semibold">Live invites</p>
                 {invites.map(invite=>(
                   <div key={invite.id} className="flex items-center justify-between gap-3 bg-zinc-900/70 border border-zinc-700 rounded-lg px-3 py-2">
@@ -155,10 +172,12 @@ function LobbyView({
                     </button>
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             )}
           </section>
 
+          {/* The create-room card owns room type, session mode, mood, and optional resource selection. */}
           <section className="flex flex-col gap-6 max-w-3xl mx-auto w-full">
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
               <h3 className="text-zinc-300 font-semibold mb-1 flex items-center gap-2"><Lock size={15} className="text-amber-400"/>Create private room</h3>
@@ -166,6 +185,7 @@ function LobbyView({
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="space-y-2">
+                  {/* Relationship mode maps directly to the backend roomType and participant cap. */}
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">Relationship mode</p>
                   <div className="grid grid-cols-1 gap-2">
                     {PRIVATE_ROOM_MODES.map(option=>{
@@ -202,6 +222,7 @@ function LobbyView({
                 </div>
 
                 <div className="space-y-2">
+                  {/* Session mode changes which engine, labels, and placeholder text the room will use. */}
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">Session mode</p>
                   <div className="grid grid-cols-2 gap-2">
                     {SESSION_MODES.map(option=>{
@@ -232,6 +253,7 @@ function LobbyView({
                 </div>
               </div>
 
+              {/* Mood tags are optional metadata used for room flavor and later memory analytics. */}
               <div className="space-y-2 mb-4 mt-4">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">Mood (optional)</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -252,6 +274,7 @@ function LobbyView({
                 </div>
               </div>
 
+              {/* Resource links are normalized before room creation so the right session engine can pick them up. */}
               <div className="space-y-2 mb-4">
                 <p className="text-[11px] uppercase tracking-wide text-zinc-500">Resource link (optional)</p>
                 <div className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 px-3">
@@ -288,6 +311,7 @@ function LobbyView({
               </button>
             </div>
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6">
+              {/* Joining uses the same normalized room-code format the backend expects. */}
               <h3 className="text-zinc-300 font-semibold mb-1 flex items-center gap-2"><Users size={15} className="text-amber-400"/>Join a room</h3>
               <p className="text-zinc-600 text-xs mb-4">Enter the 6-letter code from your friend.</p>
               <div className="flex gap-2">

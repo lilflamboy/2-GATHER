@@ -1,3 +1,8 @@
+/**
+ * RoomView is the realtime session surface. It supports watch, music, podcast,
+ * reading, and study modes while orchestrating video sync, audio sync,
+ * co-reading, WebRTC calls, chat, reactions, and room-level social actions.
+ */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { auth } from "../firebase.js";
 import CoReadingPdfViewer, { getPdfPageCountFromArrayBuffer } from "../CoReadingPdfViewer.jsx";
@@ -30,6 +35,10 @@ const YOUTUBE_SCHEDULE_BUFFER_MS = 120;
 
 let youtubeApiPromise = null;
 
+/**
+ * Loads the YouTube iframe API exactly once for all room instances.
+ * @returns {Promise<any>} The initialized global YT namespace.
+ */
 const loadYouTubeIframeApi = () => {
   // The YouTube iframe API is a global script with async ready callbacks, so
   // cache one shared promise and let every player await the same bootstrap.
@@ -78,6 +87,11 @@ const loadYouTubeIframeApi = () => {
   return youtubeApiPromise;
 };
 
+/**
+ * Renders the live room experience for all supported session modes.
+ * @param {{user: object, username: string, socket: any, roomCode: string, roomType?: string, sessionMode?: string, roomMoodTag?: string, roomContentUrl?: string, roomContentType?: string, roomCreatedBy?: string, maxParticipants?: number, initialUsers: Array, initialVideoState: object, initialAudioState?: object|null, initialMessages: Array, initialVideoMetadata?: object|null, initialDocument?: object|null, initialReadingPage?: number, initialReadingState?: object|null, onLeave: () => void, addToast: (message: string, type?: string) => void, onSendFriendRequest?: Function, onRespondFriendRequest?: Function, friendRequests?: Array, friendRequestBusyByUid?: Record<string, boolean>, invites?: Array, onAcceptInvite?: Function}} props - Room snapshot, transport handles, and room-level action callbacks.
+ * @returns {JSX.Element} The realtime room shell.
+ */
 function RoomView({
   user,
   username,
@@ -109,6 +123,7 @@ function RoomView({
 }){
   // RoomView is the realtime playback shell: transport refs, room members,
   // chat state, reading state, and the currently active media engine all meet here.
+  // Refs hold transport and media objects whose updates should not trigger rerenders.
   const videoRef=useRef(null);
   const audioRef=useRef(null);
   const youtubeHostRef=useRef(null);
@@ -151,6 +166,7 @@ function RoomView({
   const readingReadyRef=useRef(false);
   const sharedDocumentRef=useRef(initialDocument||null);
 
+  // Core room UI state covers chat, playback, resource metadata, and side-panel visibility.
   const [messages,setMessages]=useState(initialMessages||[]);
   const [chatInput,setChatInput]=useState("");
   const [isPlaying,setIsPlaying]=useState(false);
@@ -189,6 +205,7 @@ function RoomView({
   const [memberTimes,setMemberTimes]=useState({});
   const [showFriendMenu,setShowFriendMenu]=useState(false);
   const [showHeaderNotifications,setShowHeaderNotifications]=useState(false);
+  // Social/action state tracks friend actions, document uploads, and avatar fallback status.
   const [friendBusyByUid,setFriendBusyByUid]=useState({});
   const [friendStatusByUid,setFriendStatusByUid]=useState({});
   const [docUploading,setDocUploading]=useState(false);
@@ -210,6 +227,7 @@ function RoomView({
   const useYouTubePlayer=!!youtubeVideoId&&sessionMode!=="reading";
   const hideNativeYouTubeFooter=useYouTubePlayer&&!isMusicMode;
 
+  // Memoized helpers are shared across event listeners, timers, and player callbacks.
   const showBanner=useCallback(text=>{setActionBanner(text);setTimeout(()=>setActionBanner(""),3000);},[]);
   const getActiveHtmlMedia=useCallback(()=>isMusicMode?audioRef.current:videoRef.current,[isMusicMode]);
   const clearScheduledVideoStart=useCallback(()=>{
@@ -222,6 +240,7 @@ function RoomView({
     if(!uid)return;
     setBrokenAvatarUids(prev=>prev[uid]?prev:{...prev,[uid]:true});
   },[]);
+  // Avatar rendering prefers the saved photo URL and falls back to initials if the image fails.
   const renderUserAvatar=useCallback((participant,sizeClass,textClass,altLabel="")=>{
     const safeUid=String(participant?.uid||"");
     const label=altLabel||participant?.name||participant?.username||"User";
@@ -238,6 +257,7 @@ function RoomView({
         {initial}
       </div>;
   },[brokenAvatarUids,markAvatarBroken]);
+  // Old chat rows are rehydrated from the live room roster so reconnects refresh names and photos.
   const resolveMessageAuthor=useCallback((message)=>{
     if(!message||message.uid==="system"){
       return message;
@@ -394,6 +414,7 @@ function RoomView({
     });
   },[]);
 
+  // useWebRTC encapsulates peer connections, local stream setup, and call controls.
   const {inCall,micOn,camOn,localStreamRef,remoteStreams,joinCall,leaveCall,toggleMic,toggleCam}=
     useWebRTC({socket,roomCode,myUid:user.uid,users,addToast});
   const otherUsers=users.filter(u=>u.uid!==user.uid);
@@ -417,6 +438,7 @@ function RoomView({
     setShowSourcePanel(true);
   },[canChangeSource,addToast,resourceUrl]);
 
+  // Dismiss the friend menu when the user clicks anywhere outside the popover.
   useEffect(()=>{
     if(!showFriendMenu)return;
     const onDocPointerDown=e=>{
@@ -432,6 +454,7 @@ function RoomView({
     };
   },[showFriendMenu]);
 
+  // Apply the same outside-click behavior to the header "more" menu.
   useEffect(()=>{
     if(!showMoreMenu)return;
     const onDocPointerDown=e=>{
@@ -447,12 +470,14 @@ function RoomView({
     };
   },[showMoreMenu]);
 
+  // If everyone else leaves, close the friend menu automatically.
   useEffect(()=>{
     if(otherUsers.length===0){
       setShowFriendMenu(false);
     }
   },[otherUsers.length]);
 
+  // Reading rooms default to document-first layout, so hide chat until the user opens it.
   useEffect(()=>{
     if(isReadingMode){
       setShowChat(false);
@@ -461,18 +486,22 @@ function RoomView({
     setShowChat(true);
   },[isReadingMode]);
 
+  // Keep a ref mirror of the latest shared document for async callbacks.
   useEffect(()=>{
     sharedDocumentRef.current=sharedDocument;
   },[sharedDocument]);
 
+  // Re-seed the live room user list after join/rejoin snapshots.
   useEffect(()=>{
     setUsers(initialUsers||[]);
   },[initialUsers]);
 
+  // Reset broken-avatar markers when a fresh room user payload arrives.
   useEffect(()=>{
     setBrokenAvatarUids({});
   },[users]);
 
+  // Re-apply the reading snapshot whenever the host document or page payload changes.
   useEffect(()=>{
     const nextPage=Math.max(1, Math.floor(Number(initialReadingState?.page ?? initialReadingPage) || 1));
     // Whenever the room snapshot changes, re-seed the local reading controls
@@ -483,11 +512,13 @@ function RoomView({
     setSharedDocument(initialDocument||null);
   },[initialDocument,initialReadingPage,initialReadingState]);
 
+  // Store the latest initial audio sync snapshot in refs used by the music transport.
   useEffect(()=>{
     audioSyncStateRef.current=initialAudioState||null;
     pendingAudioSyncRef.current=initialAudioState||null;
   },[initialAudioState]);
 
+  // Re-apply the latest server video snapshot after the player finishes mounting on join/rejoin.
   useEffect(()=>{
     if(isMusicMode||!initialVideoState){
       return;
@@ -504,6 +535,7 @@ function RoomView({
     pendingSeek.current=null;
   },[initialVideoState,isMusicMode,videoLoaded]);
 
+  // Music mode uses the same pattern with audio-specific sync state and start scheduling.
   useEffect(()=>{
     if(!isMusicMode||!initialAudioState){
       return;
@@ -516,6 +548,7 @@ function RoomView({
     applyAudioSyncRef.current({ audioState: initialAudioState });
   },[initialAudioState,isMusicMode,videoLoaded]);
 
+  // Warn users when a music room expects a matching local file signature they have not loaded yet.
   useEffect(()=>{
     const nextSignature=String(initialVideoMetadata?.fileFingerprint||"");
     requiredAudioSignatureRef.current=nextSignature;
@@ -526,6 +559,7 @@ function RoomView({
     }
   },[initialVideoMetadata?.fileFingerprint,isMusicMode,resourceUrl]);
 
+  // Keep room resource URL/type aligned with the latest room metadata snapshot.
   useEffect(()=>{
     const nextUrl=roomContentUrl||initialVideoMetadata?.contentUrl||"";
     setResourceUrl(nextUrl);
@@ -534,10 +568,12 @@ function RoomView({
     setResourceType(nextType);
   },[roomContentUrl,roomContentType,initialVideoMetadata]);
 
+  // Derive the active YouTube id from the current room resource URL.
   useEffect(()=>{
     setYoutubeVideoId(extractYouTubeId(resourceUrl));
   },[resourceUrl]);
 
+  // Native HTML media sources can be loaded directly and then synced against the pending room state.
   useEffect(()=>{
     if(!resourceUrl||videoLoaded)return;
     if(!isDirectMediaUrl(resourceUrl))return;
@@ -571,6 +607,7 @@ function RoomView({
     };
   },[getActiveHtmlMedia,initialAudioState,initialVideoState,isMusicMode,resourceUrl,tryPlayWithFeedback,videoLoaded,videoName]);
 
+  // The YouTube transport bootstraps the iframe, mirrors native player state, and converts local controls back into socket events.
   useEffect(()=>{
     if(!useYouTubePlayer){
       clearScheduledVideoStart();
@@ -768,6 +805,7 @@ function RoomView({
     }
   },[onSendFriendRequest,onRespondFriendRequest,friendStatusByUid]);
 
+  // Preload friendship state for the current room roster so the header/menu labels are accurate immediately.
   useEffect(()=>{
     let cancelled=false;
 
@@ -813,14 +851,17 @@ function RoomView({
     return()=>{cancelled=true;};
   },[otherUserIdsKey,user.uid]);
 
+  // Keep the newest chat message in view as the conversation grows.
   useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
+  // Track browser fullscreen changes so the footer button stays in sync with actual fullscreen state.
   useEffect(()=>{
     const h=()=>setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange",h);
     return()=>document.removeEventListener("fullscreenchange",h);
   },[]);
 
+  // Finish scrubbing on pointer release even if the pointer leaves the range input.
   useEffect(()=>{
     const handleGlobalPointerUp=()=>{
       if(isScrubbing.current){
@@ -978,6 +1019,7 @@ function RoomView({
     useYouTubePlayer,
     videoLoaded,
   ]);
+  // Keep applySync in a ref so socket listeners can always call the newest sync algorithm.
   useEffect(()=>{applySyncRef.current=applySync;},[applySync]);
 
   const applyAudioSync=useCallback((payload={})=>{
@@ -1080,13 +1122,16 @@ function RoomView({
     useYouTubePlayer,
     videoLoaded,
   ]);
+  // Mirror the latest audio sync applicator for socket listeners and deferred music sync.
   useEffect(()=>{applyAudioSyncRef.current=applyAudioSync;},[applyAudioSync]);
 
+  // If a music sync payload arrives before the player is ready, replay it once media loading finishes.
   useEffect(()=>{
     if(!isMusicMode||!videoLoaded||!pendingAudioSyncRef.current)return;
     applyAudioSyncRef.current({audioState:pendingAudioSyncRef.current});
   },[isMusicMode,videoLoaded,useYouTubePlayer]);
 
+  // Periodically measure music drift and correct large gaps with seeks or small gaps with temporary rate nudges.
   useEffect(()=>{
     if(audioDriftIntervalRef.current){
       clearInterval(audioDriftIntervalRef.current);
@@ -1177,16 +1222,20 @@ function RoomView({
   // ── Socket events ─────────────────────────────────────────────────────────
   useEffect(()=>{
     if(!socket)return;
+    // sync_state is the authoritative playback snapshot for watch/podcast/study rooms.
     const onSync=({videoState,triggeredBy,serverTime})=>{
       if(isMusicMode)return;
       applySyncRef.current(videoState,triggeredBy,serverTime);
     };
+    // audio_sync carries the server-clock-based payload used by music rooms.
     const onAudioSync=payload=>{
       if(!isMusicMode)return;
       applyAudioSyncRef.current(payload);
     };
+    // Chat events keep the room timeline and emoji reaction counts aligned.
     const onMsg=msg=>setMessages(p=>{const n=[...p,{...msg,reactions:msg.reactions||{}}];return n.length>MAX_MESSAGES?n.slice(-MAX_MESSAGES):n;});
     const onReaction=({messageId,reactions})=>setMessages(p=>p.map(m=>m.id===messageId?{...m,reactions}:m));
+    // Reading/document events normalize different payload shapes into one shared document state.
     const applyIncomingReadingDocument=({document,fileUrl,signature,page,totalPages}={})=>{
       if(!isReadingMode)return;
       // Some socket events send a full document object while others send a
@@ -1236,6 +1285,7 @@ function RoomView({
       const resolvedTotalPages=payload?.readingState?.totalPages??payload?.totalPages??payload?.document?.totalPages??0;
       applyReadingState(resolvedPage,resolvedTotalPages);
     };
+    // Room lifecycle handlers keep connectivity, participant counts, and expiry feedback aligned.
     const onUserCount=({users:u})=>{if(u)setUsers(u);};
     const onExpired=()=>{addToast("Room expired","error");onLeave();};
     const onError=({message})=>addToast(message||"Error","error");
@@ -1275,6 +1325,7 @@ function RoomView({
       addToast(`@${un||n} is back — press play when ready`,"success");
     };
 
+    // Sync-wait events pause/resume the local client when someone falls too far behind.
     const onSyncWaiting=({waitForUid,waitForUsername,gap})=>{
       const now=Date.now();
       if(now-lastSyncWaitNoticeAt.current>2500){
@@ -1341,6 +1392,7 @@ function RoomView({
       }
     };
 
+    // Metadata/social side-channel events update source info, host changes, and friend notices.
     const onVideoMetadataUpdated=({metadata,updatedBy})=>{
       if(!metadata)return;
       if(updatedBy&&updatedBy===user.uid)return;
@@ -1428,6 +1480,7 @@ function RoomView({
       setMemberTimes(prev=>({...prev,[pUid]:{username:pUsername,time}}));
     };
 
+    // Register all listeners together so teardown can be a one-to-one mirror.
     socket.on("sync_state",onSync);socket.on("new_message",onMsg);
     socket.on("audio_sync",onAudioSync);
     socket.on("message_reaction_update",onReaction);socket.on("user_count_update",onUserCount);
@@ -1447,6 +1500,7 @@ function RoomView({
     socket.on("host_transferred",onHostTransferred);
     socket.on("reading_page_update",onReadingPage);
 
+    // Remove every listener on unmount/reconnect to prevent duplicate handlers.
     return()=>{
       socket.off("sync_state",onSync);socket.off("new_message",onMsg);
       socket.off("audio_sync",onAudioSync);
@@ -1494,6 +1548,7 @@ function RoomView({
     return()=>clearInterval(heartbeatRef.current);
   },[socket,videoLoaded,isMusicMode,roomCode,username,getPlaybackHealth]);
 
+  // Tear down timers, player instances, and object URLs when the room unmounts.
   useEffect(()=>()=>{
     clearScheduledVideoStart();
     clearInterval(syncIntervalRef.current);clearInterval(heartbeatRef.current);
@@ -1666,10 +1721,12 @@ function RoomView({
     return nextDocument;
   },[applyReadingState,emitSocketAck,roomCode]);
 
+  // Mirror PDF readiness in a ref for callbacks that need the latest value synchronously.
   useEffect(()=>{
     readingReadyRef.current=readingPdfReady;
   },[readingPdfReady]);
 
+  // Verify backend-hosted shared PDFs before rendering so auth errors and mismatches fail cleanly.
   useEffect(()=>{
     if(!isReadingMode||!sharedDocument?.fileUrl){
       readingReadyRef.current=false;
@@ -2140,6 +2197,7 @@ function RoomView({
       fileSignature:isMusicMode?localAudioSignatureRef.current:"",
     });
   },[socket,roomCode,getCurrentPlaybackTime,isCurrentlyPlaying,isMusicMode]);
+  // Keep the latest emitSeek function in a ref for timer-driven and player-driven seek emissions.
   useEffect(()=>{emitSeekRef.current=emitSeek;},[emitSeek]);
 
   const handlePlayPause=()=>{
@@ -2671,7 +2729,7 @@ function RoomView({
       {/* ── Body ── */}
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
-        {/* Video column */}
+        {/* Main stage contains the player/document canvas, overlays, source controls, and floating call window. */}
         <div ref={containerRef} className={`flex-1 flex flex-col overflow-hidden relative min-w-0 min-h-[45dvh] lg:min-h-0 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/70"}`}>
           <div className={`flex-1 relative flex items-center justify-center overflow-hidden ${isReadingMode?"bg-zinc-100":"bg-black"}`}>
             {isMusicMode&&!useYouTubePlayer&&(
@@ -2761,6 +2819,7 @@ function RoomView({
                 <div ref={youtubeHostRef} className="w-full h-full"/>
               </div>
             )}
+            {/* Music mode swaps the video stage for a transport-focused hero layout. */}
             {showMusicStage&&(
               <div className="absolute inset-0 z-[4] flex items-center justify-center p-6">
                 <div className="w-full max-w-4xl rounded-[32px] border border-zinc-800 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_44%),linear-gradient(180deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.98))] px-5 py-5 shadow-[0_32px_100px_rgba(0,0,0,0.5)] sm:px-7 sm:py-6">
@@ -3009,6 +3068,7 @@ function RoomView({
                 <p className="text-zinc-300 text-sm">Loading YouTube player...</p>
               </div>
             )}
+            {/* Generic load state covers empty watch/study rooms before any media or document is active. */}
             {showGenericLoadState&&(
               <div className={`absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/96"}`}>
                 <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center shadow-xl ${isReadingMode?"bg-white border-zinc-300 shadow-zinc-300/30":"bg-zinc-900 border-zinc-700 shadow-black/40"}`}>
@@ -3078,6 +3138,7 @@ function RoomView({
                 </div>
               </div>
             )}
+            {/* The co-reading panel renders the shared PDF plus host-driven page/zoom controls. */}
             {showReadingFrame&&(
               <div className="absolute inset-0 z-[5] overflow-hidden">
                 {readingPdfError?(
@@ -3260,7 +3321,7 @@ function RoomView({
             )}
           </div>
 
-      {/* Controls bar */}
+      {/* Transport controls stay below the stage for non-reading video sessions. */}
           {showBottomTransport&&(
             <div className="px-4 py-3 bg-zinc-900/95 border-t border-zinc-800 flex flex-col gap-2.5 shrink-0 relative z-10">
             <div className="flex items-center gap-2">
@@ -3307,7 +3368,7 @@ function RoomView({
             </div>
           )}
 
-          {/* Draggable call window inside container = visible in fullscreen */}
+          {/* Call window stays inside the stage container so fullscreen mode still shows the call overlay. */}
           {inCall&&(
             <DraggableCallWindow
               inCall={inCall} micOn={micOn} camOn={camOn}
@@ -3319,7 +3380,7 @@ function RoomView({
           )}
         </div>
 
-        {/* Chat panel */}
+        {/* Chat panel contains participant chips, the message timeline, presets, and composer controls. */}
         {showChat&&(
           <div className={`w-full h-[40dvh] max-h-[32rem] lg:h-auto lg:max-h-none lg:w-[30rem] flex flex-col border backdrop-blur-xl shadow-2xl lg:shadow-none shrink-0 lg:border-r-0 lg:border-t-0 lg:border-b-0 ${isReadingMode?"border-zinc-300/80 bg-white/80 lg:border-l-zinc-300 lg:bg-white/75":"border-zinc-700/60 bg-zinc-950/70 lg:border-l-zinc-700/60 lg:bg-zinc-950/65"}`}>
             <div className={`px-4 py-3 border-b flex items-center justify-between ${isReadingMode?"border-zinc-300/70":"border-zinc-700/50"}`}>

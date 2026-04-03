@@ -1,8 +1,17 @@
 /**
- * Lumiere Backend Server
- * - Realtime room sync + chat + calls
- * - Profile/Friends/Invite/Memories APIs
- * - MongoDB support with in-memory fallback
+ * server.js is the thin Lumiere backend bootstrap after the refactor. It wires
+ * together config, utilities, models, services, middleware, routers, and the
+ * socket layer, but intentionally leaves business logic inside the extracted
+ * services/routes/sockets modules.
+ *
+ * Layer responsibilities:
+ * - config/: environment-backed constants, Firebase admin, and CORS policy
+ * - utils/: shared sanitization, normalization, rate limiting, presence, and logging helpers
+ * - models/: Mongo initialization plus the re-exported Mongoose models
+ * - services/: business logic for profiles, friends, sessions, rooms, memories, and more
+ * - middleware/: request authentication and final error serialization
+ * - routes/: thin HTTP endpoints mounted under /api
+ * - sockets/: realtime room state, helpers, auth, and event registration
  */
 "use strict";
 
@@ -10,6 +19,8 @@
 // and root-level `npm start` both load the same Firebase/Mongo credentials.
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
+// Config imports centralize environment-backed constants, admin checks, CORS,
+// and Firebase admin bootstrapping in one place.
 const {
   PORT, CLIENT_ORIGIN, CLIENT_ORIGINS, NODE_ENV,
   JSON_BODY_LIMIT, ROOM_EXPIRY_MS, MAX_MESSAGE_LENGTH,
@@ -40,6 +51,8 @@ const {
   ALLOWED_REACTION_TYPES, DEFAULT_DEV_ORIGINS,
   ADMIN_UIDS, isAdminUser, SESSION_ENGINE_REGISTRY,
 } = require("./config/constants.js");
+// Utils imports provide shared sanitization, normalization, helper math,
+// rate limiting, presence tracking, and structured logging.
 const {
   escapeAngleBrackets, sanitize, sanitizeBio,
   sanitizePhotoURL, sanitizeContentUrl,
@@ -76,6 +89,7 @@ const {
   touchLastSeen,
 } = require("./utils/presence.js");
 const { log, warn, error } = require("./utils/logger.js");
+// Models are imported through db.js so Mongo init and model re-exports live behind one module boundary.
 const { memoryStore } = require("./models/memoryStore.js");
 const {
   initMongo, getMongoConnected,
@@ -88,6 +102,8 @@ const {
   WatchSessionModel, SessionReactionModel,
   MilestoneModel, InsightModel,
 } = require("./models/db.js");
+// Services hold extracted business logic for profiles, social graphs, sessions,
+// notifications, documents, insights, admin reporting, and room persistence.
 const {
   buildBaseProfile, normalizeProfile,
   publicProfile, relationshipWith,
@@ -173,10 +189,13 @@ const {
   listDistinctParticipantsForRoom,
   finalizeVideoSession,
 } = require("./services/room.service.js");
+// Middleware handles request auth and last-resort error serialization.
 const { isAllowedOrigin } = require("./config/cors.js");
 const admin = require("./config/firebase.js");
 const { requireHttpAuth } = require("./middleware/auth.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
+// Socket imports provide shared runtime maps, utility helpers, the shared io
+// getter/setter, and the extracted socket registration entrypoint.
 const { setIo } = require("./sockets/socketHub.js");
 const {
   rooms, pendingRoomUserDisconnects,
@@ -201,6 +220,7 @@ const {
   recordOverlapForLeavingUser,
 } = require("./sockets/roomUtils.js");
 const { registerSocketHandlers } = require("./sockets/index.js");
+// Route imports mount the extracted HTTP surface under the shared /api prefix.
 const uploadsRouter = require("./routes/uploads.routes.js");
 const profileRouter = require("./routes/profile.routes.js");
 const friendsRouter = require("./routes/friends.routes.js");
@@ -216,7 +236,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const helmet = require("helmet");
 const cors = require("cors");
-// ─── Express ──────────────────────────────────────────────────────────────────
+// Express setup configures trust proxy, explicit CORS handling, JSON parsing,
+// and helmet before any routes run. `trust proxy` ensures correct client IPs
+// for rate limiting when the app sits behind a proxy.
 const app = express();
 app.set("trust proxy", 1);
 
@@ -231,6 +253,9 @@ const corsOptions = {
   credentials: true,
 };
 
+// Middleware registration order matters: security headers/CORS/body parsing
+// run first, the shared API rate limiter wraps /api, then routes mount, and
+// the global error handler stays last so it can catch downstream failures.
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: JSON_BODY_LIMIT }));
@@ -245,6 +270,8 @@ app.get("/health", (_req, res) => {
   });
 });
 
+// Route mounting keeps every extracted router under /api so the bootstrap file
+// stays declarative and all HTTP business logic remains in route/service files.
 app.use("/api", uploadsRouter);
 app.use("/api", profileRouter);
 app.use("/api", friendsRouter);
@@ -256,14 +283,19 @@ app.use("/api", insightsRouter);
 app.use("/api", adminRouter);
 app.use(errorHandler);
 
+// http.createServer wraps Express so Socket.IO can share the same HTTP server.
+// Socket.IO reuses the CORS policy and heartbeat settings for the realtime layer.
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: corsOptions,
   pingTimeout: 20000,
   pingInterval: 10000,
 });
+// setIo publishes the live io instance immediately so routes/services can emit outside socket handlers.
 setIo(io);
 
+// Heartbeat sync_state broadcasts keep long-running non-music rooms converged
+// even if a client misses an earlier play/pause/seek event.
 setInterval(() => {
   // Heartbeats keep long-running sessions converged even if a client misses a
   // user-triggered play/pause/seek event.
@@ -274,11 +306,15 @@ setInterval(() => {
   });
 }, SYNC_HEARTBEAT_MS);
 
+// Document pruning enforces the in-memory upload TTL by removing expired PDFs
+// on a fraction of the TTL, but never more often than once per minute.
 setInterval(() => {
   pruneExpiredDocumentUploads();
 }, Math.max(60000, Math.floor(DOCUMENT_UPLOAD_TTL_MS / 6))).unref?.();
 
-// ─── Socket Auth ──────────────────────────────────────────────────────────────
+// Socket auth verifies the Firebase token, rebuilds a trusted identity,
+// hydrates/creates the profile, and opportunistically claims a username if the
+// client asked for one and the account does not already have one.
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -321,7 +357,8 @@ io.use(async (socket, next) => {
   }
 });
 
-// ─── Socket Handlers ──────────────────────────────────────────────────────────
+// roomRuntime bundles hot realtime dependencies into one object so the socket
+// layer receives explicit helpers instead of pulling them in via deep imports.
 const roomRuntime = {
   rooms,
   pendingRoomUserDisconnects,
@@ -367,6 +404,7 @@ const roomRuntime = {
   recordOverlapForLeavingUser,
 };
 
+// roomService bundles persistence-oriented helpers and models used by socket handlers.
 const roomService = {
   log,
   error,
@@ -386,12 +424,14 @@ const roomService = {
   updateRoomCreator,
 };
 
+// registerSocketHandlers wires the extracted auth/connection/event handler tree onto the shared io instance.
 registerSocketHandlers(io, {
   roomRuntime,
   roomService,
 });
 
-// ─── Start ────────────────────────────────────────────────────────────────────
+// start() performs the boot sequence: connect Mongo first, then listen so the
+// process only announces readiness after persistence initialization succeeds.
 async function start() {
   await initMongo();
 
@@ -409,6 +449,8 @@ start().catch((err) => {
   process.exit(1);
 });
 
+// shutdown() gracefully expires live rooms, closes Mongo when present, then
+// stops the shared HTTP/socket server.
 async function shutdown() {
   rooms.forEach((_, code) => expireRoom(code));
 
@@ -423,6 +465,8 @@ async function shutdown() {
   httpServer.close(() => process.exit(0));
 }
 
+// Process handlers funnel OS signals and unhandled promise failures into one
+// consistent shutdown/logging path for local dev and production.
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 process.on("unhandledRejection", (err) => {

@@ -1,7 +1,16 @@
+/**
+ * Preset messages are short canned chat lines grouped by session mode so the
+ * room UI can offer one-tap reactions that fit watch, reading, study, or music sessions.
+ */
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { SESSION_PRESET_MESSAGES } from "../config/roomModes";
 
+/**
+ * Renders the preset message picker for the current session mode.
+ * @param {{onSelect: (text: string) => void, onClose: () => void, sessionMode?: string}} props - Session mode plus selection/close callbacks.
+ * @returns {JSX.Element} The preset picker panel.
+ */
 function PresetPanel({onSelect,onClose,sessionMode="watch"}){
   const modeMessages=SESSION_PRESET_MESSAGES[sessionMode]||SESSION_PRESET_MESSAGES.watch;
   const categories=[...new Set(modeMessages.map(item=>item.category).filter(Boolean))];
@@ -15,6 +24,7 @@ function PresetPanel({onSelect,onClose,sessionMode="watch"}){
   ];
   const filtered=filter==="all"?modeMessages:modeMessages.filter(m=>m.category===filter);
 
+  // Reset the category filter whenever the room switches to a different session mode.
   useEffect(()=>{
     setFilter("all");
   },[sessionMode]);

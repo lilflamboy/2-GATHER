@@ -1,3 +1,8 @@
+/**
+ * The draggable call window renders the floating WebRTC call overlay so camera
+ * feeds do not permanently cover the shared media. Users can drag, resize,
+ * minimize, and maximize it while staying in the room.
+ */
 import { useRef, useState, useEffect } from "react";
 import {
   GripHorizontal, Minimize, Maximize,
@@ -5,16 +10,24 @@ import {
 } from "lucide-react";
 import VideoTile from "./VideoTile";
 
+/**
+ * Renders the movable in-room call surface.
+ * @param {{inCall: boolean, micOn: boolean, camOn: boolean, localStreamRef: {current: MediaStream|null}, remoteStreams: Record<string, MediaStream>, users: Array, myUid: string, myName: string, onLeave: () => void, onToggleMic: () => void, onToggleCam: () => void, containerRef: {current: HTMLElement|null}}} props - Call state, stream refs, callbacks, and the viewport container.
+ * @returns {JSX.Element} The floating call window.
+ */
 function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,users,myUid,myName,onLeave,onToggleMic,onToggleCam,containerRef}){
+  // Refs store transient drag/resize geometry without forcing rerenders on every pointer move.
   const winRef=useRef(null);
   const dragRef=useRef(null);
   const resizeRef=useRef(null);
   const prevLayoutRef=useRef(null);
+  // Position and size state drive the actual floating window layout.
   const [pos,setPos]=useState({x:16,y:64});
   const [size,setSize]=useState({w:300,h:220});
   const [minimized,setMinimized]=useState(false);
   const [maximized,setMaximized]=useState(false);
 
+  // Drag start captures the offset between the pointer and the current window origin.
   const onDragStart=e=>{
     if(e.target.closest(".call-btn"))return;
     e.preventDefault();
@@ -23,6 +36,7 @@ function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,us
     const rect=containerRef.current?.getBoundingClientRect()||{left:0,top:0};
     dragRef.current={ox:cx-rect.left-pos.x,oy:cy-rect.top-pos.y};
   };
+  // Global move/up listeners keep dragging responsive even if the pointer leaves the header.
   useEffect(()=>{
     const onMove=e=>{
       if(!dragRef.current)return;
@@ -37,6 +51,7 @@ function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,us
     return()=>{window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);window.removeEventListener("touchmove",onMove);window.removeEventListener("touchend",onUp);};
   },[size.w,containerRef]);
 
+  // Re-clamp the window when the viewport changes or when the minimized width changes.
   useEffect(()=>{
     const clamp=()=>{
       const rect=containerRef.current?.getBoundingClientRect();
@@ -51,12 +66,14 @@ function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,us
     return()=>window.removeEventListener("resize",clamp);
   },[size.w,size.h,minimized,containerRef]);
 
+  // Resize start captures the pointer and current window dimensions.
   const onResizeStart=e=>{
     e.preventDefault();e.stopPropagation();
     const cx=e.touches?e.touches[0].clientX:e.clientX;
     const cy=e.touches?e.touches[0].clientY:e.clientY;
     resizeRef.current={sx:cx,sy:cy,sw:size.w,sh:size.h};
   };
+  // Resize listeners track pointer movement outside the resize handle until release.
   useEffect(()=>{
     const onMove=e=>{
       if(!resizeRef.current)return;
@@ -70,9 +87,11 @@ function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,us
     return()=>{window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);window.removeEventListener("touchmove",onMove);window.removeEventListener("touchend",onUp);};
   },[]);
 
+  // Derive the grid layout from the number of local + remote tiles currently active.
   const remoteEntries=Object.entries(remoteStreams);
   const totalTiles=1+remoteEntries.length;
   const cols=totalTiles<=1?1:totalTiles<=4?2:3;
+  // Maximize remembers the old layout so restoring returns to the prior drag position.
   const toggleMaximize=()=>{
     const rect=containerRef.current?.getBoundingClientRect();
     if(!rect)return;
@@ -118,11 +137,13 @@ function DraggableCallWindow({inCall,micOn,camOn,localStreamRef,remoteStreams,us
       </div>
       {!minimized&&(
         <div style={{height:size.h,gridTemplateColumns:`repeat(${cols},1fr)`}} className="grid gap-1 p-1 bg-zinc-950">
+          {/* Always render the local stream first so mic/cam toggles feel anchored to "you". */}
           <VideoTile stream={localStreamRef.current} name={myName} muted/>
           {remoteEntries.map(([uid,stream])=>{
             const u=users.find(x=>x.uid===uid);
             return<VideoTile key={uid} stream={stream} name={u?.name?.split(" ")[0]||"Friend"}/>;
           })}
+          {/* An empty remote state keeps the call window useful before anyone else joins. */}
           {remoteEntries.length===0&&(
             <div className="flex items-center justify-center bg-zinc-900 rounded-xl">
               <span className="text-zinc-600 text-xs text-center px-3">Waiting for others<br/>to join…</span>

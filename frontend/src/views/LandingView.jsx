@@ -1,3 +1,7 @@
+/**
+ * LandingView is the public authentication entry screen. It supports Google
+ * sign-in, email/password sign-in, account creation, and password reset.
+ */
 import { useState } from "react";
 import {
   signInWithPopup,
@@ -10,7 +14,13 @@ import {
 import { Film } from "lucide-react";
 import { auth, googleProvider } from "../firebase.js";
 
+/**
+ * Renders the login and registration screen.
+ * @param {{addToast?: (message: string, type?: string) => void}} props - Toast helper for surfacing auth feedback.
+ * @returns {JSX.Element} The public auth view.
+ */
 function LandingView({addToast}){
+  // Local form state drives the login/register mode and the current input values.
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
@@ -22,6 +32,7 @@ function LandingView({addToast}){
   const [error,setError]=useState("");
   const [info,setInfo]=useState("");
 
+  // Google sign-in delegates the full popup-based OAuth flow to Firebase Auth.
   const signInGoogle=async()=>{
     setGoogleLoading(true);
     setError("");
@@ -36,6 +47,7 @@ function LandingView({addToast}){
     }
   };
 
+  // Email submit handles both login and sign-up, including inline validation and verification email dispatch.
   const submitEmail=async(e)=>{
     e.preventDefault();
     setSubmitting(true);
@@ -62,6 +74,7 @@ function LandingView({addToast}){
     }
   };
 
+  // Password reset reuses the email input so the user does not need a second form.
   const handleForgotPassword=async()=>{
     if(!email.trim()){
       const msg="Enter your email first, then click reset password.";
@@ -102,6 +115,7 @@ function LandingView({addToast}){
         </div>
 
         <div className="w-full bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 sm:p-6">
+          {/* Mode tabs switch the form between login and account creation. */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             <button onClick={()=>setMode("login")}
               className={`py-2 rounded-lg text-sm font-medium transition-colors ${mode==="login"?"bg-amber-300 text-zinc-950":"bg-zinc-800 text-zinc-400 hover:text-zinc-200"}`}>
@@ -113,6 +127,7 @@ function LandingView({addToast}){
             </button>
           </div>
 
+          {/* The email/password form keeps validation and Firebase errors inline. */}
           <form onSubmit={submitEmail} className="space-y-3">
             {mode==="register"&&(
               <input
@@ -175,6 +190,7 @@ function LandingView({addToast}){
             <div className="h-px flex-1 bg-zinc-800"/>
           </div>
 
+          {/* Google auth is the alternate auth path for users who prefer one-tap sign-in. */}
           <button onClick={signInGoogle} disabled={googleLoading}
             className="w-full flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium py-2.5 rounded-lg transition-colors disabled:opacity-60 border border-zinc-700">
             {googleLoading
