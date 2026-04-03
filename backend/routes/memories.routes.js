@@ -30,7 +30,7 @@ const {
   sanitizeSharedMemoryGenre,
   sanitizeSharedMemoryMoodTag,
 } = require('../utils/sanitize.js')
-const { isOnline, socketIdsForUser } =
+const { isOnlineVisible, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
   require('../sockets/socketHub.js')
@@ -73,7 +73,7 @@ router.get('/shared-memories', requireHttpAuth, async (req, res) => {
         partner: partner
           ? {
             ...publicProfile(partner),
-            online: isOnline(partner.uid),
+            online: isOnlineVisible(partner, req.authUser.uid),
           }
           : {
             uid: partnerId,
@@ -88,7 +88,10 @@ router.get('/shared-memories', requireHttpAuth, async (req, res) => {
 
     return res.json({ items })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load shared memories' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load shared memories' : (error.message || 'Could not load shared memories'),
+    })
   }
 })
 
@@ -140,36 +143,32 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
         reactionCount,
       },
     })
-    await createNotification({
-      recipientUid: partnerUid,
-      senderUid: req.authUser.uid,
-      type: 'shared_memory_added',
-      referenceId: row.id,
-      roomCode,
-      payload: { noteLength: memoryNote.length },
-      actionRequired: false,
-    })
-    await addMemoryEvent({
-      users: [req.authUser.uid, partnerUid],
-      type: 'shared_memory_created',
-      roomCode,
-      payload: {
-        memoryId: row.id,
-        sessionMode,
-        genre,
-        moodTag,
-      },
-      occurredAt: date,
-    }).catch(() => {})
-
-    socketIdsForUser(partnerUid).forEach((socketId) => {
-      io?.to(socketId).emit('shared_memory_added', {
-        fromUid: req.authUser.uid,
-        fromUsername: me.username || '',
-        fromName: me.displayName || '',
+    if (partner.settings?.memoryNudges !== false) {
+      await createNotification({
+        recipientUid: partnerUid,
+        senderUid: req.authUser.uid,
+        type: 'shared_memory_added',
+        referenceId: row.id,
         roomCode,
+        payload: { noteLength: memoryNote.length },
+        actionRequired: false,
       })
-    })
+
+      socketIdsForUser(partnerUid).forEach((socketId) => {
+        io?.to(socketId).emit('shared_memory_added', {
+          fromUid: req.authUser.uid,
+          fromUsername: me.username || '',
+          fromName: me.displayName || '',
+          roomCode,
+        })
+      })
+    }
+    await addMemoryEvent(
+      req.authUser.uid,
+      partnerUid,
+      Math.max(0, sessionMinutes * 60),
+      roomCode
+    ).catch(() => {})
 
     return res.status(201).json({
       item: {
@@ -186,12 +185,15 @@ router.post('/shared-memories', requireHttpAuth, async (req, res) => {
         createdBy: row.createdBy,
         partner: {
           ...publicProfile(partner),
-          online: isOnline(partner.uid),
+          online: isOnlineVisible(partner, req.authUser.uid),
         },
       },
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not create shared memory' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not create shared memory' : (error.message || 'Could not create shared memory'),
+    })
   }
 })
 

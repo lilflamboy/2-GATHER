@@ -546,17 +546,19 @@ function registerVideoSocketHandlers({
     }
   });
 
-  socket.on("time_update", ({ roomCode, username: uname, time, bufferAhead, readyState, isBuffering } = {}) => {
+  socket.on("time_update", ({ roomCode, username: _ignoredUsername, time, bufferAhead, readyState, isBuffering } = {}) => {
     if (shouldDropSocketEvent("time_update")) return;
     const room = rooms.get(roomCode);
     if (!room || !room.users.has(uid)) return;
+    const roomUser = room.users.get(uid);
+    const safeUsername = roomUser?.username || roomUser?.name || username || name || 'friend';
 
     const rawBufferAhead = Number(bufferAhead);
     const rawReadyState = Number(readyState);
     // These per-user samples drive the server-side wait-mode heuristic that
     // pauses faster members when someone is buffering too far behind.
     room.memberTimes.set(uid, {
-      username: uname,
+      username: safeUsername,
       time: clampTime(time),
       updatedAt: Date.now(),
       bufferAhead: Number.isFinite(rawBufferAhead) ? Math.max(0, Math.min(120, rawBufferAhead)) : null,
@@ -566,7 +568,7 @@ function registerVideoSocketHandlers({
 
     socket.to(roomCode).emit("member_time_update", {
       uid,
-      username: uname,
+      username: safeUsername,
       time: clampTime(time),
     });
 

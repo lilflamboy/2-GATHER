@@ -25,6 +25,17 @@ function isOnline(uid) {
   return onlineSocketsByUid.has(uid);
 }
 
+function isOnlineVisible(profile, viewerUid = "") {
+  if (!profile?.uid) return false;
+  if (String(profile.uid) === String(viewerUid || "")) {
+    return isOnline(profile.uid);
+  }
+  if (profile.settings?.showOnlineStatus === false) {
+    return false;
+  }
+  return isOnline(profile.uid);
+}
+
 function socketIdsForUser(uid) {
   const set = onlineSocketsByUid.get(uid);
   return set ? [...set] : [];
@@ -48,6 +59,7 @@ module.exports = {
   markOnline,
   markOffline,
   isOnline,
+  isOnlineVisible,
   socketIdsForUser,
   touchLastSeen,
 };

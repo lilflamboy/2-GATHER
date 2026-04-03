@@ -23,7 +23,7 @@ const {
 } = require('../services/relationship.service.js')
 const { uniqueStrings } =
   require('../utils/helpers.js')
-const { isOnline } =
+const { isOnlineVisible, isOnline } =
   require('../utils/presence.js')
 
 router.get('/watch-sessions', requireHttpAuth, async (req, res) => {
@@ -73,18 +73,21 @@ router.get('/watch-sessions', requireHttpAuth, async (req, res) => {
               displayName: participantUid === req.authUser.uid ? 'You' : 'Friend',
               photoURL: '',
               bio: '',
-              online: isOnline(participantUid),
+              online: participantUid === req.authUser.uid ? isOnline(participantUid) : false,
             }
           }
           return {
             ...publicProfile(profile),
-            online: isOnline(profile.uid),
+            online: isOnlineVisible(profile, req.authUser.uid),
           }
         }),
       })),
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load watch sessions' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load watch sessions' : (error.message || 'Could not load watch sessions'),
+    })
   }
 })
 
@@ -107,7 +110,10 @@ router.get('/milestones', requireHttpAuth, async (req, res) => {
       })),
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load milestones' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load milestones' : (error.message || 'Could not load milestones'),
+    })
   }
 })
 
@@ -146,7 +152,10 @@ router.get('/insights', requireHttpAuth, async (req, res) => {
     const rows = await listInsightsForUser(req.authUser.uid, { year: hasYear ? year : null, limit })
     return res.json({ items: rows })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load insights' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load insights' : (error.message || 'Could not load insights'),
+    })
   }
 })
 

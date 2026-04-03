@@ -29,10 +29,12 @@ const { normalizeSessionMode } =
   require('../utils/normalize.js')
 const { uniqueStrings } =
   require('../utils/helpers.js')
-const { isOnline, socketIdsForUser } =
+const { isOnlineVisible, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
   require('../sockets/socketHub.js')
+const { rooms } =
+  require('../sockets/roomStore.js')
 
 router.get('/friends', requireHttpAuth, async (req, res) => {
   const [me, friendGraph] = await Promise.all([
@@ -49,7 +51,7 @@ router.get('/friends', requireHttpAuth, async (req, res) => {
 
   const withPresence = (profile) => ({
     ...publicProfile(profile),
-    online: isOnline(profile.uid),
+    online: isOnlineVisible(profile, req.authUser.uid),
   })
 
   return res.json({
@@ -91,7 +93,10 @@ router.post('/friends/request', requireHttpAuth, async (req, res) => {
 
     return res.json({ status: result.status })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not send request' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not send request' : (error.message || 'Could not send request'),
+    })
   }
 })
 
@@ -149,7 +154,10 @@ router.post('/friends/respond', requireHttpAuth, async (req, res) => {
 
     return res.json({ status: action })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not respond to request' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not respond to request' : (error.message || 'Could not respond to request'),
+    })
   }
 })
 
@@ -159,6 +167,10 @@ router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
     const roomCode = String(req.body?.roomCode || '').trim().toUpperCase()
     if (!friendUid || !roomCode) {
       return res.status(400).json({ error: 'friendUid and roomCode are required' })
+    }
+    const room = rooms.get(roomCode)
+    if (!room || !room.users.has(req.authUser.uid)) {
+      return res.status(403).json({ error: 'You can only invite friends to rooms you are currently in' })
     }
 
     const [me, friend] = await Promise.all([
@@ -216,8 +228,11 @@ router.post('/friends/invite-room', requireHttpAuth, async (req, res) => {
     })
 
     return res.json({ delivered: sockets.length > 0, deliveries: sockets.length })
-  } catch {
-    return res.status(500).json({ error: 'Could not send invite' })
+  } catch (error) {
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not send invite' : (error.message || 'Could not send invite'),
+    })
   }
 })
 
@@ -252,7 +267,7 @@ router.get('/relationships', requireHttpAuth, async (req, res) => {
         partner: partner
           ? {
             ...publicProfile(partner),
-            online: isOnline(partner.uid),
+            online: isOnlineVisible(partner, req.authUser.uid),
           }
           : {
             uid: partnerUid,
@@ -316,7 +331,10 @@ router.patch('/relationships/tag', requireHttpAuth, async (req, res) => {
       },
     })
   } catch (error) {
-    return res.status(500).json({ error: error.message || 'Could not update relationship tag' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not update relationship tag' : (error.message || 'Could not update relationship tag'),
+    })
   }
 })
 

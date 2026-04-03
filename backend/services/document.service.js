@@ -35,11 +35,12 @@ function getUploadedDocumentById(documentId) {
   return row
 }
 
-function upsertDocumentUpload({ ownerUid, fileName, mimeType, base64Data }) {
+function upsertDocumentUpload({ ownerUid, roomCode = "", fileName, mimeType, base64Data }) {
   // Uploaded PDFs are short-lived and room-scoped, so we store them in memory
   // with a TTL instead of introducing a heavier object-storage dependency here.
   const normalizedOwnerUid = String(ownerUid || "").trim()
   if (!normalizedOwnerUid) throw new Error("Missing owner uid")
+  const normalizedRoomCode = String(roomCode || "").trim().toUpperCase().slice(0, 32)
   const normalizedName = sanitizeUploadFileName(fileName)
   const normalizedMime = normalizeDocumentMimeType(mimeType, normalizedName)
   if (!normalizedMime) throw new Error("Unsupported document type")
@@ -61,6 +62,7 @@ function upsertDocumentUpload({ ownerUid, fileName, mimeType, base64Data }) {
   const row = {
     id,
     ownerUid: normalizedOwnerUid,
+    roomCode: normalizedRoomCode,
     fileName: normalizedName,
     mimeType: normalizedMime,
     bytes,

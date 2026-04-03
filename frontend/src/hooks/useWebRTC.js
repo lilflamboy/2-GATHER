@@ -39,7 +39,12 @@ function useWebRTC({socket,roomCode,myUid,users,addToast}){
     };
     peerConnsRef.current[targetUid]=pc;
     if(isInitiator){
-      pc.createOffer().then(o=>{pc.setLocalDescription(o);socket.emit("webrtc_offer",{roomCode,offer:o,targetUid});}).catch(console.error);
+      pc.createOffer()
+        .then(async o=>{
+          await pc.setLocalDescription(o);
+          socket.emit("webrtc_offer",{roomCode,offer:o,targetUid});
+        })
+        .catch(console.error);
     }
     return pc;
   },[socket,roomCode,refresh]);

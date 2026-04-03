@@ -10,20 +10,39 @@ const {
   upsertDocumentUpload,
   getUploadedDocumentById,
 } = require('../services/document.service.js')
+const { listRoomParticipantsByCode } =
+  require('../services/room.service.js')
 const { buildDocumentSignature } =
   require('../utils/helpers.js')
+const { rooms } =
+  require('../sockets/roomStore.js')
 
 router.post('/uploads/document', requireHttpAuth, async (req, res) => {
   try {
+    const roomCode = String(req.body?.roomCode || '').trim().toUpperCase()
     const fileName = String(req.body?.fileName || '').trim()
     const mimeType = String(req.body?.mimeType || '').trim()
     const base64Data = String(req.body?.base64Data || '').trim()
+    if (!roomCode) {
+      return res.status(400).json({ error: 'roomCode is required' })
+    }
     if (!base64Data) {
       return res.status(400).json({ error: 'base64Data is required' })
     }
 
+    const liveRoom = rooms.get(roomCode)
+    let canAccessRoom = !!(liveRoom && liveRoom.users.has(req.authUser.uid))
+    if (!canAccessRoom) {
+      const participants = await listRoomParticipantsByCode(roomCode)
+      canAccessRoom = participants.some((row) => row.userId === req.authUser.uid)
+    }
+    if (!canAccessRoom) {
+      return res.status(403).json({ error: 'You do not have access to this room document' })
+    }
+
     const uploaded = upsertDocumentUpload({
       ownerUid: req.authUser.uid,
+      roomCode,
       fileName,
       mimeType,
       base64Data,
@@ -40,14 +59,30 @@ router.post('/uploads/document', requireHttpAuth, async (req, res) => {
       expiresAt: uploaded.expiresAt,
     })
   } catch (error) {
-    return res.status(400).json({ error: error.message || 'Could not upload document' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not upload document' : (error.message || 'Could not upload document'),
+    })
   }
 })
 
-router.get('/uploads/document/:documentId', async (req, res) => {
+router.get('/uploads/document/:documentId', requireHttpAuth, async (req, res) => {
   const documentId = String(req.params.documentId || '').trim()
   const row = getUploadedDocumentById(documentId)
   if (!row) return res.status(404).send('Document not found or expired')
+
+  let canAccessDocument = row.ownerUid === req.authUser.uid
+  if (!canAccessDocument && row.roomCode) {
+    const liveRoom = rooms.get(String(row.roomCode || '').trim().toUpperCase())
+    canAccessDocument = !!(liveRoom && liveRoom.users.has(req.authUser.uid))
+    if (!canAccessDocument) {
+      const participants = await listRoomParticipantsByCode(row.roomCode)
+      canAccessDocument = participants.some((participant) => participant.userId === req.authUser.uid)
+    }
+  }
+  if (!canAccessDocument) {
+    return res.status(403).send('You do not have access to this document')
+  }
 
   try {
     const buffer = Buffer.from(row.base64Data, 'base64')

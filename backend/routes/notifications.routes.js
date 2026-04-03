@@ -15,7 +15,7 @@ const {
 } = require('../services/profile.service.js')
 const { uniqueStrings } =
   require('../utils/helpers.js')
-const { isOnline } =
+const { isOnlineVisible } =
   require('../utils/presence.js')
 
 router.get('/notifications', requireHttpAuth, async (req, res) => {
@@ -48,7 +48,7 @@ router.get('/notifications', requireHttpAuth, async (req, res) => {
           sender: sender
             ? {
               ...publicProfile(sender),
-              online: isOnline(sender.uid),
+              online: isOnlineVisible(sender, req.authUser.uid),
             }
             : item.senderUid
               ? {

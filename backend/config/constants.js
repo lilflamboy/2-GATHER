@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 5001;
 const CLIENT_ORIGIN = process.env.CLIENT_URL || "http://localhost:5173";
 const NODE_ENV = process.env.NODE_ENV || "development";
 const MONGODB_URI = process.env.MONGODB_URI || "";
-const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "14mb";
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "32mb";
 
 const DEFAULT_DEV_ORIGINS = [
   "http://localhost:5173",

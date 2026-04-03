@@ -16,9 +16,11 @@ const { publicProfile } =
   require('../services/profile.service.js')
 const { logActivity } =
   require('../services/session.service.js')
-const { sanitize } =
+const {
+  sanitize, sanitizeContentUrl,
+} =
   require('../utils/sanitize.js')
-const { isOnline, socketIdsForUser } =
+const { isOnlineVisible, socketIdsForUser } =
   require('../utils/presence.js')
 const { getIo } =
   require('../sockets/socketHub.js')
@@ -43,12 +45,15 @@ router.get('/couple-space', requireHttpAuth, async (req, res) => {
     return res.json({
       partner: {
         ...publicProfile(partner),
-        online: isOnline(partner.uid),
+        online: isOnlineVisible(partner, req.authUser.uid),
       },
       space: mapped,
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load couple space' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load couple space' : (error.message || 'Could not load couple space'),
+    })
   }
 })
 
@@ -56,10 +61,12 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
   try {
     const partnerUid = String(req.body?.partnerUid || '').trim()
     const title = sanitize(String(req.body?.title || '')).slice(0, MAX_WATCHLIST_TITLE_LENGTH)
-    const url = String(req.body?.url || '').trim().slice(0, MAX_WATCHLIST_URL_LENGTH)
+    const rawUrl = String(req.body?.url || '').trim()
+    const url = sanitizeContentUrl(rawUrl).slice(0, MAX_WATCHLIST_URL_LENGTH)
     const notes = sanitize(String(req.body?.notes || '')).slice(0, MAX_WATCHLIST_NOTES_LENGTH)
     if (!partnerUid) return res.status(400).json({ error: 'partnerUid is required' })
     if (!title) return res.status(400).json({ error: 'title is required' })
+    if (rawUrl && !url) return res.status(400).json({ error: 'url must be a valid http or https URL' })
 
     const { me, partner } = await getValidatedCoupleUsers(req.authUser.uid, partnerUid)
     const space = await getCoupleSpaceByUsers(req.authUser.uid, partnerUid, true)
@@ -106,11 +113,14 @@ router.post('/couple-space/item', requireHttpAuth, async (req, res) => {
     })
 
     return res.json({
-      partner: { ...publicProfile(partner), online: isOnline(partner.uid) },
+      partner: { ...publicProfile(partner), online: isOnlineVisible(partner, req.authUser.uid) },
       space: mapped,
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not add watchlist item' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not add watchlist item' : (error.message || 'Could not add watchlist item'),
+    })
   }
 })
 
@@ -145,13 +155,18 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
       }
     } else if (action === 'edit') {
       const nextTitle = sanitize(String(req.body?.title || currentItem.title)).slice(0, MAX_WATCHLIST_TITLE_LENGTH)
+      const rawUrl = String(req.body?.url ?? currentItem.url).trim()
+      const nextUrl = sanitizeContentUrl(rawUrl).slice(0, MAX_WATCHLIST_URL_LENGTH)
       if (!nextTitle) {
         return res.status(400).json({ error: 'title is required' })
+      }
+      if (rawUrl && !nextUrl) {
+        return res.status(400).json({ error: 'url must be a valid http or https URL' })
       }
       watchlist[itemIndex] = {
         ...currentItem,
         title: nextTitle,
-        url: String(req.body?.url ?? currentItem.url).trim().slice(0, MAX_WATCHLIST_URL_LENGTH),
+        url: nextUrl,
         notes: sanitize(String(req.body?.notes ?? currentItem.notes)).slice(0, MAX_WATCHLIST_NOTES_LENGTH),
         updatedAt: new Date(),
       }
@@ -184,11 +199,14 @@ router.patch('/couple-space/item', requireHttpAuth, async (req, res) => {
     })
 
     return res.json({
-      partner: { ...publicProfile(partner), online: isOnline(partner.uid) },
+      partner: { ...publicProfile(partner), online: isOnlineVisible(partner, req.authUser.uid) },
       space: mapped,
     })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not update watchlist item' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not update watchlist item' : (error.message || 'Could not update watchlist item'),
+    })
   }
 })
 

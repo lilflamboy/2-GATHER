@@ -50,7 +50,10 @@ router.post('/username/claim', requireHttpAuth, async (req, res) => {
     })
     return res.json({ profile: publicProfile(profile) })
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not claim username' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not claim username' : (error.message || 'Could not claim username'),
+    })
   }
 })
 

@@ -114,6 +114,7 @@ export function useAuthSession({
           // Signing out must clear every room-scoped state bucket so a later
           // login never inherits stale playback/chat/session data.
           setUser(null);socketApiRef.current.cleanupSocket();clearSession();setView("lobby");setRoomCode(null);
+          setSavedCode(null);
           setProfile(null);
           setRoomType("friends");
           setSessionMode("watch");
@@ -203,11 +204,12 @@ export function useAuthSession({
 
   const handleSignOut=useCallback(()=>{
     clearSession();
+    setSavedCode(null);
     setIncomingInvites([]);
     resetFriendsState();
     socketApiRef.current.cleanupSocket();
     signOut(auth);
-  },[resetFriendsState,socketApiRef]);
+  },[resetFriendsState,setSavedCode,socketApiRef]);
 
   const avatarUrl=profile?.photoURL||user?.photoURL||"";
 

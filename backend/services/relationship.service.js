@@ -9,7 +9,9 @@ const { memoryStore } =
 const {
   uniqueStrings, getProfileStoreCopy,
 } = require('../utils/helpers.js')
-const { sanitize } =
+const {
+  sanitize, sanitizeContentUrl,
+} =
   require('../utils/sanitize.js')
 const {
   ALLOWED_RELATIONSHIP_TYPES,
@@ -39,7 +41,7 @@ function normalizeWatchlistItem(item = {}) {
   return {
     id: String(item.id || ""),
     title: sanitize(String(item.title || "")).slice(0, MAX_WATCHLIST_TITLE_LENGTH),
-    url: String(item.url || "").trim().slice(0, MAX_WATCHLIST_URL_LENGTH),
+    url: sanitizeContentUrl(item.url || "").slice(0, MAX_WATCHLIST_URL_LENGTH),
     notes: sanitize(String(item.notes || "")).slice(0, MAX_WATCHLIST_NOTES_LENGTH),
     done: !!item.done,
     addedBy: String(item.addedBy || ""),

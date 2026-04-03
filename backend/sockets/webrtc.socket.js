@@ -35,11 +35,15 @@ function registerWebRTCSocketHandlers({
 
   socket.on("call_joined", ({ roomCode } = {}) => {
     if (shouldDropSocketEvent("call_joined")) return;
+    const room = rooms.get(roomCode);
+    if (!room || !room.users.has(uid)) return;
     socket.to(roomCode).emit("peer_joined_call", { uid, name });
   });
 
   socket.on("call_left", ({ roomCode } = {}) => {
     if (shouldDropSocketEvent("call_left")) return;
+    const room = rooms.get(roomCode);
+    if (!room || !room.users.has(uid)) return;
     socket.to(roomCode).emit("peer_left_call", { uid });
   });
 }

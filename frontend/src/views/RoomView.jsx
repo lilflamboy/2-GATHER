@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { auth } from "../firebase.js";
 import CoReadingPdfViewer, { getPdfPageCountFromArrayBuffer } from "../CoReadingPdfViewer.jsx";
 import { getSessionEngine } from "../engines/index.js";
 import { extractYouTubeId } from "../engines/engineUtils.js";
@@ -1441,6 +1442,7 @@ function RoomView({
         Authorization:`Bearer ${token}`,
       },
       body:JSON.stringify({
+        roomCode,
         fileName:file.name,
         mimeType:file.type||"application/pdf",
         base64Data:toBase64(arrayBuffer),
@@ -1479,7 +1481,11 @@ function RoomView({
       };
     }
 
-    const res=await fetch(documentInfo.fileUrl,{method:"HEAD"});
+    const token=await auth.currentUser?.getIdToken();
+    const res=await fetch(documentInfo.fileUrl,{
+      method:"HEAD",
+      headers:token?{Authorization:`Bearer ${token}`}:{},
+    });
     if(!res.ok){
       throw new Error("Could not verify the shared PDF");
     }
@@ -1920,11 +1926,30 @@ function RoomView({
     setVideoLoaded(false);
     addToast("Resource linked in companion mode", "info");
   };
-  const openResourceInNewTab=()=>{
+  const openResourceInNewTab=async()=>{
     const targetUrl=sharedDocument?.fileUrl||resourceUrl;
     if(!targetUrl||!isHttpUrl(targetUrl)){
       addToast("No external resource link available","info");
       return;
+    }
+    if(isSharedUploadUrl(targetUrl)){
+      try{
+        const token=await auth.currentUser?.getIdToken();
+        const res=await fetch(targetUrl,{
+          headers:token?{Authorization:`Bearer ${token}`}:{},
+        });
+        if(!res.ok){
+          throw new Error("Could not open the shared PDF");
+        }
+        const blob=await res.blob();
+        const objectUrl=URL.createObjectURL(blob);
+        window.open(objectUrl,"_blank","noopener,noreferrer");
+        setTimeout(()=>URL.revokeObjectURL(objectUrl),60000);
+        return;
+      }catch(error){
+        addToast(error.message||"Could not open the shared PDF","error");
+        return;
+      }
     }
     window.open(targetUrl,"_blank","noopener,noreferrer");
   };
@@ -2947,6 +2972,7 @@ function RoomView({
                   >
                     <CoReadingPdfViewer
                       fileUrl={sharedDocument?.fileUrl}
+                      requiresAuth={isSharedUploadUrl(sharedDocument?.fileUrl)}
                       page={readingPage}
                       onDocumentLoadSuccess={numPages=>{
                         const safePage=applyReadingState(readingPage,numPages);

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { auth } from "./firebase.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -23,10 +24,12 @@ export default function CoReadingPdfViewer({
   page,
   onDocumentLoadSuccess,
   onDocumentLoadError,
+  requiresAuth = false,
 }) {
   const shellRef = useRef(null);
   const [pageWidth, setPageWidth] = useState(760);
   const [isRenderingPage, setIsRenderingPage] = useState(true);
+  const [authToken, setAuthToken] = useState("");
 
   useEffect(() => {
     if (!shellRef.current || typeof ResizeObserver !== "function") return undefined;
@@ -46,6 +49,35 @@ export default function CoReadingPdfViewer({
     setIsRenderingPage(true);
   }, [fileUrl, page]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!requiresAuth || !fileUrl) {
+      setAuthToken("");
+      return undefined;
+    }
+
+    auth.currentUser?.getIdToken()
+      .then((token) => {
+        if (!cancelled) setAuthToken(String(token || ""));
+      })
+      .catch(() => {
+        if (!cancelled) setAuthToken("");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUrl, requiresAuth]);
+
+  const documentFile = requiresAuth && authToken
+    ? {
+      url: fileUrl,
+      httpHeaders: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+    : fileUrl;
+
   return (
     <div ref={shellRef} className="relative h-full w-full overflow-auto bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.08),_transparent_48%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
       {isRenderingPage && (
@@ -59,7 +91,7 @@ export default function CoReadingPdfViewer({
       <div className="mx-auto flex min-h-full w-full max-w-[920px] items-start justify-center px-4 py-6 sm:px-6 sm:py-8">
         <Document
           key={fileUrl}
-          file={fileUrl}
+          file={documentFile}
           loading={null}
           error={null}
           onLoadSuccess={({ numPages }) => {

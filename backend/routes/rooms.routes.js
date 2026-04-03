@@ -14,7 +14,10 @@ router.get('/room-history/:roomCode', requireHttpAuth, async (req, res) => {
     const payload = await getRoomHistorySnapshot(req.params.roomCode, req.authUser.uid)
     return res.json(payload)
   } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message || 'Could not load room history' })
+    const status = error.status || 500
+    return res.status(status).json({
+      error: status >= 500 ? 'Could not load room history' : (error.message || 'Could not load room history'),
+    })
   }
 })
 
