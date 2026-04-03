@@ -3,10 +3,12 @@
 const {
   ALLOWED_SESSION_MODES, ALLOWED_CONTENT_TYPES,
   READING_PAGE_MAX, MAX_VIDEO_NAME_LENGTH,
+  MAX_DOCUMENT_UPLOAD_BYTES,
   MAX_VIDEO_TIME, SESSION_ENGINE_REGISTRY,
 } = require("../config/constants.js");
 const {
   sanitize, sanitizeContentUrl,
+  sanitizeUploadFileName,
 } = require("./sanitize.js");
 
 function normalizeUsername(value) {
@@ -83,6 +85,49 @@ function normalizeMetadataForSessionEngine(sessionMode, metadata = {}) {
   };
 }
 
+function normalizeRoomDocumentPayload(payload = {}) {
+  const fileUrl = sanitizeContentUrl(payload.fileUrl || payload.url || "");
+  if (!fileUrl) {
+    const error = new Error("A shareable PDF URL is required");
+    error.status = 400;
+    throw error;
+  }
+
+  let fallbackName = "";
+  try {
+    const parsed = new URL(String(fileUrl || ""));
+    const pathname = parsed.pathname || "";
+    const lastSegment = pathname.split("/").filter(Boolean).pop() || "";
+    fallbackName = sanitizeUploadFileName(decodeURIComponent(lastSegment || ""));
+  } catch {
+    fallbackName = "";
+  }
+
+  const fileName = sanitizeUploadFileName(payload.fileName || fallbackName || "shared-document.pdf");
+  const mimeType = normalizeDocumentMimeType(payload.mimeType || "application/pdf", fileName);
+  if (mimeType !== "application/pdf") {
+    const error = new Error("Only PDF files are supported in co-reading");
+    error.status = 400;
+    throw error;
+  }
+
+  const fileSize = Math.max(0, Math.floor(Number(payload.fileSize) || 0));
+  if (fileSize > MAX_DOCUMENT_UPLOAD_BYTES) {
+    const error = new Error(`Document exceeds ${Math.round(MAX_DOCUMENT_UPLOAD_BYTES / (1024 * 1024))}MB limit`);
+    error.status = 400;
+    throw error;
+  }
+
+  return {
+    fileUrl,
+    fileName,
+    fileSize,
+    mimeType,
+    signature: `${sanitizeUploadFileName(fileName)}:${Math.max(0, Math.floor(Number(fileSize) || 0))}`,
+    totalPages: normalizeReadingTotalPages(payload.totalPages),
+  };
+}
+
 module.exports = {
   normalizeUsername,
   normalizeRoomType,
@@ -90,6 +135,7 @@ module.exports = {
   resolveSessionEngine,
   normalizeContentType,
   normalizeMetadataForSessionEngine,
+  normalizeRoomDocumentPayload,
   normalizeDocumentMimeType,
   normalizeReadingTotalPages,
 };

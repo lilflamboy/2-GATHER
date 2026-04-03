@@ -14,6 +14,12 @@ const {
   sanitizeActivityPayload,
 } = require("./sanitize.js");
 
+function isPrivateLanHost(hostname) {
+  return /^10\./.test(hostname)
+    || /^192\.168\./.test(hostname)
+    || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+}
+
 function deriveDocumentFileNameFromUrl(fileUrl) {
   try {
     const parsed = new URL(String(fileUrl || ""));
@@ -127,6 +133,7 @@ function resolveVideoState(videoState) {
 }
 
 module.exports = {
+  isPrivateLanHost,
   clampTime,
   clampReadingPage,
   uniqueStrings,
