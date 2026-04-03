@@ -1,9 +1,19 @@
+/**
+ * Static room and session mode metadata for the frontend. These display models
+ * live here so the lobby and room views can render the same labels, icons,
+ * hints, and preset content without duplicating the definitions inline.
+ */
+
 import {
   Film, Heart, Users, Headphones,
   BookOpen, GraduationCap,
 } from "lucide-react";
 
+// Private room modes describe the social shape of a room. `roomType` maps to
+// the backend room model, while `maxParticipants` controls how many members the
+// UI asks the server to allow when creating that room.
 const PRIVATE_ROOM_MODES = [
+  // Couple mode maps to the backend `duo` room type for two-person private sessions.
   {
     key: "couple",
     label: "Couple mode",
@@ -13,6 +23,7 @@ const PRIVATE_ROOM_MODES = [
     blurb: "Designed for two. Deep sync + private analytics.",
     hoverHint: "Best for late-night movies, anniversaries, and memory timelines.",
   },
+  // Best-friend mode still uses the backend `friends` type, but caps the room at two people.
   {
     key: "best_friend",
     label: "Best-friend mode",
@@ -22,6 +33,7 @@ const PRIVATE_ROOM_MODES = [
     blurb: "Invite-only room for you and one friend.",
     hoverHint: "Fast reactions, inside jokes, and replayed highlights.",
   },
+  // Family mode maps to the backend `family` type and expands capacity for household-size rooms.
   {
     key: "family",
     label: "Family room mode",
@@ -33,6 +45,9 @@ const PRIVATE_ROOM_MODES = [
   },
 ];
 
+// Session modes choose the engine and interaction model for the room: watch
+// for video sync, music/podcast for shared audio, reading for PDFs, and study
+// for host-led focus sessions.
 const SESSION_MODES = [
   { key: "watch", label: "Watch", icon: Film, blurb: "Movies, shows, and videos in sync.", hoverHint: "Classic watch-party mode with reactions and timestamps." },
   { key: "music", label: "Music mode", icon: Headphones, blurb: "Turn devices into synchronized speakers.", hoverHint: "Schedule playback across local audio, YouTube, and podcast links." },
@@ -41,6 +56,8 @@ const SESSION_MODES = [
   { key: "study", label: "Study session", icon: GraduationCap, blurb: "Live class-style focus rooms.", hoverHint: "Host-led sessions: teacher explains, students ask and track progress." },
 ];
 
+// Mood tags are optional labels users attach to a room so the lobby and later
+// session history can reflect the intended vibe of that shared time.
 const ROOM_MOOD_OPTIONS = [
   { key: "", label: "No mood" },
   { key: "chill", label: "Chill" },
@@ -49,6 +66,8 @@ const ROOM_MOOD_OPTIONS = [
   { key: "energetic", label: "Energetic" },
 ];
 
+// Preset messages are session-mode-specific quick inserts used by the room chat
+// to make reactions, bookmarks, and common prompts easy to send with one tap.
 const SESSION_PRESET_MESSAGES = {
   watch: [
     { emoji: "🍿", text: "Best scene so far!", category: "reaction" },
@@ -88,12 +107,14 @@ const SESSION_PRESET_MESSAGES = {
   ],
 };
 
+// Display-only map from backend room types to the labels shown in the UI.
 const ROOM_TYPE_LABELS = {
   duo: "Couple",
   friends: "Friends",
   family: "Family",
 };
 
+// Display-only map from backend session-mode keys to friendly UI labels.
 const SESSION_MODE_LABELS = {
   watch: "Watch",
   music: "Music",

@@ -1,9 +1,29 @@
+/**
+ * Browser push-notification preference management for Lumiere. This hook keeps
+ * the browser permission flow and the locally stored opt-in preference in one
+ * place so room, invite, and social toasts can optionally surface as system
+ * notifications too.
+ */
+
 import { useState, useCallback } from "react";
 import { loadPushPref, savePushPref } from "../utils/storage";
 
+/**
+ * Creates browser-push state plus helpers to show notifications and change the preference.
+ * The preference is restored from local storage on mount and enabling push will
+ * request browser permission when needed.
+ * @param {{ addToast: (message: string, type?: string) => void, avatarUrl: string }} deps - Hook dependencies.
+ * @returns {{ browserPushEnabled: boolean, pushNotify: (title: string, body: string) => void, setPushNotifications: (enabled: boolean) => Promise<boolean> }} Push state and helpers.
+ */
 export function usePushNotifications({ addToast, avatarUrl }) {
   const [browserPushEnabled,setBrowserPushEnabled]=useState(loadPushPref());
 
+  /**
+   * Displays one browser notification when push is enabled and permission is granted.
+   * @param {string} title - Notification title.
+   * @param {string} body - Notification body text.
+   * @returns {void}
+   */
   const pushNotify=useCallback((title,body)=>{
     if(!browserPushEnabled)return;
     if(typeof window==="undefined"||!("Notification" in window))return;
@@ -17,6 +37,13 @@ export function usePushNotifications({ addToast, avatarUrl }) {
     }catch(_){}
   },[browserPushEnabled,avatarUrl]);
 
+  /**
+   * Enables or disables browser push notifications for the current device.
+   * Enabling may trigger the browser permission request flow and persists the
+   * final preference in local storage.
+   * @param {boolean} enabled - Desired push-notification state.
+   * @returns {Promise<boolean>} True when the requested state change succeeded.
+   */
   const setPushNotifications=useCallback(async(enabled)=>{
     if(!enabled){
       setBrowserPushEnabled(false);

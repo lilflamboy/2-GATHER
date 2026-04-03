@@ -1,10 +1,26 @@
+/**
+ * Friend-request state and actions for the frontend. This hook tracks the
+ * incoming friend-request list plus helper actions for the friend-request state
+ * machine: send, accept, reject, and silent refresh.
+ */
+
 import { useState, useCallback } from "react";
 import { SERVER_URL } from "../config/constants";
 
+/**
+ * Creates friend-request state and actions used by the lobby, settings, and room UI.
+ * @param {{ apiClient: (path: string, options?: object) => Promise<any>, addToast: (message: string, type?: string) => void }} deps - Hook dependencies.
+ * @returns {object} Friend-request state plus request/response helpers.
+ */
 export function useFriends({ apiClient, addToast }) {
   const [incomingFriendRequests,setIncomingFriendRequests]=useState([]);
   const [friendRequestBusyByUid,setFriendRequestBusyByUid]=useState({});
 
+  /**
+   * Fetches the latest friend graph snapshot from the backend.
+   * @param {string} token - Firebase ID token for the current user.
+   * @returns {Promise<any>} Raw `/api/friends` payload.
+   */
   const fetchFriendsSnapshot=useCallback(async(token)=>{
     const res=await fetch(`${SERVER_URL}/api/friends`,{
       headers:{Authorization:`Bearer ${token}`},
@@ -14,6 +30,11 @@ export function useFriends({ apiClient, addToast }) {
     return data;
   },[]);
 
+  /**
+   * Normalizes incoming friend-request rows into the UI shape used by the app.
+   * @param {any[]} incoming - Raw incoming request rows from the API.
+   * @returns {Array<{ uid: string, username: string, displayName: string, photoURL: string }>} Normalized incoming request list.
+   */
   const normalizeIncomingFriendRequests=useCallback((incoming)=>{
     return (Array.isArray(incoming)?incoming:[]).map(item=>({
       uid:item?.uid||"",
@@ -23,6 +44,12 @@ export function useFriends({ apiClient, addToast }) {
     })).filter(item=>item.uid);
   },[]);
 
+  /**
+   * Refreshes the incoming friend-request list from the server.
+   * @param {string} token - Firebase ID token for the current user.
+   * @param {{ silent?: boolean }} [options={}] - Whether fetch failures should suppress toasts.
+   * @returns {Promise<void>} Resolves after the local incoming-request state is refreshed.
+   */
   const syncIncomingFriendRequests=useCallback(async(token,{silent=true}={})=>{
     try{
       const snapshot=await fetchFriendsSnapshot(token);
@@ -34,6 +61,12 @@ export function useFriends({ apiClient, addToast }) {
     }
   },[fetchFriendsSnapshot,normalizeIncomingFriendRequests,addToast]);
 
+  /**
+   * Accepts or rejects one incoming friend request and updates local state.
+   * @param {string} requesterUid - User id of the original requester.
+   * @param {"accept"|"reject"} action - Requested transition for the friend request.
+   * @returns {Promise<void>} Resolves after the backend response and local state update.
+   */
   const handleRespondFriendRequest=useCallback(async(requesterUid,action)=>{
     if(!requesterUid||!["accept","reject"].includes(action))return;
     const req=incomingFriendRequests.find(item=>item.uid===requesterUid);
@@ -57,6 +90,15 @@ export function useFriends({ apiClient, addToast }) {
     }
   },[incomingFriendRequests,apiClient,addToast]);
 
+  /**
+   * Sends a friend request and returns the backend status outcome.
+   * Possible statuses include `requested`, `already_friends`,
+   * `already_requested`, and `needs_accept`.
+   * @param {string} targetUid - User id being requested.
+   * @param {string} targetUsername - Username used for toast labels when present.
+   * @param {string} targetName - Display name fallback used for toast labels.
+   * @returns {Promise<string>} Backend friend-request status string.
+   */
   const handleSendFriendRequest=useCallback(async(targetUid,targetUsername,targetName)=>{
     if(!targetUid)throw new Error("Invalid user");
     const res=await apiClient("/api/friends/request",{method:"POST",body:{targetUid}});
@@ -76,6 +118,10 @@ export function useFriends({ apiClient, addToast }) {
     return status;
   },[apiClient,addToast]);
 
+  /**
+   * Clears all local friend-request state, typically during sign-out.
+   * @returns {void}
+   */
   const resetFriendsState=useCallback(()=>{
     setIncomingFriendRequests([]);
     setFriendRequestBusyByUid({});

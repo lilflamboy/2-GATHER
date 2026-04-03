@@ -1,9 +1,22 @@
+/**
+ * Authentication/session bootstrap for the frontend. This hook manages the
+ * Firebase identity listener, backend profile hydration, email-verification
+ * gating, username setup flow, and the bridge into socket/session startup.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { onIdTokenChanged, signOut, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase.js";
 import { SERVER_URL } from "../config/constants";
 import { loadSession, loadUsername, saveUsername, clearSession } from "../utils/storage";
 
+/**
+ * Creates authenticated session state plus username and verification actions.
+ * `onIdTokenChanged` is used instead of `onAuthStateChanged` so token refreshes
+ * also run through the same bootstrap logic when backend auth needs a fresh ID token.
+ * @param {object} deps - Hook dependencies including API helpers, socket helpers, and state setters.
+ * @returns {object} Auth state, derived profile info, and auth-related action helpers.
+ */
 export function useAuthSession({
   addToast,
   apiClient,
@@ -38,6 +51,11 @@ export function useAuthSession({
   const [verificationActionLoading,setVerificationActionLoading]=useState(false);
   const [authLoading,setAuthLoading]=useState(true);
 
+  /**
+   * Fetches the authenticated user's backend profile from `/api/me`.
+   * @param {string} token - Firebase ID token for the current user.
+   * @returns {Promise<any | null>} Backend profile object or null.
+   */
   const fetchMyProfile=useCallback(async(token)=>{
     const res=await fetch(`${SERVER_URL}/api/me`,{
       headers:{Authorization:`Bearer ${token}`},
@@ -47,10 +65,19 @@ export function useAuthSession({
     return data.profile||null;
   },[]);
 
+  /**
+   * Bootstraps the full authenticated frontend session from a Firebase user.
+   * This restores the saved room code, loads the backend profile, refreshes
+   * friend/lobby data, and opens the socket connection once a username exists.
+   * @param {import('firebase/auth').User} fbUser - Authenticated Firebase user.
+   * @param {{ forceTokenRefresh?: boolean, silentProfileErrors?: boolean }} [options={}] - Bootstrap behavior flags.
+   * @returns {Promise<void>} Resolves after session state has been hydrated.
+   */
   const bootstrapAuthenticatedSession=useCallback(async(fbUser,{forceTokenRefresh=false,silentProfileErrors=false}={})=>{
     // Auth bootstrap keeps backend profile state authoritative: username/admin
     // flags/friend requests all come from the API before we open realtime state.
     const token=await fbUser.getIdToken(forceTokenRefresh);
+    // Restore the same-tab room code so reconnect/rejoin logic knows which room to resume.
     const saved=loadSession();
     setSavedCode(saved);
 
@@ -89,6 +116,7 @@ export function useAuthSession({
     }
   },[fetchMyProfile,syncIncomingFriendRequests,syncLobbyMemoryStats,addToast,socketApiRef]);
 
+  // The ID-token listener is the root auth decision tree: signed out, unverified email, missing username, or fully bootstrapped session.
   useEffect(()=>{
     const unsub=onIdTokenChanged(auth,async fbUser=>{
       try{
@@ -143,6 +171,11 @@ export function useAuthSession({
     return()=>{unsub();socketApiRef.current.cleanupSocket();};
   },[bootstrapAuthenticatedSession,addToast,socketApiRef]);
 
+  /**
+   * Claims a username through the backend and reconnects sockets with that username.
+   * @param {string} uname - Desired username entered by the user.
+   * @returns {Promise<boolean>} True when the username was successfully claimed.
+   */
   const handleUsernameSet=useCallback(async(uname)=>{
     try{
       const res=await apiClient("/api/username/claim",{method:"POST",body:{username:uname}});
@@ -159,6 +192,10 @@ export function useAuthSession({
     }
   },[apiClient,addToast,socketApiRef]);
 
+  /**
+   * Sends another email verification message for the current Firebase user.
+   * @returns {Promise<void>} Resolves after the resend attempt completes.
+   */
   const handleResendVerification=useCallback(async()=>{
     const current=auth.currentUser;
     if(!current){
@@ -176,6 +213,10 @@ export function useAuthSession({
     }
   },[addToast]);
 
+  /**
+   * Reloads the current Firebase user and continues bootstrap once verification succeeds.
+   * @returns {Promise<void>} Resolves after verification refresh handling completes.
+   */
   const handleRefreshVerification=useCallback(async()=>{
     const current=auth.currentUser;
     if(!current){
@@ -202,6 +243,11 @@ export function useAuthSession({
     }
   },[bootstrapAuthenticatedSession,addToast]);
 
+  /**
+   * Signs the user out and clears saved room/invite/friend state first.
+   * The saved-room clear prevents a future login from inheriting stale `savedCode`.
+   * @returns {void}
+   */
   const handleSignOut=useCallback(()=>{
     clearSession();
     setSavedCode(null);

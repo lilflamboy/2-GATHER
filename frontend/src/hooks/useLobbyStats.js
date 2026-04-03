@@ -1,7 +1,18 @@
+/**
+ * Lobby memory-stat helpers for the signed-in dashboard. These stats summarize
+ * recent watch history so the lobby can show shared hours, streak, and longest
+ * session without needing a dedicated backend aggregate endpoint.
+ */
+
 import { useState, useCallback } from "react";
 import { SERVER_URL } from "../config/constants";
 import { formatDurationLabel } from "../utils/media";
 
+/**
+ * Creates lobby memory-stat state and refresh helpers.
+ * @param {{ addToast: (message: string, type?: string) => void }} deps - Hook dependencies.
+ * @returns {{ lobbyMemoryStats: object, syncLobbyMemoryStats: (token: string, options?: { silent?: boolean }) => Promise<void>, resetLobbyMemoryStats: () => void }} Lobby stat state and actions.
+ */
 export function useLobbyStats({ addToast }) {
   const [lobbyMemoryStats,setLobbyMemoryStats]=useState({
     sharedHoursMonth:0,
@@ -10,6 +21,12 @@ export function useLobbyStats({ addToast }) {
     streakDays:0,
   });
 
+  /**
+   * Fetches recent completed watch sessions for client-side stat aggregation.
+   * @param {string} token - Firebase ID token for the current user.
+   * @param {number} [limit=120] - Max number of watch sessions to request.
+   * @returns {Promise<any[]>} Array of recent watch-session rows.
+   */
   const fetchWatchSessionsSnapshot=useCallback(async(token,limit=120)=>{
     const res=await fetch(`${SERVER_URL}/api/watch-sessions?limit=${Math.max(1,Math.min(400,limit))}`,{
       headers:{Authorization:`Bearer ${token}`},
@@ -19,6 +36,14 @@ export function useLobbyStats({ addToast }) {
     return Array.isArray(data.items)?data.items:[];
   },[]);
 
+  /**
+   * Recomputes the lobby summary from recent watch sessions.
+   * The derived stats include total shared hours in the last 30 days, longest
+   * session length, and a simple consecutive-day streak from session end dates.
+   * @param {string} token - Firebase ID token for the current user.
+   * @param {{ silent?: boolean }} [options={}] - Whether fetch failures should suppress toasts.
+   * @returns {Promise<void>} Resolves after local lobby stat state is refreshed.
+   */
   const syncLobbyMemoryStats=useCallback(async(token,{silent=true}={})=>{
     try{
       const sessions=await fetchWatchSessionsSnapshot(token,180);
@@ -67,6 +92,10 @@ export function useLobbyStats({ addToast }) {
     }
   },[fetchWatchSessionsSnapshot,addToast]);
 
+  /**
+   * Clears lobby stats back to their empty-state defaults.
+   * @returns {void}
+   */
   const resetLobbyMemoryStats=useCallback(()=>{
     setLobbyMemoryStats({
       sharedHoursMonth:0,
