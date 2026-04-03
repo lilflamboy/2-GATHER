@@ -1,3 +1,10 @@
+/**
+ * Shared runtime helpers for Lumiere socket rooms. This file collects room
+ * lifecycle helpers, user-management utilities, disconnect grace handling,
+ * playback/read-state synchronization logic, and emit helpers used across the
+ * room, video, and connection socket modules.
+ */
+
 'use strict'
 
 const {
@@ -34,10 +41,22 @@ const {
 const { addMemoryEvent } =
   require('../services/memory.service.js')
 
+/**
+ * Builds the pending-disconnect map key for one room/user pair.
+ * @param {string} roomCode - Room code that owns the disconnect timer.
+ * @param {string} uid - User id the timer belongs to.
+ * @returns {string} Stable `roomCode::uid` key for the pending timer map.
+ */
 function roomUserDisconnectKey(roomCode, uid) {
   return `${String(roomCode || '')}::${String(uid || '')}`
 }
 
+/**
+ * Cancels one pending disconnect timer when a user reconnects in time.
+ * @param {string} roomCode - Room code that owns the timer.
+ * @param {string} uid - User id whose timer should be cancelled.
+ * @returns {boolean} True when a pending timer existed and was cleared.
+ */
 function clearPendingRoomUserDisconnect(roomCode, uid) {
   const key = roomUserDisconnectKey(roomCode, uid)
   const pending = pendingRoomUserDisconnects.get(key)
@@ -47,6 +66,11 @@ function clearPendingRoomUserDisconnect(roomCode, uid) {
   return true
 }
 
+/**
+ * Cancels every pending disconnect timer associated with one room.
+ * @param {string} roomCode - Room code whose pending disconnects should be cleared.
+ * @returns {void}
+ */
 function clearPendingRoomDisconnects(roomCode) {
   const prefix = `${String(roomCode || '')}::`
   pendingRoomUserDisconnects.forEach((pending, key) => {
@@ -56,6 +80,14 @@ function clearPendingRoomDisconnects(roomCode) {
   })
 }
 
+/**
+ * Schedules delayed user removal after a brief disconnect grace period.
+ * @param {string} roomCode - Room code the disconnect belongs to.
+ * @param {string} uid - User id that disconnected.
+ * @param {number} graceMs - Grace period in milliseconds before cleanup runs.
+ * @param {() => Promise<any> | any} callback - Cleanup callback executed if the user does not reconnect in time.
+ * @returns {void}
+ */
 function schedulePendingRoomUserDisconnect(roomCode, uid, graceMs, callback) {
   const key = roomUserDisconnectKey(roomCode, uid)
   clearPendingRoomUserDisconnect(roomCode, uid)
@@ -72,6 +104,14 @@ function schedulePendingRoomUserDisconnect(roomCode, uid, graceMs, callback) {
   pendingRoomUserDisconnects.set(key, { token, timer })
 }
 
+/**
+ * Creates the full in-memory runtime room object used by the socket layer.
+ * The returned object holds membership, chat, playback, sync-wait, reading,
+ * document, timer, and history state for one live room code.
+ * @param {string} roomCode - Unique short room code for the live room.
+ * @param {object} [options={}] - Initial room creation options from the host.
+ * @returns {object} Fully initialized live room object.
+ */
 function makeRoom(roomCode, options = {}) {
   const normalizedType = normalizeRoomType(options.roomType)
   const normalizedSessionMode = normalizeSessionMode(options.sessionMode)
@@ -93,6 +133,7 @@ function makeRoom(roomCode, options = {}) {
   const nowMs = Date.now()
   const initialContentUrl = sanitizeContentUrl(options.contentUrl || '')
   const initialContentType = normalizeContentType(options.contentType || 'unknown')
+  // Build the canonical live room snapshot that all socket handlers mutate in memory.
   return {
     roomCode,
     roomType: normalizedType,
@@ -158,22 +199,46 @@ function makeRoom(roomCode, options = {}) {
   }
 }
 
+/**
+ * Resolves the music-room media type from the normalized source information.
+ * @param {string} sourceType - Declared content source type.
+ * @param {string} [contentUrl=''] - Current shared media URL if present.
+ * @returns {string} Normalized media type used by music sync payloads.
+ */
 function resolveMusicMediaType(sourceType, contentUrl = '') {
   if (normalizeContentType(sourceType) === 'youtube') return 'youtube'
   return String(contentUrl || '').trim() ? 'local' : 'local'
 }
 
+/**
+ * Determines whether video playback should be scheduled slightly in the future.
+ * @param {object} room - Live room whose source metadata is being evaluated.
+ * @param {boolean} [isPlaying=false] - Whether the next state is intended to play.
+ * @returns {boolean} True when scheduled playback should be used.
+ */
 function shouldScheduleVideoPlayback(room, isPlaying = false) {
   if (!room || !isPlaying) return false
   const sourceType = normalizeContentType(room?.videoMetadata?.sourceType || room?.contentType || '')
   return sourceType === 'youtube'
 }
 
+/**
+ * Calculates the absolute future start time used for scheduled playback modes.
+ * @param {object} room - Live room whose playback mode is being resolved.
+ * @param {boolean} [isPlaying=false] - Whether the next state is intended to play.
+ * @param {number} [nowSec=Date.now() / 1000] - Current server time in seconds.
+ * @returns {number} Scheduled server start time in seconds, or 0 when unused.
+ */
 function getScheduledVideoStartAt(room, isPlaying = false, nowSec = Date.now() / 1000) {
   if (!shouldScheduleVideoPlayback(room, isPlaying)) return 0
   return nowSec + (VIDEO_SCHEDULE_LEAD_MS / 1000)
 }
 
+/**
+ * Builds the canonical payload sent to music-room clients for audio sync.
+ * @param {object} room - Live room whose audio state is being serialized.
+ * @returns {object} Serialized music/media state payload for socket broadcasts.
+ */
 function buildRoomMusicStatePayload(room) {
   return {
     mediaType: String(room?.mediaType || 'local'),
@@ -194,6 +259,12 @@ function buildRoomMusicStatePayload(room) {
   }
 }
 
+/**
+ * Resolves the current shared audio position from the last server-side audio state.
+ * @param {object} room - Live room whose music playback state is being read.
+ * @param {number} [nowMs=Date.now()] - Current server timestamp in milliseconds.
+ * @returns {number} Current audio position clamped into the allowed media range.
+ */
 function resolveRoomAudioPosition(room, nowMs = Date.now()) {
   const state = room?.audioState || {}
   const baseTime = clampTime(Number(state.startTime) || 0)
@@ -203,6 +274,11 @@ function resolveRoomAudioPosition(room, nowMs = Date.now()) {
   return clampTime(baseTime + elapsedSeconds)
 }
 
+/**
+ * Acquires the short-lived mutation lock used to serialize audio state changes.
+ * @param {object} room - Live room attempting to mutate audio playback.
+ * @returns {boolean} True when the caller acquired the lock.
+ */
 function acquireAudioMutationLock(room) {
   if (!room) return false
   const nowMs = Date.now()
@@ -211,6 +287,12 @@ function acquireAudioMutationLock(room) {
   return true
 }
 
+/**
+ * Validates whether a music control request can change the shared room state.
+ * @param {object} room - Live room being controlled.
+ * @param {string} [requesterFileSignature=''] - Local file signature supplied by the client.
+ * @returns {{ ok: boolean, error?: string }} Validation result for the control request.
+ */
 function validateMusicControlRequest(room, requesterFileSignature = '') {
   if (!room) return { ok: false, error: 'Room not found' }
   if (room.sessionMode !== 'music') return { ok: false, error: 'Room is not in music mode' }
@@ -224,6 +306,12 @@ function validateMusicControlRequest(room, requesterFileSignature = '') {
   return { ok: true }
 }
 
+/**
+ * Broadcasts the authoritative audio/music sync payload to everyone in a room.
+ * @param {object} room - Live room whose audio state should be emitted.
+ * @param {object} [options={}] - Additional broadcast metadata such as action labels.
+ * @returns {void}
+ */
 function broadcastRoomAudioSync(room, options = {}) {
   if (!room?.roomCode) return
   const io = getIo()
@@ -237,14 +325,29 @@ function broadcastRoomAudioSync(room, options = {}) {
   io.to(room.roomCode).emit('audio_sync', payload)
 }
 
+/**
+ * Serializes the reading-state slice of one live room for socket payloads.
+ * @param {object} room - Live room whose reading state is being serialized.
+ * @returns {object} Normalized reading state payload.
+ */
 function getRoomReadingStatePayload(room) {
   return serializeReadingState(room?.readingState || {}, room?.document || null)
 }
 
+/**
+ * Serializes the shared document slice of one live room for socket payloads.
+ * @param {object} room - Live room whose document state is being serialized.
+ * @returns {object | null} Normalized document payload or null.
+ */
 function getRoomDocumentPayload(room) {
   return serializeRoomDocument(room?.document || null)
 }
 
+/**
+ * Builds the initial co-reading state payload sent after joins and document changes.
+ * @param {object} room - Live room whose reading snapshot is being built.
+ * @returns {object} Initial reading payload including document, page, and host id.
+ */
 function buildReadingInitialStatePayload(room) {
   const readingState = getRoomReadingStatePayload(room)
   return {
@@ -256,6 +359,11 @@ function buildReadingInitialStatePayload(room) {
   }
 }
 
+/**
+ * Chooses the next host by earliest join time among the remaining room members.
+ * @param {object} room - Live room whose ownership may need to transfer.
+ * @returns {string} Next host uid or an empty string when no users remain.
+ */
 function pickNextRoomHostUid(room) {
   if (!room?.users || room.users.size === 0) return ''
   return [...room.users.keys()]
@@ -266,6 +374,11 @@ function pickNextRoomHostUid(room) {
     })[0] || ''
 }
 
+/**
+ * Normalizes a room user's socket storage into a Set for multi-tab support.
+ * @param {object} roomUser - Live room-user record.
+ * @returns {Set<string>} Mutable socket-id set for the user.
+ */
 function ensureRoomUserSocketSet(roomUser) {
   if (!roomUser) return new Set()
   if (roomUser.socketIds instanceof Set) return roomUser.socketIds
@@ -283,11 +396,23 @@ function ensureRoomUserSocketSet(roomUser) {
   return set
 }
 
+/**
+ * Returns every active socket id currently attached to one room user.
+ * @param {object} roomUser - Live room-user record.
+ * @returns {string[]} Array of active socket ids for that user.
+ */
 function getRoomUserSocketIds(roomUser) {
   if (!roomUser) return []
   return [...ensureRoomUserSocketSet(roomUser)]
 }
 
+/**
+ * Inserts or refreshes one room user, supporting reconnects and multiple tabs.
+ * @param {object} room - Live room receiving the user.
+ * @param {object} userIdentity - Authenticated identity snapshot for the user.
+ * @param {string} socketId - Current socket id being attached.
+ * @returns {{ user: object, isRejoin: boolean, hadActiveSocketsBefore: boolean }} Result describing whether this was a rejoin.
+ */
 function upsertRoomUser(room, userIdentity, socketId) {
   const existing = room.users.get(userIdentity.uid)
   if (existing) {
@@ -321,6 +446,13 @@ function upsertRoomUser(room, userIdentity, socketId) {
   }
 }
 
+/**
+ * Removes one socket id from a room user while preserving other live tabs.
+ * @param {object} room - Live room containing the user.
+ * @param {string} uid - User id being updated.
+ * @param {string} socketId - Socket id that disconnected.
+ * @returns {{ roomUser: object | null, activeSocketCount: number }} Updated room-user state and remaining socket count.
+ */
 function removeSocketFromRoomUser(room, uid, socketId) {
   const roomUser = room.users.get(uid)
   if (!roomUser) return { roomUser: null, activeSocketCount: 0 }
@@ -335,6 +467,13 @@ function removeSocketFromRoomUser(room, uid, socketId) {
   }
 }
 
+/**
+ * Emits one socket event to every active socket owned by a room user.
+ * @param {object} roomUser - Room user whose sockets should receive the event.
+ * @param {string} eventName - Socket event name to emit.
+ * @param {object} payload - Event payload to send.
+ * @returns {void}
+ */
 function emitToRoomUserSockets(roomUser, eventName, payload) {
   const io = getIo()
   getRoomUserSocketIds(roomUser).forEach((socketId) => {
@@ -342,6 +481,15 @@ function emitToRoomUserSockets(roomUser, eventName, payload) {
   })
 }
 
+/**
+ * Emits one socket event to every active socket for a specific uid in a room.
+ * This is used because one user may have multiple tabs connected at once.
+ * @param {object} room - Live room containing the target user.
+ * @param {string} targetUid - User id whose sockets should receive the event.
+ * @param {string} eventName - Socket event name to emit.
+ * @param {object} payload - Event payload to send.
+ * @returns {number} Number of sockets that received the event.
+ */
 function emitToUidSocketsInRoom(room, targetUid, eventName, payload) {
   const target = room.users.get(targetUid)
   if (!target) return 0
@@ -354,12 +502,23 @@ function emitToUidSocketsInRoom(room, targetUid, eventName, payload) {
   return socketIds.length
 }
 
+/**
+ * Schedules the room-expiry timeout for one live room.
+ * @param {object} room - Live room whose expiry timer should be refreshed.
+ * @returns {void}
+ */
 function scheduleExpiry(room) {
   if (!room) return
   clearTimeout(room.expiryTimer)
   room.expiryTimer = setTimeout(() => expireRoom(room.roomCode), ROOM_EXPIRY_MS)
 }
 
+/**
+ * Expires a live room, broadcasts closure, cleans timers, and finalizes any
+ * room/session persistence side effects before deleting the runtime room object.
+ * @param {string} roomCode - Room code to expire.
+ * @returns {void}
+ */
 function expireRoom(roomCode) {
   const room = rooms.get(roomCode)
   if (!room) return
@@ -374,6 +533,11 @@ function expireRoom(roomCode) {
   log(`[expired] ${roomCode}`)
 }
 
+/**
+ * Deletes a room only when no members remain, preserving empty-room cleanup semantics.
+ * @param {string} roomCode - Room code that may now be empty.
+ * @returns {void}
+ */
 function deleteIfEmpty(roomCode) {
   const room = rooms.get(roomCode)
   if (room && room.users.size === 0) {
@@ -385,6 +549,10 @@ function deleteIfEmpty(roomCode) {
   }
 }
 
+/**
+ * Generates a human-friendly room code that avoids ambiguous characters.
+ * @returns {string} Unique six-character room code not currently used in memory.
+ */
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code
@@ -394,10 +562,20 @@ function generateCode() {
   return code
 }
 
+/**
+ * Serializes the current room user map into the public socket payload shape.
+ * @param {object} room - Live room whose user list should be serialized.
+ * @returns {Array<{ uid: string, name: string, username: string, photoURL: string }>} Public member list.
+ */
 function getUserList(room) {
   return [...room.users.values()].map(({ uid, name, username, photoURL }) => ({ uid, name, username, photoURL }))
 }
 
+/**
+ * Clears the active sync-wait state and resumes any members who were paused.
+ * @param {string} roomCode - Room code whose wait-mode should be cleared.
+ * @returns {void}
+ */
 function clearSyncWait(roomCode) {
   const room = rooms.get(roomCode)
   if (!room) return
@@ -434,6 +612,11 @@ function clearSyncWait(roomCode) {
   })
 }
 
+/**
+ * Returns recent per-member playback samples used to detect sync drift.
+ * @param {object} room - Live room whose member heartbeat samples are being read.
+ * @returns {Array<object>} Active member playback samples after stale entries are removed.
+ */
 function getActiveMemberTimes(room) {
   const now = Date.now()
   const members = []
@@ -465,6 +648,11 @@ function getActiveMemberTimes(room) {
   return members
 }
 
+/**
+ * Heuristic that estimates whether one member is buffering or otherwise unable to keep up.
+ * @param {object} member - Member playback sample from `getActiveMemberTimes`.
+ * @returns {boolean} True when the member likely needs wait-mode protection.
+ */
 function isMemberLikelyBuffering(member) {
   if (!member) return false
   if (member.isBuffering) return true
@@ -479,6 +667,13 @@ function isMemberLikelyBuffering(member) {
   return lowReadyState && !hasBufferAhead
 }
 
+/**
+ * Evaluates playback drift across room members and drives the sync-wait algorithm.
+ * When the fastest and slowest members diverge beyond threshold, faster members
+ * are temporarily paused until the lagging member catches back up.
+ * @param {string} roomCode - Room code whose sync-wait state should be updated.
+ * @returns {void}
+ */
 function handleSyncWait(roomCode) {
   const room = rooms.get(roomCode)
   if (!room) return
@@ -509,6 +704,7 @@ function handleSyncWait(roomCode) {
 
   const gap = Math.max(0, fastest.time - slowest.time)
   if (!room.syncWait.active) {
+    // Wait-mode only activates after the gap stays large enough for the full grace window.
     if (gap < SYNC_WAIT_THRESHOLD) {
       room.syncWait.candidateUid = null
       room.syncWait.candidateSince = 0
@@ -554,6 +750,7 @@ function handleSyncWait(roomCode) {
   const waitingForUsername = waitingMember.username || room.syncWait.waitingForUsername || 'friend'
   room.syncWait.waitingForUsername = waitingForUsername
 
+  // Compare everyone against the waiting member to decide who should pause and when wait-mode can clear.
   let maxGapFromWaiting = 0
   const shouldBePaused = new Set()
   const pauseThreshold = room.syncWait.active ? SYNC_RESUME_THRESHOLD : SYNC_WAIT_THRESHOLD
@@ -607,6 +804,13 @@ function handleSyncWait(roomCode) {
   room.syncWait.resumeSince = 0
 }
 
+/**
+ * Records shared overlap time between a disconnecting user and the members still in the room.
+ * @param {object} room - Live room being left.
+ * @param {string} leavingUid - User id that is leaving.
+ * @param {string} roomCode - Room code used for memory-event attribution.
+ * @returns {Promise<void>} Resolves after memory-event writes have been attempted.
+ */
 async function recordOverlapForLeavingUser(room, leavingUid, roomCode) {
   if (typeof addMemoryEvent !== 'function') return
   const leftAt = Date.now()

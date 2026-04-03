@@ -1,5 +1,21 @@
+/**
+ * Room lifecycle socket handlers for creating rooms, joining rooms, and
+ * synchronizing co-reading/document state. Most HTTP routes expose metadata,
+ * but the live room lifecycle itself runs through these realtime events.
+ */
+
 'use strict'
 
+/**
+ * Registers room-management socket handlers for one connected client.
+ * @param {object} deps - Runtime dependencies injected from the socket bootstrap.
+ * @param {import('socket.io').Server} deps.io - Shared Socket.IO server used for room broadcasts.
+ * @param {import('socket.io').Socket} deps.socket - Current connected client socket.
+ * @param {object} deps.context - Authenticated user context for this socket.
+ * @param {object} deps.roomRuntime - In-memory room helpers and constants.
+ * @param {object} deps.roomService - Persistence and side-effect helpers for room operations.
+ * @returns {void}
+ */
 function registerRoomSocketHandlers({
   io,
   socket,
@@ -43,6 +59,12 @@ function registerRoomSocketHandlers({
     saveVideoSessionMetadata,
   } = roomService
 
+  /**
+   * `create_room`
+   * Accepts `{ roomType, sessionMode, maxParticipants, moodTag, contentUrl, contentType }`,
+   * generates a new room code, creates the live room object, persists metadata
+   * best-effort, joins the caller, and returns the initial room snapshot.
+   */
   socket.on("create_room", async ({ roomType, sessionMode, maxParticipants, moodTag, contentUrl, contentType } = {}, ack) => {
     if (shouldDropSocketEvent("create_room")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -62,6 +84,7 @@ function registerRoomSocketHandlers({
         2,
         Math.min(10, Number(maxParticipants) || (normalizedRoomType === "duo" ? 2 : MAX_ROOM_USERS))
       );
+      // Room construction creates the full live runtime object, including users, playback state, reading state, timers, and history buffers.
       const room = makeRoom(roomCode, {
         roomType: normalizedRoomType,
         sessionMode: normalizedSessionMode,
@@ -84,6 +107,7 @@ function registerRoomSocketHandlers({
       }
       scheduleExpiry(room);
 
+      // The creator becomes the first live member immediately after room creation.
       upsertRoomUser(room, { uid, name, username, photoURL }, socket.id);
       room.joinedAtByUid.set(uid, Date.now());
       rooms.set(roomCode, room);
@@ -148,6 +172,7 @@ function registerRoomSocketHandlers({
         userCount: 1,
         users: getUserList(room),
         videoState: room.videoState,
+        serverTime: Date.now() / 1000,
         audioState: musicState.audioState,
         mediaType: musicState.mediaType,
         mediaMeta: musicState.mediaMeta,
@@ -177,6 +202,11 @@ function registerRoomSocketHandlers({
     }
   });
 
+  /**
+   * `join_room`
+   * Accepts `{ roomCode }`, verifies the room exists and is not full, attaches
+   * the caller to room membership, and emits the current authoritative room state.
+   */
   socket.on("join_room", ({ roomCode } = {}, ack) => {
     if (shouldDropSocketEvent("join_room")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -202,6 +232,7 @@ function registerRoomSocketHandlers({
         return;
       }
 
+      // Rejoining within the disconnect grace window clears the pending removal timer and reuses the same logical member.
       clearPendingRoomUserDisconnect(code, uid);
       const joinState = upsertRoomUser(room, { uid, name, username, photoURL }, socket.id);
       const { isRejoin, hadActiveSocketsBefore } = joinState;
@@ -212,12 +243,14 @@ function registerRoomSocketHandlers({
       socket.join(code);
       socket.currentRoom = code;
 
+      // Joiners receive the canonical room snapshot so playback, reading, and chat state all start from one source of truth.
       const musicState = roomRuntime.buildRoomMusicStatePayload(room);
       socket.emit("room_joined", {
         roomCode: code,
         userCount: room.users.size,
         users: getUserList(room),
         videoState: { ...room.videoState },
+        serverTime: Date.now() / 1000,
         audioState: musicState.audioState,
         mediaType: musicState.mediaType,
         mediaMeta: musicState.mediaMeta,
@@ -287,6 +320,12 @@ function registerRoomSocketHandlers({
     }
   });
 
+  /**
+   * `upload_document`
+   * Accepts `{ roomCode, fileUrl, fileName, fileSize, mimeType, totalPages }`,
+   * verifies the caller is the reading-room host, normalizes the document, and
+   * broadcasts the new canonical document and page state to the room.
+   */
   socket.on("upload_document", ({ roomCode, fileUrl, fileName, fileSize, mimeType, totalPages } = {}, ack) => {
     if (shouldDropSocketEvent("upload_document")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -411,6 +450,12 @@ function registerRoomSocketHandlers({
     }
   });
 
+  /**
+   * `sync_state`
+   * Accepts `{ roomCode, readingState, document }`, validates the host and
+   * document signature, updates reading totals/page when needed, and re-emits
+   * the authoritative co-reading snapshot if anything changed.
+   */
   socket.on("sync_state", ({ roomCode, readingState, document } = {}, ack) => {
     if (shouldDropSocketEvent("sync_state_write")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -452,6 +497,7 @@ function registerRoomSocketHandlers({
     }
 
     if (changed) {
+      // Re-broadcast the entire reading initial state so every client converges on the same document/page snapshot.
       const payload = buildReadingInitialStatePayload(room);
       io.to(room.roomCode).emit("initial_state", payload);
     }
@@ -466,6 +512,11 @@ function registerRoomSocketHandlers({
     }
   });
 
+  /**
+   * `request_page_change`
+   * Accepts `{ roomCode, page }`, validates host authority, applies the reading
+   * page lock, updates the canonical page, and broadcasts the new page state.
+   */
   socket.on("request_page_change", ({ roomCode, page } = {}, ack) => {
     if (shouldDropSocketEvent("request_page_change")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -547,6 +598,12 @@ function registerRoomSocketHandlers({
     }
   });
 
+  /**
+   * `reading_page_update`
+   * Accepts `{ roomCode, page }` as a fire-and-forget page update from the host.
+   * It mirrors the ack-based page-change path so direct UI events still update
+   * the authoritative page state and broadcast the new page to viewers.
+   */
   socket.on("reading_page_update", ({ roomCode, page } = {}) => {
     if (shouldDropSocketEvent("reading_page_update")) return;
     const room = rooms.get(roomCode);

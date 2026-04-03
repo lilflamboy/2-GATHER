@@ -1,5 +1,21 @@
+/**
+ * Playback and media-state socket handlers for watch, music, and co-reading
+ * rooms. The server acts as the single source of truth for shared state while
+ * clients report local actions and heartbeat samples.
+ */
+
 'use strict'
 
+/**
+ * Registers playback-related socket handlers for one connected client.
+ * @param {object} deps - Runtime dependencies injected from the socket bootstrap.
+ * @param {import('socket.io').Server} deps.io - Shared Socket.IO server used for room broadcasts.
+ * @param {import('socket.io').Socket} deps.socket - Current connected client socket.
+ * @param {object} deps.context - Authenticated user context for this socket.
+ * @param {object} deps.roomRuntime - In-memory room helpers and runtime constants.
+ * @param {object} deps.roomService - Persistence and side-effect helpers for playback events.
+ * @returns {void}
+ */
 function registerVideoSocketHandlers({
   io,
   socket,
@@ -42,6 +58,12 @@ function registerVideoSocketHandlers({
     updateRoomContentState,
   } = roomService
 
+  /**
+   * `request_play`
+   * Accepts `{ roomCode, currentTime, fileSignature }`, validates room control,
+   * transitions the canonical playback state into playing, and broadcasts the
+   * authoritative play state to the room.
+   */
   socket.on("request_play", ({ roomCode, currentTime, fileSignature } = {}, ack) => {
     if (shouldDropSocketEvent("request_play")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -144,6 +166,11 @@ function registerVideoSocketHandlers({
     if (typeof ack === "function") ack({ ok: true });
   });
 
+  /**
+   * `request_pause`
+   * Accepts `{ roomCode, currentTime, fileSignature }`, validates room control,
+   * snapshots the current canonical position, and broadcasts the paused state.
+   */
   socket.on("request_pause", ({ roomCode, currentTime, fileSignature } = {}, ack) => {
     if (shouldDropSocketEvent("request_pause")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -233,6 +260,12 @@ function registerVideoSocketHandlers({
     if (typeof ack === "function") ack({ ok: true });
   });
 
+  /**
+   * `request_seek`
+   * Accepts `{ roomCode, currentTime, isPlaying, playbackRate, fileSignature }`,
+   * clamps the requested time, optionally updates playing/paused state, and
+   * broadcasts the new canonical playback position to the room.
+   */
   socket.on("request_seek", ({ roomCode, currentTime, isPlaying, playbackRate, fileSignature } = {}, ack) => {
     if (shouldDropSocketEvent("request_seek")) {
       if (typeof ack === "function") ack({ ok: false, error: "Too many requests. Please try again." });
@@ -336,6 +369,11 @@ function registerVideoSocketHandlers({
     if (typeof ack === "function") ack({ ok: true });
   });
 
+  /**
+   * `bookmark_seek`
+   * Accepts `{ roomCode, seekTime }`, records a bookmark-style session reaction,
+   * moves the room to that timeline point, and broadcasts a hard sync update.
+   */
   socket.on("bookmark_seek", ({ roomCode, seekTime } = {}) => {
     if (shouldDropSocketEvent("bookmark_seek")) return;
     const room = rooms.get(roomCode);
@@ -379,6 +417,7 @@ function registerVideoSocketHandlers({
       return;
     }
 
+    // Video-mode bookmark seeks reuse the authoritative room timeline rather than client-local state.
     room.videoState = {
       ...room.videoState,
       currentTime: time,
@@ -413,6 +452,12 @@ function registerVideoSocketHandlers({
     });
   });
 
+  /**
+   * `video_metadata`
+   * Accepts `{ roomCode, videoName, duration, sourceType, fileFingerprint, contentUrl }`,
+   * normalizes the current source metadata, updates room content state, and
+   * broadcasts the accepted source information to peers.
+   */
   socket.on("video_metadata", ({ roomCode, videoName, duration, sourceType, fileFingerprint, contentUrl } = {}) => {
     if (shouldDropSocketEvent("video_metadata")) return;
     const room = rooms.get(roomCode);
@@ -546,6 +591,13 @@ function registerVideoSocketHandlers({
     }
   });
 
+  /**
+   * `time_update`
+   * Accepts `{ roomCode, time, bufferAhead, readyState, isBuffering }`, ignores
+   * any client-supplied username after the security fix, stores the caller's
+   * heartbeat sample, emits a lightweight peer time update, and re-evaluates
+   * the server-side sync-wait heuristic.
+   */
   socket.on("time_update", ({ roomCode, username: _ignoredUsername, time, bufferAhead, readyState, isBuffering } = {}) => {
     if (shouldDropSocketEvent("time_update")) return;
     const room = rooms.get(roomCode);
