@@ -1,3 +1,8 @@
+/**
+ * Provides administrator-facing project summary data.
+ * The service aggregates counts and recent activity across the main Lumiere
+ * domains and is intended for routes guarded by the admin authorization check.
+ */
 'use strict'
 
 const {
@@ -9,11 +14,19 @@ const {
 const { memoryStore } =
   require('../models/memoryStore.js')
 
+/**
+ * Builds a high-level project overview for the admin dashboard.
+ * The returned payload includes cross-domain counts, recent activity, recent
+ * rooms, and static policy metadata, using either MongoDB or memory data.
+ * @param {string} uid - The requesting admin UID, used for personalized counts.
+ * @returns {Promise<object>} A summary object for the admin interface.
+ */
 async function getProjectOverview(uid) {
   const selfUid = String(uid || '').trim()
   const now = Date.now()
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000
 
+  // Query durable counts and recent rows directly from MongoDB when connected.
   if (getMongoConnected()) {
     const [
       users,
@@ -45,6 +58,7 @@ async function getProjectOverview(uid) {
       RoomModel.find({}).sort({ createdAt: -1 }).limit(12).lean(),
     ])
 
+    // Count weekly activity separately because it uses a date-bounded filter.
     const weekActivities = selfUid
       ? await ActivityEventModel.countDocuments({ uid: selfUid, occurredAt: { $gte: new Date(weekAgo) } })
       : 0
@@ -82,6 +96,7 @@ async function getProjectOverview(uid) {
     }
   }
 
+  // Rebuild the same dashboard shape from the in-memory fallback collections.
   const recentActivity = memoryStore.activityEvents
     .filter((item) => !selfUid || item.uid === selfUid)
     .slice(-12)

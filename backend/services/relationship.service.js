@@ -1,3 +1,8 @@
+/**
+ * Manages pair-based relationship records and couple-space state.
+ * Relationships capture the durable status between two sorted UIDs, while the
+ * couple space stores pair-scoped shared data such as the watchlist.
+ */
 'use strict'
 
 const {
@@ -21,22 +26,53 @@ const {
   MAX_WATCHLIST_NOTES_LENGTH,
 } = require('../config/constants.js')
 
+/**
+ * Normalizes a relationship type against the allowed enum.
+ * The fallback is also validated so callers cannot accidentally store an
+ * unsupported relationship type.
+ * @param {string} value - The raw relationship type.
+ * @param {string} [fallback='friends'] - The fallback type when the value is invalid.
+ * @returns {string} The normalized relationship type.
+ */
 function normalizeRelationshipType(value, fallback = 'friends') {
   const raw = String(value || '').trim().toLowerCase()
   if (ALLOWED_RELATIONSHIP_TYPES.includes(raw)) return raw
   return ALLOWED_RELATIONSHIP_TYPES.includes(fallback) ? fallback : 'friends'
 }
 
+/**
+ * Returns a sorted two-user array suitable for pair-based keys.
+ * Sorting is critical so every pair resolves to a consistent key regardless
+ * of which user initiated the request.
+ * @param {string} uidA - The first user UID.
+ * @param {string} uidB - The second user UID.
+ * @returns {string[]|null} The sorted UID pair or null when invalid.
+ */
 function sortedPairUsers(uidA, uidB) {
   if (!uidA || !uidB || uidA === uidB) return null
   return [uidA, uidB].sort()
 }
 
+/**
+ * Builds the durable `pairKey` used by relationship and couple-space records.
+ * The key is the two sorted UIDs joined with `__`, which guarantees a stable
+ * lookup value regardless of request direction.
+ * @param {string} uidA - The first user UID.
+ * @param {string} uidB - The second user UID.
+ * @returns {string|null} The normalized pair key.
+ */
 function pairKeyFromUsers(uidA, uidB) {
   const users = sortedPairUsers(uidA, uidB)
   return users ? users.join("__") : null
 }
 
+/**
+ * Normalizes a watchlist item stored inside a couple space.
+ * Titles, URLs, and notes are sanitized and length-limited, while flags and
+ * timestamps are coerced into a predictable shape for both storage paths.
+ * @param {object} [item={}] - The raw watchlist item.
+ * @returns {object} The normalized watchlist item.
+ */
 function normalizeWatchlistItem(item = {}) {
   return {
     id: String(item.id || ""),
@@ -50,6 +86,14 @@ function normalizeWatchlistItem(item = {}) {
   }
 }
 
+/**
+ * Maps a stored couple-space row into the API response shape.
+ * The mapper derives the partner UID from the current user and sorts the
+ * watchlist newest-first for the shared dashboard experience.
+ * @param {object} space - The stored couple-space record.
+ * @param {string} currentUid - The viewing user's UID.
+ * @returns {object} The mapped couple-space payload.
+ */
 function mapCoupleSpace(space, currentUid) {
   const users = Array.isArray(space?.users) ? [...space.users] : []
   const watchlist = Array.isArray(space?.watchlist) ? space.watchlist.map(normalizeWatchlistItem) : []
@@ -63,11 +107,21 @@ function mapCoupleSpace(space, currentUid) {
   }
 }
 
+/**
+ * Loads or optionally creates the couple-space record for a pair of users.
+ * Couple spaces are keyed by the same sorted pair key as relationships and can
+ * be lazily created the first time the pair needs shared watchlist state.
+ * @param {string} uidA - The first participant UID.
+ * @param {string} uidB - The second participant UID.
+ * @param {boolean} [createIfMissing=false] - Whether to create an empty space.
+ * @returns {Promise<object|null>} The stored couple-space row.
+ */
 async function getCoupleSpaceByUsers(uidA, uidB, createIfMissing = false) {
   const users = sortedPairUsers(uidA, uidB)
   if (!users) return null
   const pairKey = users.join("__")
 
+  // MongoDB stores the durable couple-space document keyed by pairKey.
   if (getMongoConnected()) {
     let space = await CoupleSpaceModel.findOne({ pairKey }).lean()
     if (!space && createIfMissing) {
@@ -77,6 +131,7 @@ async function getCoupleSpaceByUsers(uidA, uidB, createIfMissing = false) {
     return space
   }
 
+  // Memory mode mirrors the same lazy-creation behavior in the fallback map.
   const existing = memoryStore.coupleSpaces.get(pairKey)
   if (existing) return getProfileStoreCopy(existing)
   if (!createIfMissing) return null
@@ -92,6 +147,13 @@ async function getCoupleSpaceByUsers(uidA, uidB, createIfMissing = false) {
   return getProfileStoreCopy(fresh)
 }
 
+/**
+ * Saves a couple-space record using upsert semantics.
+ * The watchlist is normalized, capped to the configured maximum, and the
+ * original `createdAt` is preserved across later updates.
+ * @param {object} space - The couple-space payload to save.
+ * @returns {Promise<object>} The persisted or cached couple-space row.
+ */
 async function saveCoupleSpace(space) {
   const normalized = {
     pairKey: String(space.pairKey || ""),
@@ -106,6 +168,7 @@ async function saveCoupleSpace(space) {
     normalized.pairKey = pairKeyFromUsers(normalized.users[0], normalized.users[1]) || ""
   }
 
+  // Persist the normalized couple-space row when MongoDB is available.
   if (getMongoConnected()) {
     await CoupleSpaceModel.updateOne(
       { pairKey: normalized.pairKey },
@@ -115,6 +178,7 @@ async function saveCoupleSpace(space) {
     return CoupleSpaceModel.findOne({ pairKey: normalized.pairKey }).lean()
   }
 
+  // Mirror the upsert into the in-memory couple-space map.
   const existing = memoryStore.coupleSpaces.get(normalized.pairKey)
   const next = {
     ...(existing || {}),
@@ -125,10 +189,19 @@ async function saveCoupleSpace(space) {
   return getProfileStoreCopy(next)
 }
 
+/**
+ * Fetches the relationship row for a pair of users.
+ * The lookup always uses the sorted pair key so both directions resolve to the
+ * same durable relationship record.
+ * @param {string} uidA - The first user UID.
+ * @param {string} uidB - The second user UID.
+ * @returns {Promise<object|null>} The relationship row or null when missing.
+ */
 async function getRelationshipRow(uidA, uidB) {
   const users = sortedPairUsers(uidA, uidB)
   if (!users) return null
   const key = users.join("__")
+  // MongoDB uses the pairKey as the single source of truth.
   if (getMongoConnected()) {
     return RelationshipModel.findOne({ pairKey: key }).lean()
   }
@@ -136,11 +209,22 @@ async function getRelationshipRow(uidA, uidB) {
   return cached ? getProfileStoreCopy(cached) : null
 }
 
+/**
+ * Updates the current state of a relationship row.
+ * This tracks the effective status, requester/recipient direction, and audit
+ * fields like `lastActionBy` and `lastActionAt` for later reasoning.
+ * @param {string} uidA - One user in the relationship pair.
+ * @param {string} uidB - The other user in the relationship pair.
+ * @param {string} status - The next relationship status.
+ * @param {string} actorUid - The UID performing the transition.
+ * @returns {Promise<object|null>} The updated relationship row.
+ */
 async function setRelationshipState(uidA, uidB, status, actorUid) {
   const users = sortedPairUsers(uidA, uidB)
   if (!users) return null
   const now = new Date()
   const existing = await getRelationshipRow(users[0], users[1])
+  // Normalize the target status before deriving requester and recipient fields.
   const effectiveStatus = ["pending", "accepted", "rejected", "blocked"].includes(status) ? status : "pending"
   const actor = String(actorUid || "")
   const fallbackRequester = users.includes(actor) ? actor : String(existing?.requesterUid || existing?.requestedBy || "")
@@ -163,6 +247,7 @@ async function setRelationshipState(uidA, uidB, status, actorUid) {
     updatedAt: now,
   }
 
+  // Upsert the relationship row in MongoDB when persistent storage is available.
   if (getMongoConnected()) {
     await RelationshipModel.updateOne(
       { pairKey: payload.pairKey },
@@ -172,6 +257,7 @@ async function setRelationshipState(uidA, uidB, status, actorUid) {
     return RelationshipModel.findOne({ pairKey: payload.pairKey }).lean()
   }
 
+  // Otherwise update the fallback relationship map using the same canonical payload.
   const cached = memoryStore.relationships.get(payload.pairKey)
   const next = {
     ...(cached || {}),
@@ -182,6 +268,16 @@ async function setRelationshipState(uidA, uidB, status, actorUid) {
   return getProfileStoreCopy(next)
 }
 
+/**
+ * Updates the relationship type for an existing pair.
+ * This is separate from status changes so the app can refine whether a pair is
+ * a friendship, couple, family link, or other allowed relationship flavor.
+ * @param {string} uidA - The first user UID.
+ * @param {string} uidB - The second user UID.
+ * @param {string} relationshipType - The new relationship type.
+ * @param {string} [actorUid=''] - The UID performing the update.
+ * @returns {Promise<object|null>} The updated relationship row.
+ */
 async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") {
   const users = sortedPairUsers(uidA, uidB)
   if (!users) return null
@@ -189,6 +285,7 @@ async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") 
   const nextType = String(relationshipType || "friends").trim().toLowerCase() || "friends"
   const now = new Date()
 
+  // Persist the type change in MongoDB when available.
   if (getMongoConnected()) {
     await RelationshipModel.updateOne(
       { pairKey },
@@ -204,6 +301,7 @@ async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") 
     return RelationshipModel.findOne({ pairKey }).lean()
   }
 
+  // Mirror the same metadata update in the in-memory fallback row.
   const existing = memoryStore.relationships.get(pairKey)
   if (!existing) return null
   const next = {
@@ -217,6 +315,12 @@ async function setRelationshipType(uidA, uidB, relationshipType, actorUid = "") 
   return getProfileStoreCopy(next)
 }
 
+/**
+ * Loads a relationship row directly by pair key.
+ * This helper is useful once callers already have the normalized composite key.
+ * @param {string} pairKey - The normalized pair key.
+ * @returns {Promise<object|null>} The matching relationship row.
+ */
 async function getRelationshipByPairKey(pairKey) {
   const key = String(pairKey || "").trim()
   if (!key) return null
