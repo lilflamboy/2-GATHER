@@ -32,8 +32,27 @@ const YOUTUBE_REMOTE_GUARD_MS = 1400;
 const YOUTUBE_LOCAL_CONTROL_DEBOUNCE_MS = 900;
 const YOUTUBE_NATIVE_SEEK_DEBOUNCE_MS = 1400;
 const YOUTUBE_SCHEDULE_BUFFER_MS = 120;
+const ROOM_INVITE_RESEND_COOLDOWN_MS = 25000;
 
 let youtubeApiPromise = null;
+
+const describeYouTubePlayerError = (code, videoId = "") => {
+  switch (Number(code) || 0) {
+    case 2:
+      return "The shared YouTube link looks invalid for this player.";
+    case 5:
+      return "This browser could not play the embedded YouTube video.";
+    case 100:
+      return "This YouTube video is unavailable.";
+    case 101:
+    case 150:
+      return "This YouTube video does not allow embedded playback.";
+    default:
+      return videoId
+        ? `This device could not load the embedded YouTube video (${videoId}).`
+        : "This device could not load the embedded YouTube video.";
+  }
+};
 
 /**
  * Loads the YouTube iframe API exactly once for all room instances.
@@ -88,8 +107,91 @@ const loadYouTubeIframeApi = () => {
 };
 
 /**
+ * Verifies that a YouTube video can initialize inside an embedded player before
+ * the host syncs it to the whole room.
+ * @param {string} videoId - Parsed YouTube video id.
+ * @returns {Promise<void>} Resolves when the embed is ready, rejects with a host-facing message otherwise.
+ */
+const preflightYouTubeEmbed = async (videoId) => {
+  if (typeof window === "undefined" || typeof document === "undefined" || !videoId) {
+    throw new Error("This YouTube link looks invalid for Lumiere.");
+  }
+
+  let YT = null;
+  try {
+    YT = await loadYouTubeIframeApi();
+  } catch (error) {
+    const message = error?.message === "Failed to load YouTube API" || error?.message === "YouTube API load timed out"
+      ? "Lumiere could not verify this YouTube link right now. Try again, disable blockers, or upload a file instead."
+      : (error?.message || "Lumiere could not verify this YouTube link right now.");
+    throw new Error(message);
+  }
+
+  await new Promise((resolve, reject) => {
+    const probeHost = document.createElement("div");
+    probeHost.setAttribute("aria-hidden", "true");
+    probeHost.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;";
+    document.body.appendChild(probeHost);
+
+    let settled = false;
+    let player = null;
+    let timeoutId = null;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      try {
+        player?.destroy?.();
+      } catch (_) {
+        // Ignore teardown failures from the hidden probe player.
+      }
+      probeHost.remove();
+    };
+
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn(value);
+    };
+
+    timeoutId = setTimeout(() => {
+      finish(reject, new Error("This YouTube link took too long to verify inside Lumiere. Try another link or upload a file."));
+    }, 8000);
+    timeoutId.unref?.();
+
+    player = new YT.Player(probeHost, {
+      width: "1",
+      height: "1",
+      videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        rel: 0,
+        modestbranding: 1,
+        playsinline: 1,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: () => finish(resolve),
+        onError: (event) => {
+          const code = Number(event?.data) || 0;
+          const baseMessage = describeYouTubePlayerError(code, videoId);
+          const message = code === 101 || code === 150
+            ? "This YouTube video won't work inside Lumiere because YouTube blocks embedded playback. Choose another link or upload a file."
+            : baseMessage;
+          finish(reject, new Error(message));
+        },
+      },
+    });
+  });
+};
+
+/**
  * Renders the live room experience for all supported session modes.
- * @param {{user: object, username: string, socket: any, roomCode: string, roomType?: string, sessionMode?: string, roomMoodTag?: string, roomContentUrl?: string, roomContentType?: string, roomCreatedBy?: string, maxParticipants?: number, initialUsers: Array, initialVideoState: object, initialAudioState?: object|null, initialMessages: Array, initialVideoMetadata?: object|null, initialDocument?: object|null, initialReadingPage?: number, initialReadingState?: object|null, onLeave: () => void, addToast: (message: string, type?: string) => void, onSendFriendRequest?: Function, onRespondFriendRequest?: Function, friendRequests?: Array, friendRequestBusyByUid?: Record<string, boolean>, invites?: Array, onAcceptInvite?: Function}} props - Room snapshot, transport handles, and room-level action callbacks.
+ * @param {{user: object, username: string, socket: any, roomCode: string, roomType?: string, sessionMode?: string, roomMoodTag?: string, roomContentUrl?: string, roomContentType?: string, roomCreatedBy?: string, maxParticipants?: number, initialUsers: Array, initialVideoState: object, initialAudioState?: object|null, initialMessages: Array, initialVideoMetadata?: object|null, initialDocument?: object|null, initialReadingPage?: number, initialReadingState?: object|null, onLeave: () => void, addToast: (message: string, type?: string) => void, onSendFriendRequest?: Function, onRespondFriendRequest?: Function, onInviteFriend?: Function, friendRequests?: Array, friendRequestBusyByUid?: Record<string, boolean>, invites?: Array, onAcceptInvite?: Function}} props - Room snapshot, transport handles, and room-level action callbacks.
  * @returns {JSX.Element} The realtime room shell.
  */
 function RoomView({
@@ -116,6 +218,7 @@ function RoomView({
   addToast,
   onSendFriendRequest,
   onRespondFriendRequest,
+  onInviteFriend,
   friendRequests=[],
   friendRequestBusyByUid={},
   invites=[],
@@ -165,6 +268,7 @@ function RoomView({
   const lastReadingPageRequestAtRef=useRef(0);
   const readingReadyRef=useRef(false);
   const sharedDocumentRef=useRef(initialDocument||null);
+  const inviteCooldownTimeoutsRef=useRef({});
 
   // Core room UI state covers chat, playback, resource metadata, and side-panel visibility.
   const [messages,setMessages]=useState(initialMessages||[]);
@@ -178,6 +282,8 @@ function RoomView({
   const [resourceInput,setResourceInput]=useState(roomContentUrl||initialVideoMetadata?.contentUrl||"");
   const [resourceType,setResourceType]=useState(roomContentType||initialVideoMetadata?.sourceType||"unknown");
   const [youtubeVideoId,setYoutubeVideoId]=useState(extractYouTubeId(roomContentUrl||initialVideoMetadata?.contentUrl||""));
+  const [youtubeLoadError,setYoutubeLoadError]=useState("");
+  const [youtubeRetryNonce,setYoutubeRetryNonce]=useState(0);
   const [audioLoadWarning,setAudioLoadWarning]=useState("");
   const [audioDebugStatus,setAudioDebugStatus]=useState("");
   const [sharedDocument,setSharedDocument]=useState(initialDocument||null);
@@ -191,6 +297,7 @@ function RoomView({
   const [showChat,setShowChat]=useState(sessionMode!=="reading");
   const [showMoreMenu,setShowMoreMenu]=useState(false);
   const [showSourcePanel,setShowSourcePanel]=useState(false);
+  const [sourcePanelError,setSourcePanelError]=useState("");
   const [readingZoom,setReadingZoom]=useState(100);
   const [showPresets,setShowPresets]=useState(false);
   const [copied,setCopied]=useState(false);
@@ -208,6 +315,10 @@ function RoomView({
   // Social/action state tracks friend actions, document uploads, and avatar fallback status.
   const [friendBusyByUid,setFriendBusyByUid]=useState({});
   const [friendStatusByUid,setFriendStatusByUid]=useState({});
+  const [availableFriends,setAvailableFriends]=useState([]);
+  const [inviteBusyByUid,setInviteBusyByUid]=useState({});
+  const [inviteCooldownByUid,setInviteCooldownByUid]=useState({});
+  const [inviteHistoryByUid,setInviteHistoryByUid]=useState({});
   const [docUploading,setDocUploading]=useState(false);
   const [closePickerSignal,setClosePickerSignal]=useState(0);
   const [brokenAvatarUids,setBrokenAvatarUids]=useState({});
@@ -415,18 +526,19 @@ function RoomView({
   },[]);
 
   // useWebRTC encapsulates peer connections, local stream setup, and call controls.
-  const {inCall,micOn,camOn,localStreamRef,remoteStreams,joinCall,leaveCall,toggleMic,toggleCam}=
+  const {inCall,isJoiningCall,micOn,camOn,localStreamRef,remoteStreams,joinCall,leaveCall,toggleMic,toggleCam}=
     useWebRTC({socket,roomCode,myUid:user.uid,users,addToast});
+  const callVisible=inCall||isJoiningCall;
   const otherUsers=users.filter(u=>u.uid!==user.uid);
   const otherUserIdsKey=otherUsers.map(target=>target.uid).sort().join("|");
   const hostUid=roomCreatedBy||"";
   // True when this user is the teacher in a study
-  // session - they have full playback control.
+  // session — they have full playback control.
   const isStudyHost=
     sessionMode==="study"&&
     user?.uid===roomCreatedBy;
   // True when this user is a student in a study
-  // session - playback controls are locked for them.
+  // session — playback controls are locked for them.
   const isStudyStudent=
     sessionMode==="study"&&
     user?.uid!==roomCreatedBy;
@@ -439,14 +551,39 @@ function RoomView({
   const showGenericLoadState=!videoLoaded&&!showReadingFrame&&!useYouTubePlayer&&!isMusicMode;
   const showBottomTransport=!isReadingMode&&!hideNativeYouTubeFooter&&!isMusicMode;
   const canOpenExternalResource=isHttpUrl(sharedDocument?.fileUrl||resourceUrl);
+  const closeSourcePanel=useCallback(()=>{
+    setSourcePanelError("");
+    setShowSourcePanel(false);
+  },[]);
+  const clearInviteCooldownForUid=useCallback((uid)=>{
+    if(!uid)return;
+    const activeTimeout=inviteCooldownTimeoutsRef.current[uid];
+    if(activeTimeout){
+      clearTimeout(activeTimeout);
+      delete inviteCooldownTimeoutsRef.current[uid];
+    }
+    setInviteCooldownByUid(prev=>{
+      if(!(uid in prev))return prev;
+      const next={...prev};
+      delete next[uid];
+      return next;
+    });
+  },[]);
   const openSourcePanel=useCallback(()=>{
     if(!canChangeSource){
       addToast("Only the host can change the document in co-reading","error");
       return;
     }
     setResourceInput(resourceUrl||"");
+    setSourcePanelError("");
     setShowSourcePanel(true);
   },[canChangeSource,addToast,resourceUrl]);
+  const handleResourceInputChange=useCallback((e)=>{
+    setResourceInput(e.target.value);
+    if(sourcePanelError){
+      setSourcePanelError("");
+    }
+  },[sourcePanelError]);
 
   // Dismiss the friend menu when the user clicks anywhere outside the popover.
   useEffect(()=>{
@@ -480,12 +617,26 @@ function RoomView({
     };
   },[showMoreMenu]);
 
-  // If everyone else leaves, close the friend menu automatically.
+  // Reset invite cooldown timers whenever the user enters a new room and clean
+  // them up on unmount so stale timers never leak across sessions.
   useEffect(()=>{
-    if(otherUsers.length===0){
+    Object.values(inviteCooldownTimeoutsRef.current).forEach(clearTimeout);
+    inviteCooldownTimeoutsRef.current={};
+    setInviteBusyByUid({});
+    setInviteCooldownByUid({});
+    setInviteHistoryByUid({});
+    return()=>{
+      Object.values(inviteCooldownTimeoutsRef.current).forEach(clearTimeout);
+      inviteCooldownTimeoutsRef.current={};
+    };
+  },[roomCode]);
+
+  // If everyone else leaves and no friend roster is available, close the menu.
+  useEffect(()=>{
+    if(otherUsers.length===0&&availableFriends.length===0){
       setShowFriendMenu(false);
     }
-  },[otherUsers.length]);
+  },[otherUsers.length,availableFriends.length]);
 
   // Reading rooms default to document-first layout, so hide chat until the user opens it.
   useEffect(()=>{
@@ -581,6 +732,7 @@ function RoomView({
   // Derive the active YouTube id from the current room resource URL.
   useEffect(()=>{
     setYoutubeVideoId(extractYouTubeId(resourceUrl));
+    setYoutubeLoadError("");
   },[resourceUrl]);
 
   // Native HTML media sources can be loaded directly and then synced against the pending room state.
@@ -621,6 +773,7 @@ function RoomView({
   useEffect(()=>{
     if(!useYouTubePlayer){
       clearScheduledVideoStart();
+      setYoutubeLoadError("");
       if(youtubeProgressRef.current){
         clearInterval(youtubeProgressRef.current);
         youtubeProgressRef.current=null;
@@ -638,6 +791,7 @@ function RoomView({
 
     let cancelled=false;
     setVideoLoaded(false);
+    setYoutubeLoadError("");
     setDuration(0);
 
     // The YouTube path is effectively its own transport layer: we mirror player
@@ -670,6 +824,7 @@ function RoomView({
               if(cancelled)return;
               const player=youtubePlayerRef.current;
               setVideoLoaded(true);
+              setYoutubeLoadError("");
               setVideoName(`YouTube · ${youtubeVideoId}`);
               const total=Number(player?.getDuration?.()||0);
               if(total>0)setDuration(total);
@@ -766,15 +921,22 @@ function RoomView({
                 socket?.emit("request_pause",{roomCode,currentTime:current});
               }
             },
-            onError:()=>{
-              addToast("YouTube player failed to load","error");
+            onError:event=>{
+              const message=describeYouTubePlayerError(event?.data,youtubeVideoId);
+              setVideoLoaded(false);
+              setYoutubeLoadError(message);
+              addToast(message,"error");
             },
           },
         });
       })
       .catch(error=>{
         if(cancelled)return;
-        addToast(error.message||"Could not initialize YouTube player","error");
+        const message=error.message==="Failed to load YouTube API"||error.message==="YouTube API load timed out"
+          ?"This device could not reach the YouTube player. Check the network or disable ad blockers/privacy shields."
+          :(error.message||"Could not initialize YouTube player");
+        setYoutubeLoadError(message);
+        addToast(message,"error");
       });
 
     return()=>{
@@ -794,7 +956,7 @@ function RoomView({
       lastYouTubeSeekEmitAtRef.current=0;
       blockRemoteEcho(0);
     };
-  },[useYouTubePlayer,youtubeVideoId,initialAudioState,initialVideoState,addToast,clearScheduledVideoStart,isMusicMode,roomCode,socket]);
+  },[useYouTubePlayer,youtubeVideoId,youtubeRetryNonce,initialAudioState,initialVideoState,addToast,clearScheduledVideoStart,isMusicMode,roomCode,socket]);
 
   const handleSendFriendFromRoom=useCallback(async(target)=>{
     if(!target?.uid||!onSendFriendRequest)return;
@@ -815,13 +977,34 @@ function RoomView({
     }
   },[onSendFriendRequest,onRespondFriendRequest,friendStatusByUid]);
 
+  const handleInviteFriendFromRoom=useCallback(async(target)=>{
+    if(!target?.uid||!target.online||!onInviteFriend)return;
+    setInviteBusyByUid(prev=>({...prev,[target.uid]:true}));
+    try{
+      await onInviteFriend(target.uid);
+      const expiresAt=Date.now()+ROOM_INVITE_RESEND_COOLDOWN_MS;
+      clearInviteCooldownForUid(target.uid);
+      setInviteHistoryByUid(prev=>({...prev,[target.uid]:true}));
+      setInviteCooldownByUid(prev=>({...prev,[target.uid]:expiresAt}));
+      inviteCooldownTimeoutsRef.current[target.uid]=setTimeout(()=>{
+        clearInviteCooldownForUid(target.uid);
+      },ROOM_INVITE_RESEND_COOLDOWN_MS);
+    }catch(error){
+      addToast(error.message||"Could not send invite","error");
+    }finally{
+      setInviteBusyByUid(prev=>({...prev,[target.uid]:false}));
+    }
+  },[onInviteFriend,addToast,clearInviteCooldownForUid]);
+
   // Preload friendship state for the current room roster so the header/menu labels are accurate immediately.
   useEffect(()=>{
     let cancelled=false;
+    let refreshTimer=null;
 
     const syncRoomFriendStatuses=async()=>{
-      if(!auth.currentUser||otherUsers.length===0){
+      if(!auth.currentUser){
         setFriendStatusByUid({});
+        setAvailableFriends([]);
         return;
       }
 
@@ -837,6 +1020,7 @@ function RoomView({
         const friendsSet=new Set((Array.isArray(data?.friends)?data.friends:[]).map(item=>item?.uid).filter(Boolean));
         const incomingSet=new Set((Array.isArray(data?.incomingRequests)?data.incomingRequests:[]).map(item=>item?.uid).filter(Boolean));
         const outgoingSet=new Set((Array.isArray(data?.outgoingRequests)?data.outgoingRequests:[]).map(item=>item?.uid).filter(Boolean));
+        const friendRows=Array.isArray(data?.friends)?data.friends:[];
 
         const nextStatuses={};
         // Preload room-member friendship state so the header/menu renders "Friends"
@@ -852,14 +1036,21 @@ function RoomView({
         });
 
         setFriendStatusByUid(nextStatuses);
+        setAvailableFriends(friendRows);
       }catch{
         // Keep whatever room-level status we already have if the sync request fails.
       }
     };
 
     syncRoomFriendStatuses();
-    return()=>{cancelled=true;};
-  },[otherUserIdsKey,user.uid]);
+    if(showFriendMenu){
+      refreshTimer=setInterval(syncRoomFriendStatuses,15000);
+    }
+    return()=>{
+      cancelled=true;
+      if(refreshTimer)clearInterval(refreshTimer);
+    };
+  },[otherUserIdsKey,user.uid,showFriendMenu]);
 
   // Keep the newest chat message in view as the conversation grows.
   useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
@@ -1835,7 +2026,7 @@ function RoomView({
       e.target.value="";
       return;
     }
-    setShowSourcePanel(false);
+    closeSourcePanel();
     const validation=sessionEngine.validateFile?.(file)||{valid:true};
     if(!validation.valid){
       addToast(validation.reason||"Unsupported file for this mode","error");
@@ -1996,8 +2187,12 @@ function RoomView({
       return;
     }
     const raw=resourceInput.trim();
+    const reportLinkError=(message)=>{
+      setSourcePanelError(message);
+      addToast(message,"error");
+    };
     if(!raw){
-      addToast("Paste a link first","error");
+      reportLinkError("Paste a link first");
       return;
     }
     const resolved=sessionEngine.resolveResourceFromUrl?.(raw)||{
@@ -2008,7 +2203,7 @@ function RoomView({
       syncKind:"companion",
     };
     if(!resolved.valid){
-      addToast(resolved.reason||"Invalid link","error");
+      reportLinkError(resolved.reason||"Invalid link");
       return;
     }
 
@@ -2019,12 +2214,27 @@ function RoomView({
     // right loading path: YouTube iframe, HTML media, PDF, or companion link.
 
     setResourceInput(normalizedUrl);
-    setShowSourcePanel(false);
     if(isMusicMode){
       requiredAudioSignatureRef.current="";
       localAudioSignatureRef.current="";
       setAudioLoadWarning("");
     }
+
+    if(syncKind==="youtube"){
+      const nextVideoId=extractYouTubeId(normalizedUrl);
+      if(!nextVideoId){
+        reportLinkError("This YouTube link looks invalid for Lumiere.");
+        return;
+      }
+      try{
+        await preflightYouTubeEmbed(nextVideoId);
+      }catch(error){
+        reportLinkError(error.message||"This YouTube video won't work inside Lumiere. Choose another link or upload a file.");
+        return;
+      }
+    }
+
+    closeSourcePanel();
 
     if(isReadingMode&&sourceType==="pdf"){
       try{
@@ -2448,15 +2658,30 @@ function RoomView({
     return "Add friend";
   };
 
+  const roomUserUidSet=new Set(users.map(item=>item?.uid).filter(Boolean));
+  const inviteableFriends=availableFriends
+    .filter(friend=>friend?.uid&&friend.uid!==user.uid&&!roomUserUidSet.has(friend.uid))
+    .sort((a,b)=>{
+      const onlineDiff=Number(!!b?.online)-Number(!!a?.online);
+      if(onlineDiff!==0)return onlineDiff;
+      const aLabel=String(a?.displayName||a?.name||a?.username||"").toLowerCase();
+      const bLabel=String(b?.displayName||b?.name||b?.username||"").toLowerCase();
+      return aLabel.localeCompare(bLabel);
+    });
+  const onlineInviteableFriends=inviteableFriends.filter(friend=>friend.online);
+  const offlineInviteableFriends=inviteableFriends.filter(friend=>!friend.online);
+  const hasFriendRoster=availableFriends.length>0;
   const singleOtherUser=otherUsers.length===1?otherUsers[0]:null;
   const singleOtherUserStatus=singleOtherUser?(friendStatusByUid[singleOtherUser.uid]||""):"";
   const allOtherUsersAreFriends=otherUsers.length>0&&otherUsers.every(target=>friendStatusByUid[target.uid]==="already_friends");
   // For 1:1 rooms we can mirror the exact relationship label in the header button.
   // In larger rooms, showing "Friends" only makes sense when everyone in the room already is.
-  const roomFriendButtonLabel=singleOtherUser
-    ?getFriendStatusLabel(singleOtherUserStatus)
-    :(allOtherUsersAreFriends?"Friends":"Add Friend");
-  const roomFriendButtonSettled=singleOtherUserStatus==="already_friends"||allOtherUsersAreFriends;
+  const roomFriendButtonLabel=hasFriendRoster
+    ?"Friends"
+    :singleOtherUser
+      ?getFriendStatusLabel(singleOtherUserStatus)
+      :(allOtherUsersAreFriends?"Friends":"Add Friend");
+  const roomFriendButtonSettled=hasFriendRoster||singleOtherUserStatus==="already_friends"||allOtherUsersAreFriends;
 
   return(
     <div className={`h-dvh min-h-screen flex flex-col overflow-hidden relative ${isReadingMode?"bg-zinc-50":"bg-screen"}`}>
@@ -2511,7 +2736,7 @@ function RoomView({
                     >
                       Open resource
                     </button>
-                    {!inCall?(
+                    {!callVisible?(
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);joinCall(true);}}
@@ -2525,7 +2750,7 @@ function RoomView({
                         onClick={()=>{setShowMoreMenu(false);leaveCall();}}
                         className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-red-600 hover:bg-red-50"
                       >
-                        End call
+                        {isJoiningCall?"Cancel call":"End call"}
                       </button>
                     )}
                     <button
@@ -2595,7 +2820,7 @@ function RoomView({
                 </button>
               )}
               <span className="flex items-center gap-1 text-zinc-500 text-xs"><Users size={12}/>{users.length}/{maxParticipants}</span>
-              {otherUsers.length>0&&(
+              {(otherUsers.length>0||hasFriendRoster)&&(
                 <div ref={friendMenuRef} className="relative hidden sm:block">
                   <button
                     type="button"
@@ -2608,43 +2833,146 @@ function RoomView({
                         ?"border-zinc-600 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800"
                         :"border-amber-500/35 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20"
                     }`}
-                    title={singleOtherUserStatus==="needs_accept"?"Accept friend request":"View room people"}
+                    title={singleOtherUserStatus==="needs_accept"?"Accept friend request":"View room people and invite friends"}
                   >
                     <UserPlus size={12}/>
                     <span className="hidden md:inline">{roomFriendButtonLabel}</span>
                   </button>
                   {showFriendMenu&&(
-                    <div className="absolute right-0 mt-2 w-72 max-w-[80vw] rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-2 z-40">
-                      <p className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-zinc-500">People in room</p>
-                      <div className="max-h-60 overflow-y-auto flex flex-col gap-1">
-                        {otherUsers.map(target=>{
-                          const status=friendStatusByUid[target.uid]||"";
-                          const isBusy=!!friendBusyByUid[target.uid];
-                          const disableAction=isBusy||status==="already_friends"||status==="already_requested"||status==="requested";
-                          const label=`@${target.username||target.name||"friend"}`;
-                          return(
-                            <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
-                              {renderUserAvatar(target,"w-7 h-7","text-[11px]",target.name||label)}
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs text-zinc-200 truncate">{label}</p>
-                                <p className="text-[11px] text-zinc-500 truncate">{target.name||"Viewer"}</p>
-                              </div>
-                              <button
-                                type="button"
-                                disabled={disableAction}
-                                onClick={()=>handleSendFriendFromRoom(target)}
-                                className={`text-[11px] px-2 py-1 rounded-md border transition-colors whitespace-nowrap ${
-                                  disableAction
-                                    ?"bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed"
-                                    :"bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
-                                }`}
-                                title={status==="needs_accept"?"Accept friend request":"Send friend request"}
-                              >
-                                {isBusy?"Sending...":getFriendStatusLabel(status)}
-                              </button>
+                    <div className="absolute right-0 mt-2 w-80 max-w-[84vw] rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-2 z-40">
+                      <div className="max-h-72 overflow-y-auto space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between px-2 py-1.5">
+                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">People in room</p>
+                            {otherUsers.length>0&&<span className="text-[10px] text-zinc-500">{otherUsers.length}</span>}
+                          </div>
+                          {otherUsers.length>0?(
+                            <div className="flex flex-col gap-1">
+                              {otherUsers.map(target=>{
+                                const status=friendStatusByUid[target.uid]||"";
+                                const isBusy=!!friendBusyByUid[target.uid];
+                                const disableAction=isBusy||status==="already_friends"||status==="already_requested"||status==="requested";
+                                const label=`@${target.username||target.name||"friend"}`;
+                                return(
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
+                                    {renderUserAvatar(target,"w-7 h-7","text-[11px]",target.name||label)}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <p className="text-xs text-zinc-200 truncate">{label}</p>
+                                        <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-emerald-300">Here</span>
+                                      </div>
+                                      <p className="text-[11px] text-zinc-500 truncate">{target.name||"Viewer"}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      disabled={disableAction}
+                                      onClick={()=>handleSendFriendFromRoom(target)}
+                                      className={`text-[11px] px-2 py-1 rounded-md border transition-colors whitespace-nowrap ${
+                                        disableAction
+                                          ?"bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed"
+                                          :"bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                                      }`}
+                                      title={status==="needs_accept"?"Accept friend request":"Send friend request"}
+                                    >
+                                      {isBusy?"Sending...":getFriendStatusLabel(status)}
+                                    </button>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          );
-                        })}
+                          ):(
+                            <p className="px-2 pb-1 text-[11px] text-zinc-500">No one else is in the room yet.</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between px-2 py-1.5">
+                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Online friends</p>
+                            {onlineInviteableFriends.length>0&&<span className="text-[10px] text-zinc-500">{onlineInviteableFriends.length}</span>}
+                          </div>
+                          {onlineInviteableFriends.length>0?(
+                            <div className="flex flex-col gap-1">
+                              {onlineInviteableFriends.map(target=>{
+                                const displayName=target.displayName||target.name||"Friend";
+                                const label=`@${target.username||"friend"}`;
+                                const isInviting=!!inviteBusyByUid[target.uid];
+                                const isCoolingDown=Number(inviteCooldownByUid[target.uid]||0)>Date.now();
+                                const hasBeenInvited=!!inviteHistoryByUid[target.uid];
+                                const inviteLabel=isInviting
+                                  ?"Inviting..."
+                                  :isCoolingDown
+                                    ?"Invited"
+                                    :hasBeenInvited
+                                      ?"Invite Again"
+                                      :"Invite";
+                                return(
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
+                                    {renderUserAvatar(target,"w-7 h-7","text-[11px]",displayName)}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"/>
+                                        <p className="text-xs text-zinc-200 truncate">{label}</p>
+                                      </div>
+                                      <p className="text-[11px] text-zinc-500 truncate">{displayName}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      disabled={isInviting||isCoolingDown}
+                                      onClick={()=>handleInviteFriendFromRoom(target)}
+                                      className={`text-[11px] px-2 py-1 rounded-md border transition-colors whitespace-nowrap ${
+                                        isInviting||isCoolingDown
+                                          ?"bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed"
+                                          :"bg-amber-500/15 border-amber-500/40 text-amber-200 hover:bg-amber-500/25"
+                                      }`}
+                                      title={hasBeenInvited&&!isCoolingDown?"Send another room invite":"Invite this friend to the room"}
+                                    >
+                                      {inviteLabel}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ):(
+                            <p className="px-2 pb-1 text-[11px] text-zinc-500">No online friends are ready to invite right now.</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between px-2 py-1.5">
+                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Offline friends</p>
+                            {offlineInviteableFriends.length>0&&<span className="text-[10px] text-zinc-500">{offlineInviteableFriends.length}</span>}
+                          </div>
+                          {offlineInviteableFriends.length>0?(
+                            <div className="flex flex-col gap-1">
+                              {offlineInviteableFriends.map(target=>{
+                                const displayName=target.displayName||target.name||"Friend";
+                                const label=`@${target.username||"friend"}`;
+                                return(
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-900/50 px-2 py-2 opacity-60">
+                                    {renderUserAvatar(target,"w-7 h-7","text-[11px]",displayName)}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"/>
+                                        <p className="text-xs text-zinc-300 truncate">{label}</p>
+                                      </div>
+                                      <p className="text-[11px] text-zinc-500 truncate">{displayName}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      disabled
+                                      className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed whitespace-nowrap"
+                                      title="Offline friends cannot be invited right now"
+                                    >
+                                      Offline
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ):(
+                            <p className="px-2 pb-1 text-[11px] text-zinc-500">All available friends are already online above.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2689,7 +3017,7 @@ function RoomView({
                     >
                       Open resource
                     </button>
-                    {!inCall?(
+                    {!callVisible?(
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);joinCall(true);}}
@@ -2703,7 +3031,7 @@ function RoomView({
                         onClick={()=>{setShowMoreMenu(false);leaveCall();}}
                         className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-red-300 hover:bg-red-500/10"
                       >
-                        End call
+                        {isJoiningCall?"Cancel call":"End call"}
                       </button>
                     )}
                     <button
@@ -2716,18 +3044,19 @@ function RoomView({
                   </div>
                 )}
               </div>
-              {!inCall
+              {!callVisible
                 ?<button onClick={()=>joinCall(true)}
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-green-600 hover:bg-green-500 text-white font-medium transition-all shadow-lg shadow-green-900/30 sm:px-3 sm:py-1.5">
                     <Phone size={12}/> Start Call
                   </button>
                 :<div className="flex items-center gap-2">
-                    <span className="hidden sm:flex text-green-400 text-xs items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"/> In Call
+                    <span className={`hidden sm:flex text-xs items-center gap-1 ${isJoiningCall?"text-amber-300":"text-green-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isJoiningCall?"bg-amber-300 animate-pulse":"bg-green-400 animate-pulse"}`}/>
+                      {isJoiningCall?"Starting...":"In Call"}
                     </span>
                     <button onClick={leaveCall}
                       className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-medium transition-all sm:px-3 sm:py-1.5">
-                      <PhoneOff size={12}/> End Call
+                      <PhoneOff size={12}/>{isJoiningCall?"Cancel":"End Call"}
                     </button>
                   </div>
               }
@@ -2954,7 +3283,7 @@ function RoomView({
                             <Link2 size={15} className="shrink-0 text-zinc-500"/>
                             <input
                               value={resourceInput}
-                              onChange={e=>setResourceInput(e.target.value)}
+                              onChange={handleResourceInputChange}
                               disabled={!canChangeSource}
                               onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
                               placeholder={engineUi.resourcePlaceholder||"Paste audio link"}
@@ -3106,7 +3435,38 @@ function RoomView({
                 </div>
               </div>
             )}
-            {useYouTubePlayer&&!videoLoaded&&!isMusicMode&&(
+            {useYouTubePlayer&&!!youtubeLoadError&&!isMusicMode&&(
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-950/88 z-20 px-6 text-center">
+                <div className="w-14 h-14 rounded-full border border-red-400/25 bg-red-500/10 flex items-center justify-center">
+                  <span className="text-red-300 text-xl">!</span>
+                </div>
+                <div className="max-w-md">
+                  <p className="text-zinc-100 text-lg font-semibold">Could not load YouTube on this device</p>
+                  <p className="text-zinc-300 text-sm mt-2 leading-6">{youtubeLoadError}</p>
+                  <p className="text-zinc-500 text-xs mt-3 leading-5">
+                    This is usually caused by ad blockers, privacy shields, restricted networks, or browser-specific YouTube embed issues.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={()=>setYoutubeRetryNonce(v=>v+1)}
+                    className="rounded-xl border border-zinc-600 px-4 py-2 text-xs text-zinc-100 transition-colors hover:border-zinc-400 hover:bg-zinc-900"
+                  >
+                    Retry player
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openResourceInNewTab}
+                    disabled={!canOpenExternalResource}
+                    className="rounded-xl bg-amber-300 px-4 py-2 text-xs font-medium text-zinc-950 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Open on YouTube
+                  </button>
+                </div>
+              </div>
+            )}
+            {useYouTubePlayer&&!videoLoaded&&!youtubeLoadError&&!isMusicMode&&(
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 z-10 pointer-events-none">
                 <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-amber-300 animate-spin"/>
                 <p className="text-zinc-300 text-sm">Loading YouTube player...</p>
@@ -3151,7 +3511,7 @@ function RoomView({
                       {sessionMode==="reading"?<FileText size={14} className="text-zinc-500 shrink-0"/>:<Link2 size={14} className="text-zinc-500 shrink-0"/>}
                       <input
                         value={resourceInput}
-                        onChange={e=>setResourceInput(e.target.value)}
+                        onChange={handleResourceInputChange}
                         disabled={!canChangeSource}
                         onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
                         placeholder={engineUi.resourcePlaceholder||"Paste resource link"}
@@ -3315,7 +3675,7 @@ function RoomView({
                   </div>
                   <button
                     type="button"
-                    onClick={()=>setShowSourcePanel(false)}
+                    onClick={closeSourcePanel}
                     className={`p-1.5 rounded-lg border ${isReadingMode?"border-zinc-200 text-zinc-500 hover:text-zinc-800":"border-zinc-700 text-zinc-400 hover:text-zinc-200"}`}
                   >
                     <X size={12}/>
@@ -3343,7 +3703,7 @@ function RoomView({
                       {sessionMode==="reading"?<FileText size={13} className="text-zinc-500 shrink-0"/>:<Link2 size={13} className="text-zinc-500 shrink-0"/>}
                       <input
                         value={resourceInput}
-                        onChange={e=>setResourceInput(e.target.value)}
+                        onChange={handleResourceInputChange}
                         placeholder={engineUi.resourcePlaceholder||"Paste link"}
                         className={`flex-1 bg-transparent py-2 text-xs focus:outline-none ${isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"}`}
                       />
@@ -3363,6 +3723,11 @@ function RoomView({
                       </button>
                     </div>
                   </>
+                )}
+                {sourcePanelError&&(
+                  <p className={`mt-2 text-[11px] leading-5 ${isReadingMode?"text-red-600":"text-red-300"}`}>
+                    {sourcePanelError}
+                  </p>
                 )}
                 {!canChangeSource&&(
                   <p className="mt-2 text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
@@ -3437,9 +3802,10 @@ function RoomView({
           )}
 
           {/* Call window stays inside the stage container so fullscreen mode still shows the call overlay. */}
-          {inCall&&(
+          {callVisible&&(
             <DraggableCallWindow
-              inCall={inCall} micOn={micOn} camOn={camOn}
+              inCall={inCall} isConnecting={isJoiningCall}
+              micOn={micOn} camOn={camOn}
               localStreamRef={localStreamRef} remoteStreams={remoteStreams}
               users={users} myUid={user.uid} myName={username}
               onLeave={leaveCall} onToggleMic={toggleMic} onToggleCam={toggleCam}

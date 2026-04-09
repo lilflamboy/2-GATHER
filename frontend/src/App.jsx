@@ -268,6 +268,7 @@ export default function App(){
             onLeave={roomActions.handleLeave} addToast={addToast}
             onSendFriendRequest={friends.handleSendFriendRequest}
             onRespondFriendRequest={friends.handleRespondFriendRequest}
+            onInviteFriend={roomActions.handleInviteFriend}
             friendRequests={friends.incomingFriendRequests}
             friendRequestBusyByUid={friends.friendRequestBusyByUid}
             invites={room.incomingInvites}
