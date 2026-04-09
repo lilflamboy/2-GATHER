@@ -338,6 +338,15 @@ function registerRoomSocketHandlers({
         if (typeof ack === "function") ack({ ok: false, error: "Room not found" });
         return;
       }
+      // Study mode: only the room creator (teacher) can
+      // control playback. Drop the event silently if a
+      // student tries to trigger it.
+      if (
+        room.sessionMode === "study" &&
+        uid !== room.createdBy
+      ) {
+        return;
+      }
       if (room.sessionMode !== "reading") {
         if (typeof ack === "function") ack({ ok: false, error: "Document sync is only available in co-reading rooms" });
         return;
