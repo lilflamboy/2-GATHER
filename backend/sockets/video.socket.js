@@ -74,6 +74,15 @@ function registerVideoSocketHandlers({
       if (typeof ack === "function") ack({ ok: false, error: "Room not found" });
       return;
     }
+    // Study mode: only the room creator (teacher) can
+    // control playback. Drop the event silently if a
+    // student tries to trigger it.
+    if (
+      room.sessionMode === "study" &&
+      uid !== room.createdBy
+    ) {
+      return;
+    }
     if (room.sessionMode === "music") {
       // Local audio cannot be synchronized safely unless everyone loaded the
       // same file, so music control checks the shared file signature first.
@@ -181,6 +190,15 @@ function registerVideoSocketHandlers({
       if (typeof ack === "function") ack({ ok: false, error: "Room not found" });
       return;
     }
+    // Study mode: only the room creator (teacher) can
+    // control playback. Drop the event silently if a
+    // student tries to trigger it.
+    if (
+      room.sessionMode === "study" &&
+      uid !== room.createdBy
+    ) {
+      return;
+    }
     if (room.sessionMode === "music") {
       const validation = validateMusicControlRequest(room, fileSignature);
       if (!validation.ok) {
@@ -274,6 +292,15 @@ function registerVideoSocketHandlers({
     const room = rooms.get(roomCode);
     if (!room || !room.users.has(uid)) {
       if (typeof ack === "function") ack({ ok: false, error: "Room not found" });
+      return;
+    }
+    // Study mode: only the room creator (teacher) can
+    // control playback. Drop the event silently if a
+    // student tries to trigger it.
+    if (
+      room.sessionMode === "study" &&
+      uid !== room.createdBy
+    ) {
       return;
     }
     if (room.sessionMode === "music") {
@@ -378,6 +405,15 @@ function registerVideoSocketHandlers({
     if (shouldDropSocketEvent("bookmark_seek")) return;
     const room = rooms.get(roomCode);
     if (!room || !room.users.has(uid)) return;
+    // Study mode: only the room creator (teacher) can
+    // control playback. Drop the event silently if a
+    // student tries to trigger it.
+    if (
+      room.sessionMode === "study" &&
+      uid !== room.createdBy
+    ) {
+      return;
+    }
 
     const time = clampTime(seekTime);
     // Bookmark seek is a user-friendly wrapper around hard sync: it records the
@@ -462,6 +498,15 @@ function registerVideoSocketHandlers({
     if (shouldDropSocketEvent("video_metadata")) return;
     const room = rooms.get(roomCode);
     if (!room || !room.users.has(uid)) return;
+    // Study mode: only the room creator (teacher) can
+    // control playback. Drop the event silently if a
+    // student tries to trigger it.
+    if (
+      room.sessionMode === "study" &&
+      uid !== room.createdBy
+    ) {
+      return;
+    }
     if (room.sessionMode === "reading" && room.createdBy && room.createdBy !== uid) {
       socket.emit("error", { message: "Only the host can change the document in co-reading" });
       return;
