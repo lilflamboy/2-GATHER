@@ -25,7 +25,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Maximize, Minimize,
   Users, UserPlus, Wifi, WifiOff, Upload, Send, X,
   Menu, Phone, PhoneOff, Volume2, VolumeX, Bookmark,
-  Headphones, Link2, FileText, Lock,
+  Headphones, Link2, FileText, Lock, GraduationCap,
 } from "lucide-react";
 
 const YOUTUBE_REMOTE_GUARD_MS = 1400;
@@ -2742,6 +2742,22 @@ function RoomView({
         {/* Main stage contains the player/document canvas, overlays, source controls, and floating call window. */}
         <div ref={containerRef} className={`flex-1 flex flex-col overflow-hidden relative min-w-0 min-h-[45dvh] lg:min-h-0 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/70"}`}>
           <div className={`flex-1 relative flex items-center justify-center overflow-hidden ${isReadingMode?"bg-zinc-100":"bg-black"}`}>
+            {isStudyHost&&(
+              <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-300 text-xs">
+                <GraduationCap size={14}/>
+                <span>
+                  You are the teacher - you control playback for all students in this session.
+                </span>
+              </div>
+            )}
+            {isStudyStudent&&(
+              <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-4 py-2 bg-zinc-800/80 border-b border-zinc-700/50 text-zinc-400 text-xs">
+                <Lock size={14}/>
+                <span>
+                  Your teacher controls playback. Use the chat to ask questions.
+                </span>
+              </div>
+            )}
             {isMusicMode&&!useYouTubePlayer&&(
               <audio
                 ref={audioRef}
@@ -3392,7 +3408,15 @@ function RoomView({
               </button>
               {videoName&&<span className="text-zinc-600 text-xs font-mono truncate max-w-[180px] hidden lg:block ml-1">{videoName}</span>}
               <div className="flex-1"/>
-              <span className="text-zinc-700 text-xs hidden sm:block">{isMusicMode?"Equal control • master clock sync":"Everyone controls"}</span>
+              <span className="text-zinc-700 text-xs hidden sm:block">
+                {isMusicMode
+                  ?"Equal control • master clock sync"
+                  :sessionMode==="study"
+                    ?isStudyHost
+                      ?"You are the teacher"
+                      :"Teacher controls"
+                    :"Everyone controls"}
+              </span>
               {!isMusicMode&&(
                 <button onClick={handleFullscreen} title={isFullscreen?"Exit fullscreen":"Fullscreen"}
                   className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
