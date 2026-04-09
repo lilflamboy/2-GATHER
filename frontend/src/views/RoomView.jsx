@@ -3494,7 +3494,7 @@ function RoomView({
                 ✨
               </button>
               <input value={chatInput} onChange={e=>setChatInput(e.target.value)}
-                placeholder={chatPlaceholder} maxLength={500}
+                placeholder={sessionMode==="study"?"Ask a question, raise hand, share notes...":chatPlaceholder} maxLength={500}
                 onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(e);}}}
                 className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500/50 transition-colors min-w-0 ${
                   isReadingMode
