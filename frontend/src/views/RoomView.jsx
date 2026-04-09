@@ -25,7 +25,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Maximize, Minimize,
   Users, UserPlus, Wifi, WifiOff, Upload, Send, X,
   Menu, Phone, PhoneOff, Volume2, VolumeX, Bookmark,
-  Headphones, Link2, FileText,
+  Headphones, Link2, FileText, Lock,
 } from "lucide-react";
 
 const YOUTUBE_REMOTE_GUARD_MS = 1400;
@@ -2983,8 +2983,10 @@ function RoomView({
                           max={duration||100}
                           step={0.1}
                           value={currentTime}
-                          disabled={!videoLoaded}
-                          className="flex-1 accent-amber-400 cursor-pointer"
+                          disabled={!videoLoaded||isStudyStudent}
+                          className={`flex-1 accent-amber-400 ${
+                            isStudyStudent?"cursor-not-allowed opacity-40":"cursor-pointer"
+                          }`}
                           style={{height:"4px"}}
                           onMouseDown={()=>{isScrubbing.current=true;}}
                           onTouchStart={()=>{isScrubbing.current=true;}}
@@ -2999,26 +3001,33 @@ function RoomView({
                           <button
                             type="button"
                             onClick={()=>handleSkip(-10)}
-                            disabled={!videoLoaded}
+                            disabled={!videoLoaded||isStudyStudent}
                             title="Back 10s"
-                            className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors"
+                            className={`p-2 rounded-xl text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
+                              isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                            }`}
                           >
                             <SkipBack size={16}/>
                           </button>
                           <button
                             type="button"
-                            onClick={handlePlayPause}
-                            disabled={!videoLoaded}
-                            className="h-12 w-12 rounded-full bg-amber-300 hover:bg-amber-200 flex items-center justify-center text-zinc-950 transition-colors disabled:opacity-30 shadow-lg shadow-amber-500/20"
+                            onClick={isStudyStudent?undefined:handlePlayPause}
+                            disabled={!videoLoaded||isStudyStudent}
+                            title={isStudyStudent?"Your teacher controls playback":isPlaying?"Pause":"Play"}
+                            className={`h-12 w-12 rounded-full bg-amber-300 flex items-center justify-center text-zinc-950 transition-colors disabled:opacity-30 shadow-lg shadow-amber-500/20 ${
+                              isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-amber-200 cursor-pointer"
+                            }`}
                           >
-                            {isPlaying?<Pause size={18}/>:<Play size={18} className="ml-0.5"/>}
+                            {isStudyStudent?<Lock size={16}/>:isPlaying?<Pause size={18}/>:<Play size={18} className="ml-0.5"/>}
                           </button>
                           <button
                             type="button"
                             onClick={()=>handleSkip(10)}
-                            disabled={!videoLoaded}
+                            disabled={!videoLoaded||isStudyStudent}
                             title="Forward 10s"
-                            className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors"
+                            className={`p-2 rounded-xl text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
+                              isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                            }`}
                           >
                             <SkipForward size={16}/>
                           </button>
@@ -3091,61 +3100,63 @@ function RoomView({
                     <p className="text-amber-300 text-xs mt-1">Uploading PDF for room sharing...</p>
                   )}
                 </div>
-                <div className="w-full max-w-xl px-4 space-y-2">
-                  <div className="flex gap-2">
-                    <button onClick={()=>fileInputRef.current?.click()} disabled={!canChangeSource}
-                      className={`font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2 ${
-                        canChangeSource
-                          ?isReadingMode
-                            ?"bg-zinc-900 hover:bg-zinc-700 text-white"
-                            :"bg-amber-300 hover:bg-amber-200 text-zinc-950 shadow-lg shadow-amber-900/30"
-                          :"bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
-                      }`}>
-                      <Upload size={15}/> {uploadButtonLabel}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={openResourceInNewTab}
-                      disabled={!showCompanionLink&&!showReadingFrame}
-                      className={`px-4 py-2.5 rounded-xl border disabled:opacity-45 disabled:cursor-not-allowed text-sm ${isReadingMode?"border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:border-zinc-500":"border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500"}`}
-                    >
-                      Open linked resource
-                    </button>
+                {!isStudyStudent&&(
+                  <div className="w-full max-w-xl px-4 space-y-2">
+                    <div className="flex gap-2">
+                      <button onClick={()=>fileInputRef.current?.click()} disabled={!canChangeSource}
+                        className={`font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2 ${
+                          canChangeSource
+                            ?isReadingMode
+                              ?"bg-zinc-900 hover:bg-zinc-700 text-white"
+                              :"bg-amber-300 hover:bg-amber-200 text-zinc-950 shadow-lg shadow-amber-900/30"
+                            :"bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
+                        }`}>
+                        <Upload size={15}/> {uploadButtonLabel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={openResourceInNewTab}
+                        disabled={!showCompanionLink&&!showReadingFrame}
+                        className={`px-4 py-2.5 rounded-xl border disabled:opacity-45 disabled:cursor-not-allowed text-sm ${isReadingMode?"border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:border-zinc-500":"border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500"}`}
+                      >
+                        Open linked resource
+                      </button>
+                    </div>
+                    <div className={`flex items-center gap-2 rounded-xl border px-3 ${isReadingMode?"border-zinc-300 bg-white":"border-zinc-700 bg-zinc-900/70"}`}>
+                      {sessionMode==="reading"?<FileText size={14} className="text-zinc-500 shrink-0"/>:<Link2 size={14} className="text-zinc-500 shrink-0"/>}
+                      <input
+                        value={resourceInput}
+                        onChange={e=>setResourceInput(e.target.value)}
+                        disabled={!canChangeSource}
+                        onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
+                        placeholder={engineUi.resourcePlaceholder||"Paste resource link"}
+                        className={`flex-1 bg-transparent py-2 text-sm focus:outline-none ${
+                          isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"
+                        } ${!canChangeSource?"cursor-not-allowed opacity-60":""}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleLoadResourceLink}
+                        disabled={!canChangeSource}
+                        className={`text-[11px] px-2.5 py-1.5 rounded-lg border ${
+                          canChangeSource
+                            ?isReadingMode
+                              ?"bg-zinc-100 hover:bg-zinc-200 border-zinc-300 text-zinc-700"
+                              :"bg-zinc-800 hover:bg-zinc-700 border-zinc-600 text-zinc-200"
+                            :"bg-zinc-800/60 border-zinc-700 text-zinc-500 cursor-not-allowed"
+                        }`}
+                      >
+                        {sessionMode==="watch"?"Load YouTube":"Load Link"}
+                      </button>
+                    </div>
+                    {!canChangeSource&&isReadingMode&&(
+                      <p className="text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
+                    )}
+                    {audioLoadWarning&&!isReadingMode&&(
+                      <p className="text-[11px] text-amber-300">{audioLoadWarning}</p>
+                    )}
                   </div>
-                  <div className={`flex items-center gap-2 rounded-xl border px-3 ${isReadingMode?"border-zinc-300 bg-white":"border-zinc-700 bg-zinc-900/70"}`}>
-                    {sessionMode==="reading"?<FileText size={14} className="text-zinc-500 shrink-0"/>:<Link2 size={14} className="text-zinc-500 shrink-0"/>}
-                    <input
-                      value={resourceInput}
-                      onChange={e=>setResourceInput(e.target.value)}
-                      disabled={!canChangeSource}
-                      onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
-                      placeholder={engineUi.resourcePlaceholder||"Paste resource link"}
-                      className={`flex-1 bg-transparent py-2 text-sm focus:outline-none ${
-                        isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"
-                      } ${!canChangeSource?"cursor-not-allowed opacity-60":""}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleLoadResourceLink}
-                      disabled={!canChangeSource}
-                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border ${
-                        canChangeSource
-                          ?isReadingMode
-                            ?"bg-zinc-100 hover:bg-zinc-200 border-zinc-300 text-zinc-700"
-                            :"bg-zinc-800 hover:bg-zinc-700 border-zinc-600 text-zinc-200"
-                          :"bg-zinc-800/60 border-zinc-700 text-zinc-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {sessionMode==="watch"?"Load YouTube":"Load Link"}
-                    </button>
-                  </div>
-                  {!canChangeSource&&isReadingMode&&(
-                    <p className="text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
-                  )}
-                  {audioLoadWarning&&!isReadingMode&&(
-                    <p className="text-[11px] text-amber-300">{audioLoadWarning}</p>
-                  )}
-                </div>
+                )}
               </div>
             )}
             {/* The co-reading panel renders the shared PDF plus host-driven page/zoom controls. */}
@@ -3285,45 +3296,49 @@ function RoomView({
                     <X size={12}/>
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={()=>fileInputRef.current?.click()}
-                  disabled={!canChangeSource}
-                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                    canChangeSource
-                      ?isReadingMode
-                        ?"bg-zinc-900 text-white hover:bg-zinc-700"
-                        :"bg-amber-400 text-zinc-950 hover:bg-amber-300"
-                      :"bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
-                  }`}
-                >
-                  <Upload size={13}/> Choose file
-                </button>
-                <div className={`mt-2 flex items-center gap-2 rounded-xl border px-2 ${
-                  isReadingMode?"border-zinc-200 bg-white":"border-zinc-700 bg-zinc-900/60"
-                }`}>
-                  {sessionMode==="reading"?<FileText size={13} className="text-zinc-500 shrink-0"/>:<Link2 size={13} className="text-zinc-500 shrink-0"/>}
-                  <input
-                    value={resourceInput}
-                    onChange={e=>setResourceInput(e.target.value)}
-                    placeholder={engineUi.resourcePlaceholder||"Paste link"}
-                    className={`flex-1 bg-transparent py-2 text-xs focus:outline-none ${isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleLoadResourceLink}
-                    disabled={!canChangeSource}
-                    className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${
-                      canChangeSource
-                        ?isReadingMode
-                          ?"bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
-                          :"bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700"
-                        :"bg-zinc-800/60 border-zinc-800 text-zinc-500 cursor-not-allowed"
-                    }`}
-                  >
-                    {sessionMode==="watch"?"YouTube":"Load"}
-                  </button>
-                </div>
+                {!isStudyStudent&&(
+                  <>
+                    <button
+                      type="button"
+                      onClick={()=>fileInputRef.current?.click()}
+                      disabled={!canChangeSource}
+                      className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                        canChangeSource
+                          ?isReadingMode
+                            ?"bg-zinc-900 text-white hover:bg-zinc-700"
+                            :"bg-amber-400 text-zinc-950 hover:bg-amber-300"
+                          :"bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
+                      }`}
+                    >
+                      <Upload size={13}/> Choose file
+                    </button>
+                    <div className={`mt-2 flex items-center gap-2 rounded-xl border px-2 ${
+                      isReadingMode?"border-zinc-200 bg-white":"border-zinc-700 bg-zinc-900/60"
+                    }`}>
+                      {sessionMode==="reading"?<FileText size={13} className="text-zinc-500 shrink-0"/>:<Link2 size={13} className="text-zinc-500 shrink-0"/>}
+                      <input
+                        value={resourceInput}
+                        onChange={e=>setResourceInput(e.target.value)}
+                        placeholder={engineUi.resourcePlaceholder||"Paste link"}
+                        className={`flex-1 bg-transparent py-2 text-xs focus:outline-none ${isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleLoadResourceLink}
+                        disabled={!canChangeSource}
+                        className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${
+                          canChangeSource
+                            ?isReadingMode
+                              ?"bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
+                              :"bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700"
+                            :"bg-zinc-800/60 border-zinc-800 text-zinc-500 cursor-not-allowed"
+                        }`}
+                      >
+                        {sessionMode==="watch"?"YouTube":"Load"}
+                      </button>
+                    </div>
+                  </>
+                )}
                 {!canChangeSource&&(
                   <p className="mt-2 text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
                 )}
@@ -3337,23 +3352,33 @@ function RoomView({
             <div className="flex items-center gap-2">
               <span className="text-zinc-500 text-xs font-mono w-12 text-right shrink-0">{fmt(currentTime)}</span>
               <input type="range" min={0} max={duration||100} step={0.1} value={currentTime}
-                disabled={!videoLoaded} className="flex-1 accent-amber-400 cursor-pointer" style={{height:"4px"}}
+                disabled={!videoLoaded||isStudyStudent}
+                className={`flex-1 accent-amber-400 ${
+                  isStudyStudent?"cursor-not-allowed opacity-40":"cursor-pointer"
+                }`} style={{height:"4px"}}
                 onMouseDown={()=>{isScrubbing.current=true;}}
                 onTouchStart={()=>{isScrubbing.current=true;}}
                 onChange={handleScrubChange} onMouseUp={handleScrubEnd} onTouchEnd={handleScrubEnd}/>
               <span className="text-zinc-500 text-xs font-mono w-12 shrink-0">{fmt(duration)}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <button onClick={()=>handleSkip(-10)} disabled={!videoLoaded} title="Back 10s"
-                className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors">
+              <button onClick={()=>handleSkip(-10)} disabled={!videoLoaded||isStudyStudent} title="Back 10s"
+                className={`p-2 rounded-lg text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                }`}>
                 <SkipBack size={16}/>
               </button>
-              <button onClick={handlePlayPause} disabled={!videoLoaded}
-                className="w-10 h-10 rounded-full bg-amber-300 hover:bg-amber-200 flex items-center justify-center text-zinc-950 transition-colors disabled:opacity-30 shrink-0 shadow-lg shadow-amber-500/20">
-                {isPlaying?<Pause size={17}/>:<Play size={17} className="ml-0.5"/>}
+              <button onClick={isStudyStudent?undefined:handlePlayPause} disabled={!videoLoaded||isStudyStudent}
+                title={isStudyStudent?"Your teacher controls playback":isPlaying?"Pause":"Play"}
+                className={`w-10 h-10 rounded-full bg-amber-300 flex items-center justify-center text-zinc-950 transition-colors disabled:opacity-30 shrink-0 shadow-lg shadow-amber-500/20 ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-amber-200 cursor-pointer"
+                }`}>
+                {isStudyStudent?<Lock size={16}/>:isPlaying?<Pause size={17}/>:<Play size={17} className="ml-0.5"/>}
               </button>
-              <button onClick={()=>handleSkip(10)} disabled={!videoLoaded} title="Forward 10s"
-                className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors">
+              <button onClick={()=>handleSkip(10)} disabled={!videoLoaded||isStudyStudent} title="Forward 10s"
+                className={`p-2 rounded-lg text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                }`}>
                 <SkipForward size={16}/>
               </button>
               <button onClick={toggleMute} className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors ml-1">
