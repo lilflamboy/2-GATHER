@@ -2391,6 +2391,15 @@ function RoomView({
     socket.emit("send_message",{roomCode,text,senderUsername:username});
     setChatInput("");
   };
+  const handleRaiseHand=useCallback(()=>{
+    if(!socket||!roomCode)return;
+    socket.emit("send_message",{
+      roomCode,
+      text:"✋ Raised hand — I have a question",
+      type:"text",
+      meta:null,
+    });
+  },[socket,roomCode]);
   const sendBookmark=()=>{
     const time=getCurrentPlaybackTime();
     if(!videoLoaded){addToast(isMusicMode?"Load audio first":"Load a video first","info");return;}
@@ -3515,6 +3524,16 @@ function RoomView({
               >
                 <Bookmark size={14}/>
               </button>
+              {isStudyStudent&&(
+                <button
+                  type="button"
+                  onClick={handleRaiseHand}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs hover:bg-amber-500/25 transition-colors shrink-0"
+                  title="Raise your hand"
+                >
+                  ✋ Raise hand
+                </button>
+              )}
               <button type="submit" disabled={!chatInput.trim()}
                 className="p-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg disabled:opacity-40 transition-colors shrink-0">
                 <Send size={14}/>
