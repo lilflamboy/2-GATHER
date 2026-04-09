@@ -420,6 +420,16 @@ function RoomView({
   const otherUsers=users.filter(u=>u.uid!==user.uid);
   const otherUserIdsKey=otherUsers.map(target=>target.uid).sort().join("|");
   const hostUid=roomCreatedBy||"";
+  // True when this user is the teacher in a study
+  // session - they have full playback control.
+  const isStudyHost=
+    sessionMode==="study"&&
+    user?.uid===roomCreatedBy;
+  // True when this user is a student in a study
+  // session - playback controls are locked for them.
+  const isStudyStudent=
+    sessionMode==="study"&&
+    user?.uid!==roomCreatedBy;
   const hostUser=users.find(u=>u.uid===hostUid);
   const isHost=!hostUid||user.uid===hostUid;
   const canChangeSource=!isReadingMode||isHost;
