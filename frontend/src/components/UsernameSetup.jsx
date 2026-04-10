@@ -48,35 +48,43 @@ function UsernameSetup({displayName, onDone}){
   };
 
   return(
-    <div className="min-h-screen bg-screen flex items-center justify-center p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-screen relative flex items-center justify-center overflow-hidden px-6 py-10 sm:px-8">
       <div className="grain-overlay"/>
-      <div className="absolute w-96 h-96 rounded-full bg-amber-600/8 blur-3xl top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"/>
-      <div className="relative z-10 w-full max-w-sm flex flex-col gap-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-            <AtSign size={26} className="text-amber-400"/>
+      <div className="absolute inset-x-0 top-[-20rem] h-[32rem] bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.2),transparent_52%)] pointer-events-none"/>
+      <div className="absolute right-[-7rem] top-20 h-[22rem] w-[22rem] rounded-full bg-violet-500/10 blur-3xl pointer-events-none"/>
+      <div className="absolute left-[-8rem] bottom-[-8rem] h-[20rem] w-[20rem] rounded-full bg-amber-500/10 blur-3xl pointer-events-none"/>
+      <div className="relative z-10 flex w-full max-w-md flex-col gap-8">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="feature-pill border-amber-500/20 bg-amber-500/10 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-amber-200/90">
+            Claim your identity
           </div>
-          <h1 className="font-display text-3xl text-zinc-100">Choose your username</h1>
-          <p className="text-zinc-500 text-sm text-center">This is how friends will see you.<br/>You can't change it later.</p>
+          <div className="flex h-16 w-16 items-center justify-center rounded-[1.6rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/18 to-violet-500/12 shadow-[0_22px_60px_rgba(245,158,11,0.14)]">
+            <AtSign size={28} className="text-amber-300"/>
+          </div>
+          <div className="space-y-3">
+            <h1 className="font-display text-4xl leading-none text-zinc-50">Choose your username</h1>
+            <p className="mx-auto max-w-sm text-sm leading-7 text-zinc-400">This is how friends will see you.<br/>You can't change it later.</p>
+          </div>
         </div>
         {/* The form keeps feedback inline so the user understands why a claim failed. */}
-        <form onSubmit={handleSubmit} className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="glass-panel relative flex flex-col gap-4 overflow-hidden border border-white/10 bg-white/[0.03] p-6 shadow-[0_32px_120px_rgba(0,0,0,0.52)]">
+          <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"/>
           <div>
-            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus-within:border-amber-500/60 transition-colors">
-              <span className="text-zinc-500 mr-1 text-sm">@</span>
+            <div className="flex items-center rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 transition-all duration-200 focus-within:border-amber-400/60 focus-within:ring-2 focus-within:ring-amber-500/10">
+              <span className="mr-2 text-sm font-semibold text-amber-200">@</span>
               <input
                 value={value}
                 onChange={e=>{setValue(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,"").slice(0,20));setError("");}}
                 placeholder="yourname"
                 autoFocus
-                className="flex-1 bg-transparent text-zinc-100 text-sm font-mono focus:outline-none placeholder-zinc-600"
+                className="flex-1 bg-transparent text-sm font-mono text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
               />
             </div>
-            {error&&<p className="text-red-400 text-xs mt-1.5 ml-1">{error}</p>}
-            {!error&&value.length>0&&<p className="text-zinc-600 text-xs mt-1.5 ml-1">{value.length}/20 characters</p>}
+            {error&&<p className="mt-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs leading-6 text-red-200">{error}</p>}
+            {!error&&value.length>0&&<p className="mt-2 rounded-full border border-white/8 bg-black/20 px-3 py-2 text-xs text-zinc-500">{value.length}/20 characters</p>}
           </div>
           <button type="submit" disabled={submitting}
-            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-zinc-950 font-semibold py-3 rounded-xl transition-colors">
+            className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-orange-300 to-amber-300 px-4 py-3.5 text-sm font-semibold text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:from-amber-300 hover:to-orange-200 disabled:opacity-60">
             {submitting?"Saving...":"Continue →"}
           </button>
         </form>
