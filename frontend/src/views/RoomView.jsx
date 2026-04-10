@@ -2688,13 +2688,13 @@ function RoomView({
       {!isReadingMode&&<div className="grain-overlay"/>}
 
       {/* ── Header ── */}
-      <header className={`relative z-20 border-b backdrop-blur-sm shrink-0 ${isReadingMode?"px-3 sm:px-4 py-3 bg-white border-zinc-200":"px-3 sm:px-4 py-2 bg-zinc-950/90 border-zinc-800/60"}`}>
+      <header className={`relative z-20 shrink-0 border-b backdrop-blur-xl ${isReadingMode?"border-zinc-200/80 bg-white/92 px-4 py-3.5 sm:px-5":"border-white/8 bg-black/30 px-4 py-3 sm:px-5"}`}>
         {isReadingMode?(
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-zinc-500">CO-READING MODE</p>
-              <p className="font-display text-lg leading-tight text-zinc-900">Room {roomCode}</p>
-              <p className="text-xs mt-0.5 text-zinc-600">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">CO-READING MODE</p>
+              <p className="font-display text-xl leading-tight text-zinc-900">Room {roomCode}</p>
+              <p className="mt-1 text-xs text-zinc-600">
                 {modeLabel==="Couple"?"💛 Couple Mode":modeLabel==="Family"?"👨‍👩‍👧 Family Mode":"👥 Best Friend Mode"}
                 {" · "}
                 {users.length}/{maxParticipants}
@@ -2705,7 +2705,7 @@ function RoomView({
               <button
                 type="button"
                 onClick={()=>setShowChat(s=>!s)}
-                className="p-2 rounded-lg border border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-500 transition-colors"
+                className="rounded-full border border-zinc-300 bg-white/70 p-2.5 text-zinc-600 transition-all duration-200 hover:border-zinc-500 hover:text-zinc-900"
                 title={showChat ? "Close chat" : "Open chat"}
               >
                 <MessageSquare size={15}/>
@@ -2714,25 +2714,25 @@ function RoomView({
                 <button
                   type="button"
                   onClick={()=>setShowMoreMenu(v=>!v)}
-                  className="p-2 rounded-lg border border-zinc-300 text-zinc-600 hover:text-zinc-900 hover:border-zinc-500 transition-colors"
+                  className="rounded-full border border-zinc-300 bg-white/70 p-2.5 text-zinc-600 transition-all duration-200 hover:border-zinc-500 hover:text-zinc-900"
                   title="More actions"
                 >
                   <Menu size={15}/>
                 </button>
                 {showMoreMenu&&(
-                  <div className="absolute right-0 mt-2 w-44 rounded-xl border border-zinc-200 bg-white shadow-xl p-1.5 z-40">
+                  <div className="absolute right-0 z-40 mt-3 w-48 rounded-[1.35rem] border border-zinc-200 bg-white/95 p-2 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
                     <button
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);openSourcePanel();}}
                       disabled={!canChangeSource}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-700 transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Change source
                     </button>
                     <button
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);openResourceInNewTab();}}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-700 hover:bg-zinc-100"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-700 transition-all duration-200 hover:bg-zinc-100"
                     >
                       Open resource
                     </button>
@@ -2740,7 +2740,7 @@ function RoomView({
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);joinCall(true);}}
-                        className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-700 hover:bg-zinc-100"
+                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-700 transition-all duration-200 hover:bg-zinc-100"
                       >
                         Start call
                       </button>
@@ -2748,7 +2748,7 @@ function RoomView({
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);leaveCall();}}
-                        className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-red-600 hover:bg-red-50"
+                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-red-600 transition-all duration-200 hover:bg-red-50"
                       >
                         {isJoiningCall?"Cancel call":"End call"}
                       </button>
@@ -2756,7 +2756,7 @@ function RoomView({
                     <button
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);copyCode();}}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-700 hover:bg-zinc-100"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-700 transition-all duration-200 hover:bg-zinc-100"
                     >
                       Copy room code
                     </button>
@@ -2764,7 +2764,7 @@ function RoomView({
                 )}
               </div>
               <button onClick={onLeave}
-                className="text-xs px-2.5 py-2 rounded-lg transition-colors text-zinc-700 hover:text-red-600 hover:bg-zinc-100">
+                className="rounded-full px-3 py-2 text-xs text-zinc-700 transition-all duration-200 hover:bg-zinc-100 hover:text-red-600">
                 Leave
               </button>
             </div>
@@ -2772,32 +2772,34 @@ function RoomView({
         ):(
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Film size={16} className="text-amber-400"/>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-400/18 bg-gradient-to-br from-amber-500/16 to-violet-500/10 shadow-[0_16px_40px_rgba(245,158,11,0.14)]">
+                <Film size={16} className="text-amber-300"/>
+              </div>
               <span className="font-display text-lg text-zinc-100 hidden sm:block">Lumiere</span>
-              <div className="flex items-center gap-1.5 bg-zinc-800/60 rounded-lg px-3 py-1">
-                <span className="font-mono text-xs text-amber-400 tracking-widest">{roomCode}</span>
-                <button onClick={copyCode} className="text-zinc-500 hover:text-zinc-300 transition-colors ml-1">
+              <div className="flex items-center gap-1.5 rounded-full border border-amber-400/18 bg-amber-500/10 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <span className="font-mono text-xs tracking-[0.28em] text-amber-200">{roomCode}</span>
+                <button onClick={copyCode} className="ml-1 text-zinc-500 transition-all duration-200 hover:text-zinc-200">
                   {copied?<Check size={11} className="text-green-400"/>:<Copy size={11}/>}
                 </button>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto max-w-[45vw] sm:max-w-none pr-1">
-                <span className="text-[10px] px-2 py-1 rounded-full border border-amber-500/35 bg-amber-500/10 text-amber-200 whitespace-nowrap">
+                <span className="whitespace-nowrap rounded-full border border-amber-400/18 bg-amber-500/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">
                   {modeLabel} room
                 </span>
-                <span className="text-[10px] px-2 py-1 rounded-full border border-emerald-500/35 bg-emerald-500/10 text-emerald-200 whitespace-nowrap">
+                <span className="whitespace-nowrap rounded-full border border-violet-400/18 bg-violet-500/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-violet-100">
                   {sessionLabel} mode
                 </span>
                 {!!roomMoodTag&&(
-                  <span className="text-[10px] px-2 py-1 rounded-full border border-violet-500/35 bg-violet-500/10 text-violet-200 whitespace-nowrap">
+                  <span className="whitespace-nowrap rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-zinc-200">
                     Mood: {roomMoodTag}
                   </span>
                 )}
-                <div className={`flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border whitespace-nowrap
-                  ${connected?"bg-green-950/60 text-green-400 border-green-800/50":"bg-red-950/60 text-red-400 border-red-800/50"}`}>
+                <div className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.18em]
+                  ${connected?"border-emerald-500/18 bg-emerald-500/10 text-emerald-200":"border-red-500/18 bg-red-500/10 text-red-200"}`}>
                   {connected?<Wifi size={10}/>:<WifiOff size={10}/>}
                   {connected?"Live":"Reconnecting…"}
                 </div>
-                <span className="hidden sm:inline text-[10px] px-2 py-1 rounded-full border border-zinc-700 bg-zinc-900/80 text-zinc-400 whitespace-nowrap">
+                <span className="hidden whitespace-nowrap rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-zinc-400 sm:inline">
                   Invite-only
                 </span>
                 <div className="hidden sm:flex">
@@ -2812,14 +2814,14 @@ function RoomView({
                 <button
                   type="button"
                   onClick={openResourceInNewTab}
-                  className="hidden lg:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/80 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+                  className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-zinc-300 transition-all duration-200 hover:border-white/18 hover:text-zinc-100"
                   title="Open linked resource"
                 >
                   <Link2 size={12}/>
                   Resource
                 </button>
               )}
-              <span className="flex items-center gap-1 text-zinc-500 text-xs"><Users size={12}/>{users.length}/{maxParticipants}</span>
+              <span className="flex items-center gap-1.5 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400"><Users size={12}/>{users.length}/{maxParticipants}</span>
               {(otherUsers.length>0||hasFriendRoster)&&(
                 <div ref={friendMenuRef} className="relative hidden sm:block">
                   <button
@@ -2828,10 +2830,10 @@ function RoomView({
                       setShowHeaderNotifications(false);
                       setShowFriendMenu(v=>!v);
                     }}
-                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
+                    className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs transition-all duration-200 ${
                       roomFriendButtonSettled
-                        ?"border-zinc-600 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800"
-                        :"border-amber-500/35 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20"
+                        ?"border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/18 hover:bg-white/[0.08]"
+                        :"border-amber-400/18 bg-amber-500/10 text-amber-200 hover:border-amber-300/24 hover:bg-amber-500/16"
                     }`}
                     title={singleOtherUserStatus==="needs_accept"?"Accept friend request":"View room people and invite friends"}
                   >
@@ -2839,11 +2841,11 @@ function RoomView({
                     <span className="hidden md:inline">{roomFriendButtonLabel}</span>
                   </button>
                   {showFriendMenu&&(
-                    <div className="absolute right-0 mt-2 w-80 max-w-[84vw] rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-2 z-40">
+                    <div className="absolute right-0 z-40 mt-3 w-80 max-w-[84vw] rounded-[1.4rem] border border-white/10 bg-zinc-950/95 p-2.5 shadow-[0_32px_100px_rgba(0,0,0,0.52)] backdrop-blur-2xl">
                       <div className="max-h-72 overflow-y-auto space-y-3">
                         <div>
                           <div className="flex items-center justify-between px-2 py-1.5">
-                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">People in room</p>
+                            <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">People in room</p>
                             {otherUsers.length>0&&<span className="text-[10px] text-zinc-500">{otherUsers.length}</span>}
                           </div>
                           {otherUsers.length>0?(
@@ -2854,12 +2856,12 @@ function RoomView({
                                 const disableAction=isBusy||status==="already_friends"||status==="already_requested"||status==="requested";
                                 const label=`@${target.username||target.name||"friend"}`;
                                 return(
-                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-2.5 py-2.5">
                                     {renderUserAvatar(target,"w-7 h-7","text-[11px]",target.name||label)}
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 min-w-0">
                                         <p className="text-xs text-zinc-200 truncate">{label}</p>
-                                        <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-emerald-300">Here</span>
+                                        <span className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-200">Here</span>
                                       </div>
                                       <p className="text-[11px] text-zinc-500 truncate">{target.name||"Viewer"}</p>
                                     </div>
@@ -2867,10 +2869,10 @@ function RoomView({
                                       type="button"
                                       disabled={disableAction}
                                       onClick={()=>handleSendFriendFromRoom(target)}
-                                      className={`text-[11px] px-2 py-1 rounded-md border transition-colors whitespace-nowrap ${
+                                      className={`text-[11px] rounded-md border px-2 py-1 transition-all duration-200 whitespace-nowrap ${
                                         disableAction
-                                          ?"bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed"
-                                          :"bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25"
+                                          ?"cursor-not-allowed border-white/8 bg-zinc-900 text-zinc-500"
+                                          :"border-emerald-400/18 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/18"
                                       }`}
                                       title={status==="needs_accept"?"Accept friend request":"Send friend request"}
                                     >
@@ -2887,7 +2889,7 @@ function RoomView({
 
                         <div>
                           <div className="flex items-center justify-between px-2 py-1.5">
-                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Online friends</p>
+                            <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Online friends</p>
                             {onlineInviteableFriends.length>0&&<span className="text-[10px] text-zinc-500">{onlineInviteableFriends.length}</span>}
                           </div>
                           {onlineInviteableFriends.length>0?(
@@ -2906,7 +2908,7 @@ function RoomView({
                                       ?"Invite Again"
                                       :"Invite";
                                 return(
-                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/70 px-2 py-2">
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-2.5 py-2.5">
                                     {renderUserAvatar(target,"w-7 h-7","text-[11px]",displayName)}
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 min-w-0">
@@ -2919,10 +2921,10 @@ function RoomView({
                                       type="button"
                                       disabled={isInviting||isCoolingDown}
                                       onClick={()=>handleInviteFriendFromRoom(target)}
-                                      className={`text-[11px] px-2 py-1 rounded-md border transition-colors whitespace-nowrap ${
+                                      className={`text-[11px] rounded-md border px-2 py-1 transition-all duration-200 whitespace-nowrap ${
                                         isInviting||isCoolingDown
-                                          ?"bg-zinc-800 border-zinc-700 text-zinc-500 cursor-not-allowed"
-                                          :"bg-amber-500/15 border-amber-500/40 text-amber-200 hover:bg-amber-500/25"
+                                          ?"cursor-not-allowed border-white/8 bg-zinc-900 text-zinc-500"
+                                          :"border-amber-400/18 bg-amber-500/10 text-amber-200 hover:bg-amber-500/18"
                                       }`}
                                       title={hasBeenInvited&&!isCoolingDown?"Send another room invite":"Invite this friend to the room"}
                                     >
@@ -2939,7 +2941,7 @@ function RoomView({
 
                         <div>
                           <div className="flex items-center justify-between px-2 py-1.5">
-                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Offline friends</p>
+                            <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Offline friends</p>
                             {offlineInviteableFriends.length>0&&<span className="text-[10px] text-zinc-500">{offlineInviteableFriends.length}</span>}
                           </div>
                           {offlineInviteableFriends.length>0?(
@@ -2948,7 +2950,7 @@ function RoomView({
                                 const displayName=target.displayName||target.name||"Friend";
                                 const label=`@${target.username||"friend"}`;
                                 return(
-                                  <div key={target.uid} className="flex items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-900/50 px-2 py-2 opacity-60">
+                                  <div key={target.uid} className="flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.02] px-2.5 py-2.5 opacity-60">
                                     {renderUserAvatar(target,"w-7 h-7","text-[11px]",displayName)}
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 min-w-0">
@@ -2960,7 +2962,7 @@ function RoomView({
                                     <button
                                       type="button"
                                       disabled
-                                      className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 cursor-not-allowed whitespace-nowrap"
+                                      className="text-[11px] rounded-md border border-white/8 bg-zinc-900 px-2 py-1 text-zinc-500 cursor-not-allowed whitespace-nowrap"
                                       title="Offline friends cannot be invited right now"
                                     >
                                       Offline
@@ -2995,17 +2997,17 @@ function RoomView({
                 <button
                   type="button"
                   onClick={()=>{setShowMoreMenu(v=>!v);setShowHeaderNotifications(false);setShowFriendMenu(false);}}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition-all duration-200 hover:border-white/18 hover:text-zinc-100"
                   title="More actions"
                 >
                   <Menu size={15}/>
                 </button>
                 {showMoreMenu&&(
-                  <div className="absolute right-0 mt-2 w-48 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-1.5 z-40">
+                  <div className="absolute right-0 z-40 mt-3 w-48 rounded-[1.35rem] border border-white/10 bg-zinc-950/95 p-2 shadow-[0_28px_80px_rgba(0,0,0,0.52)] backdrop-blur-2xl">
                     <button
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);openSourcePanel();}}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-200 hover:bg-zinc-800"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-200 transition-all duration-200 hover:bg-white/[0.05]"
                     >
                       Change source
                     </button>
@@ -3013,7 +3015,7 @@ function RoomView({
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);openResourceInNewTab();}}
                       disabled={!resourceUrl}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-200 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-200 transition-all duration-200 hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Open resource
                     </button>
@@ -3021,7 +3023,7 @@ function RoomView({
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);joinCall(true);}}
-                        className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-200 hover:bg-zinc-800"
+                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-200 transition-all duration-200 hover:bg-white/[0.05]"
                       >
                         Start call
                       </button>
@@ -3029,7 +3031,7 @@ function RoomView({
                       <button
                         type="button"
                         onClick={()=>{setShowMoreMenu(false);leaveCall();}}
-                        className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-red-300 hover:bg-red-500/10"
+                        className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-red-300 transition-all duration-200 hover:bg-red-500/10"
                       >
                         {isJoiningCall?"Cancel call":"End call"}
                       </button>
@@ -3037,7 +3039,7 @@ function RoomView({
                     <button
                       type="button"
                       onClick={()=>{setShowMoreMenu(false);copyCode();}}
-                      className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-zinc-200 hover:bg-zinc-800"
+                      className="w-full rounded-xl px-3 py-2.5 text-left text-xs text-zinc-200 transition-all duration-200 hover:bg-white/[0.05]"
                     >
                       Copy room code
                     </button>
@@ -3046,7 +3048,7 @@ function RoomView({
               </div>
               {!callVisible
                 ?<button onClick={()=>joinCall(true)}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-green-600 hover:bg-green-500 text-white font-medium transition-all shadow-lg shadow-green-900/30 sm:px-3 sm:py-1.5">
+                    className="flex items-center gap-1.5 rounded-full bg-emerald-400 px-3 py-1.5 text-xs font-medium text-zinc-950 transition-all duration-200 shadow-[0_14px_34px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 hover:bg-emerald-300 sm:px-3.5">
                     <Phone size={12}/> Start Call
                   </button>
                 :<div className="flex items-center gap-2">
@@ -3055,18 +3057,18 @@ function RoomView({
                       {isJoiningCall?"Starting...":"In Call"}
                     </span>
                     <button onClick={leaveCall}
-                      className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-medium transition-all sm:px-3 sm:py-1.5">
+                      className="flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500 sm:px-3.5">
                       <PhoneOff size={12}/>{isJoiningCall?"Cancel":"End Call"}
                     </button>
                   </div>
               }
               <button onClick={()=>setShowChat(s=>!s)}
-                className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="rounded-full border border-white/8 bg-white/[0.03] p-2 text-zinc-500 transition-all duration-200 hover:border-white/16 hover:text-zinc-300"
                 title={showChat ? "Close chat" : "Open chat"}>
                 <MessageSquare size={15}/>
               </button>
               <button onClick={onLeave}
-                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-800">
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-zinc-500 transition-all duration-200 hover:bg-white/[0.05] hover:text-red-300">
                 <LogOut size={13}/><span className="hidden sm:inline">Leave</span>
               </button>
             </div>
@@ -3078,10 +3080,10 @@ function RoomView({
       <div className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
 
         {/* Main stage contains the player/document canvas, overlays, source controls, and floating call window. */}
-        <div ref={containerRef} className={`flex-1 flex flex-col overflow-hidden relative min-w-0 min-h-[45dvh] lg:min-h-0 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/70"}`}>
-          <div className={`flex-1 relative flex items-center justify-center overflow-hidden ${isReadingMode?"bg-zinc-100":"bg-black"}`}>
+        <div ref={containerRef} className={`relative flex min-h-[45dvh] min-w-0 flex-1 flex-col overflow-hidden lg:min-h-0 ${isReadingMode?"bg-zinc-100":"bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.08),transparent_34%),linear-gradient(180deg,rgba(9,9,11,0.95),rgba(3,4,7,1))]"}`}>
+          <div className={`relative flex flex-1 items-center justify-center overflow-hidden ${isReadingMode?"bg-zinc-100":"bg-[radial-gradient(circle_at_top,rgba(139,92,246,0.08),transparent_30%),linear-gradient(180deg,rgba(3,4,7,1),rgba(2,6,23,0.96))]"}`}>
             {isStudyHost&&(
-              <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-300 text-xs">
+              <div className="absolute left-4 right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-amber-400/18 bg-amber-500/12 px-4 py-2 text-xs text-amber-200 shadow-[0_18px_40px_rgba(251,146,60,0.12)] backdrop-blur-xl">
                 <GraduationCap size={14}/>
                 <span>
                   You are the teacher - you control playback for all students in this session.
@@ -3089,7 +3091,7 @@ function RoomView({
               </div>
             )}
             {isStudyStudent&&(
-              <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-4 py-2 bg-zinc-800/80 border-b border-zinc-700/50 text-zinc-400 text-xs">
+              <div className="absolute left-4 right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/88 px-4 py-2 text-xs text-zinc-300 shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                 <Lock size={14}/>
                 <span>
                   Your teacher controls playback. Use the chat to ask questions.
@@ -3142,7 +3144,7 @@ function RoomView({
                 ref={videoRef}
                 preload="auto"
                 playsInline
-                className={`max-h-full max-w-full ${videoLoaded?"cursor-pointer":""}`}
+                className={`max-h-full max-w-full rounded-[1.5rem] border border-white/8 shadow-[0_24px_80px_rgba(0,0,0,0.38)] ${videoLoaded?"cursor-pointer":""}`}
                 onClick={()=>{if(videoLoaded)handlePlayPause();}}
                 onPlay={()=>{
                   expectedPlayRef.current=true;
@@ -3186,15 +3188,15 @@ function RoomView({
             {/* Music mode swaps the video stage for a transport-focused hero layout. */}
             {showMusicStage&&(
               <div className="absolute inset-0 z-[4] flex items-center justify-center p-6">
-                <div className="w-full max-w-4xl rounded-[32px] border border-zinc-800 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_44%),linear-gradient(180deg,_rgba(24,24,27,0.96),_rgba(9,9,11,0.98))] px-5 py-5 shadow-[0_32px_100px_rgba(0,0,0,0.5)] sm:px-7 sm:py-6">
+                <div className="w-full max-w-4xl rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.18),_transparent_44%),radial-gradient(circle_at_90%_0%,_rgba(139,92,246,0.14),_transparent_35%),linear-gradient(180deg,_rgba(24,24,31,0.96),_rgba(9,9,11,0.98))] px-5 py-5 shadow-[0_40px_120px_rgba(0,0,0,0.56)] sm:px-7 sm:py-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-4">
-                        <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-[24px] border border-amber-400/20 bg-amber-300/10 text-amber-300 sm:flex">
+                        <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-[24px] border border-amber-400/18 bg-amber-300/10 text-amber-200 shadow-[0_22px_60px_rgba(251,146,60,0.12)] sm:flex">
                           <Headphones size={26}/>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[11px] uppercase tracking-[0.3em] text-amber-300/80">Music Mode</p>
+                          <p className="text-[11px] uppercase tracking-[0.3em] text-amber-200/80">Music Mode</p>
                           <p className="mt-3 truncate font-display text-3xl text-zinc-100 sm:text-[2.5rem]">
                             {videoName||"Waiting for a track"}
                           </p>
@@ -3210,23 +3212,23 @@ function RoomView({
                                 :"Load a local file or paste a shareable audio link to turn every device into a synchronized speaker."}
                           </p>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            <span className="rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-zinc-300">
+                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-zinc-200">
                               {isPlaying?"Playing":"Paused"}
                             </span>
-                            <span className="rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-zinc-300">
+                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-zinc-200">
                               {useYouTubePlayer?"YouTube":resourceUrl?"Shared audio":"Local audio"}
                             </span>
-                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-emerald-300">
+                            <span className="rounded-full border border-violet-400/18 bg-violet-500/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-violet-100">
                               Equal control
                             </span>
                           </div>
                           {audioLoadWarning&&(
-                            <p className="mt-4 inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-200">
+                            <p className="mt-4 inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200">
                               {audioLoadWarning}
                             </p>
                           )}
                           {useYouTubePlayer&&!videoLoaded&&(
-                            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-zinc-700 bg-black/35 px-3 py-1.5 text-xs text-zinc-300">
+                            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/35 px-3 py-1.5 text-xs text-zinc-300">
                               <span className="h-3 w-3 rounded-full border-2 border-zinc-600 border-t-amber-300 animate-spin"/>
                               Preparing YouTube audio...
                             </div>
@@ -3235,12 +3237,12 @@ function RoomView({
                       </div>
                     </div>
                     <div className="grid gap-3 sm:min-w-[13rem]">
-                      <div className="rounded-[24px] border border-zinc-700/80 bg-black/35 px-4 py-3 text-right">
+                      <div className="rounded-[24px] border border-white/8 bg-black/35 px-4 py-3 text-right">
                         <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Clock</p>
                         <p className="mt-2 text-3xl font-mono text-zinc-100">{fmt(currentTime)}</p>
                         <p className="mt-1 text-[11px] text-zinc-500">{audioDebugStatus||"Waiting for sync"}</p>
                       </div>
-                      <div className="rounded-[24px] border border-zinc-800 bg-zinc-950/70 px-4 py-3">
+                      <div className="rounded-[24px] border border-white/8 bg-zinc-950/70 px-4 py-3">
                         <p className="text-[11px] uppercase tracking-[0.22em] text-zinc-500">Timeline</p>
                         <div className="mt-2 flex items-center justify-between text-sm text-zinc-100">
                           <span>{fmt(currentTime)}</span>
@@ -3253,7 +3255,7 @@ function RoomView({
                   </div>
                   {!videoLoaded?(
                     <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.85fr)]">
-                      <div className="rounded-[28px] border border-zinc-800 bg-zinc-950/65 p-4 sm:p-5">
+                      <div className="rounded-[28px] border border-white/8 bg-zinc-950/65 p-4 sm:p-5">
                         <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Load Source</p>
                         <div className="mt-4 flex flex-col gap-3">
                           <div className="flex flex-col gap-3 sm:flex-row">
@@ -3263,7 +3265,7 @@ function RoomView({
                               disabled={!canChangeSource}
                               className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
                                 canChangeSource
-                                  ?"bg-amber-300 text-zinc-950 hover:bg-amber-200 shadow-lg shadow-amber-900/20"
+                                  ?"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 hover:from-amber-300 hover:to-orange-200 shadow-[0_18px_40px_rgba(251,146,60,0.25)]"
                                   :"bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
                               }`}
                             >
@@ -3273,13 +3275,13 @@ function RoomView({
                             <button
                               type="button"
                               onClick={openSourcePanel}
-                              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100"
+                              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-300 transition-all duration-200 hover:border-white/18 hover:text-zinc-100"
                             >
                               <Link2 size={15}/>
                               Open source panel
                             </button>
                           </div>
-                          <div className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-black/25 px-3">
+                          <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-black/25 px-3.5">
                             <Link2 size={15} className="shrink-0 text-zinc-500"/>
                             <input
                               value={resourceInput}
@@ -3297,7 +3299,7 @@ function RoomView({
                               disabled={!canChangeSource}
                               className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                                 canChangeSource
-                                  ?"border-zinc-600 bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                                  ?"border-white/10 bg-white/[0.06] text-zinc-100 hover:bg-white/[0.12]"
                                   :"border-zinc-800 bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
                               }`}
                             >
@@ -3309,26 +3311,26 @@ function RoomView({
                           MP3, WAV, and AAC are best for local sync. YouTube and direct audio links are shareable across devices.
                         </p>
                       </div>
-                      <div className="rounded-[28px] border border-zinc-800 bg-zinc-950/65 p-4 sm:p-5">
+                      <div className="rounded-[28px] border border-white/8 bg-zinc-950/65 p-4 sm:p-5">
                         <p className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Room Sync</p>
                         <p className="mt-4 text-sm leading-6 text-zinc-300">
                           Everyone can play, pause, or jump the track. The server only shares timeline state, so each device stays in sync without streaming audio.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-zinc-800 bg-black/25 px-3 py-1 text-[11px] text-zinc-400">
+                          <span className="rounded-full border border-white/8 bg-black/25 px-3 py-1.5 text-[11px] text-zinc-400">
                             Scheduled starts
                           </span>
-                          <span className="rounded-full border border-zinc-800 bg-black/25 px-3 py-1 text-[11px] text-zinc-400">
+                          <span className="rounded-full border border-white/8 bg-black/25 px-3 py-1.5 text-[11px] text-zinc-400">
                             Drift correction
                           </span>
-                          <span className="rounded-full border border-zinc-800 bg-black/25 px-3 py-1 text-[11px] text-zinc-400">
+                          <span className="rounded-full border border-white/8 bg-black/25 px-3 py-1.5 text-[11px] text-zinc-400">
                             Late join sync
                           </span>
                         </div>
                       </div>
                     </div>
                   ):(
-                    <div className="mt-6 rounded-[28px] border border-zinc-800 bg-zinc-950/70 p-4 sm:p-5">
+                    <div className="mt-6 rounded-[28px] border border-white/8 bg-zinc-950/70 p-4 sm:p-5">
                       <div className="flex items-center gap-3">
                         <span className="text-zinc-500 text-xs font-mono w-12 text-right shrink-0">{fmt(currentTime)}</span>
                         <input
@@ -3436,8 +3438,8 @@ function RoomView({
               </div>
             )}
             {useYouTubePlayer&&!!youtubeLoadError&&!isMusicMode&&(
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-950/88 z-20 px-6 text-center">
-                <div className="w-14 h-14 rounded-full border border-red-400/25 bg-red-500/10 flex items-center justify-center">
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-zinc-950/88 px-6 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 shadow-[0_18px_40px_rgba(239,68,68,0.12)]">
                   <span className="text-red-300 text-xl">!</span>
                 </div>
                 <div className="max-w-md">
@@ -3451,7 +3453,7 @@ function RoomView({
                   <button
                     type="button"
                     onClick={()=>setYoutubeRetryNonce(v=>v+1)}
-                    className="rounded-xl border border-zinc-600 px-4 py-2 text-xs text-zinc-100 transition-colors hover:border-zinc-400 hover:bg-zinc-900"
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08]"
                   >
                     Retry player
                   </button>
@@ -3459,7 +3461,7 @@ function RoomView({
                     type="button"
                     onClick={openResourceInNewTab}
                     disabled={!canOpenExternalResource}
-                    className="rounded-xl bg-amber-300 px-4 py-2 text-xs font-medium text-zinc-950 transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-amber-400 to-orange-300 px-4 py-2 text-xs font-medium text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:to-orange-200 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Open on YouTube
                   </button>
@@ -3467,15 +3469,15 @@ function RoomView({
               </div>
             )}
             {useYouTubePlayer&&!videoLoaded&&!youtubeLoadError&&!isMusicMode&&(
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 z-10 pointer-events-none">
-                <div className="w-12 h-12 rounded-full border-2 border-zinc-700 border-t-amber-300 animate-spin"/>
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-zinc-950/70 pointer-events-none">
+                <div className="h-12 w-12 rounded-full border-2 border-zinc-700 border-t-amber-300 animate-spin"/>
                 <p className="text-zinc-300 text-sm">Loading YouTube player...</p>
               </div>
             )}
             {/* Generic load state covers empty watch/study rooms before any media or document is active. */}
             {showGenericLoadState&&(
-              <div className={`absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/96"}`}>
-                <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center shadow-xl ${isReadingMode?"bg-white border-zinc-300 shadow-zinc-300/30":"bg-zinc-900 border-zinc-700 shadow-black/40"}`}>
+              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/96"}`}>
+                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border shadow-xl ${isReadingMode?"border-zinc-300 bg-white shadow-zinc-300/30":"border-white/10 bg-zinc-900 shadow-black/40"}`}>
                   <Upload size={26} className={isReadingMode?"text-zinc-500":"text-zinc-500"}/>
                 </div>
                 <div className="text-center">
@@ -3493,7 +3495,7 @@ function RoomView({
                           canChangeSource
                             ?isReadingMode
                               ?"bg-zinc-900 hover:bg-zinc-700 text-white"
-                              :"bg-amber-300 hover:bg-amber-200 text-zinc-950 shadow-lg shadow-amber-900/30"
+                              :"bg-gradient-to-r from-amber-400 to-orange-300 hover:from-amber-300 hover:to-orange-200 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.25)]"
                             :"bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
                         }`}>
                         <Upload size={15}/> {uploadButtonLabel}
@@ -3502,12 +3504,12 @@ function RoomView({
                         type="button"
                         onClick={openResourceInNewTab}
                         disabled={!showCompanionLink&&!showReadingFrame}
-                        className={`px-4 py-2.5 rounded-xl border disabled:opacity-45 disabled:cursor-not-allowed text-sm ${isReadingMode?"border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:border-zinc-500":"border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500"}`}
+                      className={`px-4 py-2.5 rounded-xl border disabled:opacity-45 disabled:cursor-not-allowed text-sm ${isReadingMode?"border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:border-zinc-500":"border-white/10 bg-white/[0.03] text-zinc-300 hover:text-zinc-100 hover:border-white/18"}`}
                       >
                         Open linked resource
                       </button>
                     </div>
-                    <div className={`flex items-center gap-2 rounded-xl border px-3 ${isReadingMode?"border-zinc-300 bg-white":"border-zinc-700 bg-zinc-900/70"}`}>
+                    <div className={`flex items-center gap-2 rounded-xl border px-3 ${isReadingMode?"border-zinc-300 bg-white":"border-white/8 bg-zinc-900/70"}`}>
                       {sessionMode==="reading"?<FileText size={14} className="text-zinc-500 shrink-0"/>:<Link2 size={14} className="text-zinc-500 shrink-0"/>}
                       <input
                         value={resourceInput}
@@ -3527,7 +3529,7 @@ function RoomView({
                           canChangeSource
                             ?isReadingMode
                               ?"bg-zinc-100 hover:bg-zinc-200 border-zinc-300 text-zinc-700"
-                              :"bg-zinc-800 hover:bg-zinc-700 border-zinc-600 text-zinc-200"
+                              :"bg-white/[0.06] hover:bg-white/[0.12] border-white/10 text-zinc-200"
                             :"bg-zinc-800/60 border-zinc-700 text-zinc-500 cursor-not-allowed"
                         }`}
                       >
@@ -3592,22 +3594,22 @@ function RoomView({
             )}
             {showReadingFrame&&(
               <>
-                <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-[11px] text-zinc-600 bg-white/88 border border-zinc-200 rounded-full px-3 py-1 backdrop-blur-sm shadow-sm">
+                <div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-zinc-200 bg-white/88 px-3 py-1.5 text-[11px] text-zinc-600 shadow-sm backdrop-blur-sm">
                   <span className={`h-2 w-2 rounded-full ${readingPdfReady?"bg-emerald-400":"bg-amber-400 animate-pulse"}`}/>
                   <span>{readingPdfReady?"Synced":"Loading PDF"}</span>
                   <span className="text-zinc-400">•</span>
                   <span>Host: @{hostUser?.username||hostUser?.name||"host"}</span>
                 </div>
                 {readingPdfWarning&&(
-                  <div className="absolute top-4 left-4 z-10 max-w-xs rounded-full border border-amber-200 bg-amber-50/95 px-3 py-1 text-[11px] text-amber-700 shadow-sm backdrop-blur-sm">
+                  <div className="absolute left-4 top-4 z-10 max-w-xs rounded-full border border-amber-200 bg-amber-50/95 px-3 py-1.5 text-[11px] text-amber-700 shadow-sm backdrop-blur-sm">
                     {readingPdfWarning}
                   </div>
                 )}
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 rounded-full border border-zinc-200 bg-white/95 backdrop-blur-sm px-3 py-2 flex items-center gap-2 shadow-lg">
+                <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-zinc-200 bg-white/95 px-3 py-2.5 shadow-lg backdrop-blur-sm">
                   <button
                     onClick={()=>handleReadingPageStep(-1)}
                     disabled={!isHost||readingPage<=1||!sharedDocument?.fileUrl}
-                    className="px-2 py-1 text-sm rounded-md text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md px-2 py-1 text-sm text-zinc-700 transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     ◀
                   </button>
@@ -3620,19 +3622,19 @@ function RoomView({
                     onBlur={handleReadingPageJump}
                     onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();handleReadingPageJump();}}}
                     readOnly={!isHost}
-                    className={`w-16 border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-800 focus:outline-none focus:border-zinc-500 ${!isHost?"cursor-not-allowed bg-zinc-100 text-zinc-500":"bg-white"}`}
+                    className={`w-16 rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-800 focus:outline-none focus:border-zinc-500 ${!isHost?"cursor-not-allowed bg-zinc-100 text-zinc-500":"bg-white"}`}
                   />
                   <span className="text-xs text-zinc-500 min-w-[3rem]">{readingTotalPages>0?`/ ${readingTotalPages}`:"pages"}</span>
                   <button
                     onClick={()=>handleReadingPageStep(1)}
                     disabled={!isHost||!sharedDocument?.fileUrl||(readingTotalPages>0&&readingPage>=readingTotalPages)}
-                    className="px-2 py-1 text-sm rounded-md text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md px-2 py-1 text-sm text-zinc-700 transition-all duration-200 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     ▶
                   </button>
                   <span className="text-xs text-zinc-500 px-1">{readingZoom}%</span>
-                  <button onClick={()=>handleReadingZoom(-10)} className="px-2 py-1 text-xs rounded-md text-zinc-600 hover:bg-zinc-100">-</button>
-                  <button onClick={()=>handleReadingZoom(10)} className="px-2 py-1 text-xs rounded-md text-zinc-600 hover:bg-zinc-100">+</button>
+                  <button onClick={()=>handleReadingZoom(-10)} className="rounded-md px-2 py-1 text-xs text-zinc-600 transition-all duration-200 hover:bg-zinc-100">-</button>
+                  <button onClick={()=>handleReadingZoom(10)} className="rounded-md px-2 py-1 text-xs text-zinc-600 transition-all duration-200 hover:bg-zinc-100">+</button>
                   <span className="hidden sm:inline text-[11px] text-zinc-500 pl-1">
                     {isHost?"You control the room":"Following the host"}
                   </span>
@@ -3640,27 +3642,27 @@ function RoomView({
               </>
             )}
             {showCompanionLink&&(
-              <div className="absolute bottom-3 left-3 right-3 z-10 rounded-lg border border-zinc-700/70 bg-black/55 backdrop-blur-sm px-3 py-2 text-xs text-zinc-300 flex items-center justify-between gap-2">
+              <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-black/55 px-3 py-2.5 text-xs text-zinc-300 backdrop-blur-sm">
                 <span className="truncate">Companion {resourceType!=="unknown"?`${resourceType} `:""}resource: {resourceUrl.replace(/^https?:\/\//i,"")}</span>
-                <button onClick={openResourceInNewTab} className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-100">
+                <button onClick={openResourceInNewTab} className="rounded-md border border-white/10 bg-white/[0.06] px-2.5 py-1 text-zinc-100 transition-all duration-200 hover:bg-white/[0.12]">
                   Open
                 </button>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept={fileAccept} className="hidden" onChange={handleFileSelect}/>
             {actionBanner&&(
-              <div className="absolute top-3 left-3 bg-black/60 text-zinc-300 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm z-10 pointer-events-none">
+              <div className="absolute left-3 top-3 z-10 rounded-full bg-black/60 px-3 py-1.5 text-xs text-zinc-300 backdrop-blur-sm pointer-events-none">
                 {actionBanner}
               </div>
             )}
             {waitingForUser&&(
-              <div className="absolute top-12 left-3 bg-amber-500/20 border border-amber-500/35 text-amber-300 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm z-10 pointer-events-none">
+              <div className="absolute left-3 top-12 z-10 rounded-full border border-amber-400/20 bg-amber-500/12 px-3 py-1.5 text-xs text-amber-200 backdrop-blur-sm pointer-events-none">
                 Waiting for @{waitingForUser}...
               </div>
             )}
             {showSourcePanel&&(
-              <div className={`absolute top-4 right-4 z-20 w-[22rem] max-w-[90vw] rounded-2xl border shadow-2xl p-3 ${
-                isReadingMode?"border-zinc-200 bg-white":"border-zinc-700/70 bg-zinc-950/90"
+              <div className={`absolute top-4 right-4 z-20 w-[22rem] max-w-[90vw] rounded-[1.6rem] border p-3 shadow-[0_32px_100px_rgba(0,0,0,0.45)] ${
+                isReadingMode?"border-zinc-200 bg-white":"border-white/10 bg-zinc-950/90"
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -3676,7 +3678,7 @@ function RoomView({
                   <button
                     type="button"
                     onClick={closeSourcePanel}
-                    className={`p-1.5 rounded-lg border ${isReadingMode?"border-zinc-200 text-zinc-500 hover:text-zinc-800":"border-zinc-700 text-zinc-400 hover:text-zinc-200"}`}
+                    className={`rounded-lg border p-1.5 transition-all duration-200 ${isReadingMode?"border-zinc-200 text-zinc-500 hover:text-zinc-800":"border-white/10 text-zinc-400 hover:text-zinc-200"}`}
                   >
                     <X size={12}/>
                   </button>
@@ -3691,14 +3693,14 @@ function RoomView({
                         canChangeSource
                           ?isReadingMode
                             ?"bg-zinc-900 text-white hover:bg-zinc-700"
-                            :"bg-amber-400 text-zinc-950 hover:bg-amber-300"
+                            :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 hover:from-amber-300 hover:to-orange-200"
                           :"bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
                       }`}
                     >
                       <Upload size={13}/> Choose file
                     </button>
                     <div className={`mt-2 flex items-center gap-2 rounded-xl border px-2 ${
-                      isReadingMode?"border-zinc-200 bg-white":"border-zinc-700 bg-zinc-900/60"
+                      isReadingMode?"border-zinc-200 bg-white":"border-white/8 bg-zinc-900/60"
                     }`}>
                       {sessionMode==="reading"?<FileText size={13} className="text-zinc-500 shrink-0"/>:<Link2 size={13} className="text-zinc-500 shrink-0"/>}
                       <input
@@ -3715,7 +3717,7 @@ function RoomView({
                           canChangeSource
                             ?isReadingMode
                               ?"bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
-                              :"bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700"
+                              :"bg-white/[0.06] border-white/10 text-zinc-200 hover:bg-white/[0.12]"
                             :"bg-zinc-800/60 border-zinc-800 text-zinc-500 cursor-not-allowed"
                         }`}
                       >
@@ -3738,7 +3740,7 @@ function RoomView({
 
       {/* Transport controls stay below the stage for non-reading video sessions. */}
           {showBottomTransport&&(
-            <div className="px-4 py-3 bg-zinc-900/95 border-t border-zinc-800 flex flex-col gap-2.5 shrink-0 relative z-10">
+            <div className="relative z-10 flex shrink-0 flex-col gap-3 border-t border-white/8 bg-zinc-950/94 px-4 py-3 backdrop-blur-xl">
             <div className="flex items-center gap-2">
               <span className="text-zinc-500 text-xs font-mono w-12 text-right shrink-0">{fmt(currentTime)}</span>
               <input type="range" min={0} max={duration||100} step={0.1} value={currentTime}
@@ -3753,31 +3755,31 @@ function RoomView({
             </div>
             <div className="flex items-center gap-1.5">
               <button onClick={()=>handleSkip(-10)} disabled={!videoLoaded||isStudyStudent} title="Back 10s"
-                className={`p-2 rounded-lg text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
-                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                className={`rounded-xl p-2 text-zinc-400 transition-all duration-200 disabled:opacity-30 ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-white/[0.05] hover:text-zinc-200"
                 }`}>
                 <SkipBack size={16}/>
               </button>
               <button onClick={isStudyStudent?undefined:handlePlayPause} disabled={!videoLoaded||isStudyStudent}
                 title={isStudyStudent?"Your teacher controls playback":isPlaying?"Pause":"Play"}
-                className={`w-10 h-10 rounded-full bg-amber-300 flex items-center justify-center text-zinc-950 transition-colors disabled:opacity-30 shrink-0 shadow-lg shadow-amber-500/20 ${
-                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-amber-200 cursor-pointer"
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.24)] transition-all duration-200 disabled:opacity-30 ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"cursor-pointer hover:-translate-y-0.5 hover:from-amber-300 hover:to-orange-200"
                 }`}>
                 {isStudyStudent?<Lock size={16}/>:isPlaying?<Pause size={17}/>:<Play size={17} className="ml-0.5"/>}
               </button>
               <button onClick={()=>handleSkip(10)} disabled={!videoLoaded||isStudyStudent} title="Forward 10s"
-                className={`p-2 rounded-lg text-zinc-400 hover:text-zinc-200 disabled:opacity-30 transition-colors ${
-                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-zinc-800"
+                className={`rounded-xl p-2 text-zinc-400 transition-all duration-200 disabled:opacity-30 ${
+                  isStudyStudent?"opacity-40 cursor-not-allowed":"hover:bg-white/[0.05] hover:text-zinc-200"
                 }`}>
                 <SkipForward size={16}/>
               </button>
-              <button onClick={toggleMute} className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors ml-1">
+              <button onClick={toggleMute} className="ml-1 rounded-xl p-2 text-zinc-400 transition-all duration-200 hover:bg-white/[0.05] hover:text-zinc-200">
                 {muted||volume===0?<VolumeX size={15}/>:<Volume2 size={15}/>}
               </button>
               <input type="range" min={0} max={1} step={0.05} value={muted?0:volume}
                 onChange={handleVolumeChange} className="w-20 accent-amber-400 cursor-pointer" style={{height:"4px"}}/>
               <button onClick={sendBookmark} disabled={!videoLoaded} title="Bookmark current time"
-                className="p-2 rounded-lg hover:bg-amber-500/20 text-zinc-500 hover:text-amber-400 disabled:opacity-30 transition-colors ml-1">
+                className="ml-1 rounded-xl p-2 text-zinc-500 transition-all duration-200 hover:bg-amber-500/12 hover:text-amber-300 disabled:opacity-30">
                 <Bookmark size={15}/>
               </button>
               {videoName&&<span className="text-zinc-600 text-xs font-mono truncate max-w-[180px] hidden lg:block ml-1">{videoName}</span>}
@@ -3793,7 +3795,7 @@ function RoomView({
               </span>
               {!isMusicMode&&(
                 <button onClick={handleFullscreen} title={isFullscreen?"Exit fullscreen":"Fullscreen"}
-                  className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
+                  className="rounded-xl p-2 text-zinc-400 transition-all duration-200 hover:bg-white/[0.05] hover:text-zinc-200">
                   {isFullscreen?<Minimize size={15}/>:<Maximize size={15}/>}
                 </button>
               )}
@@ -3816,17 +3818,17 @@ function RoomView({
 
         {/* Chat panel contains participant chips, the message timeline, presets, and composer controls. */}
         {showChat&&(
-          <div className={`w-full h-[40dvh] max-h-[32rem] lg:h-auto lg:max-h-none lg:w-[30rem] flex flex-col border backdrop-blur-xl shadow-2xl lg:shadow-none shrink-0 lg:border-r-0 lg:border-t-0 lg:border-b-0 ${isReadingMode?"border-zinc-300/80 bg-white/80 lg:border-l-zinc-300 lg:bg-white/75":"border-zinc-700/60 bg-zinc-950/70 lg:border-l-zinc-700/60 lg:bg-zinc-950/65"}`}>
-            <div className={`px-4 py-3 border-b flex items-center justify-between ${isReadingMode?"border-zinc-300/70":"border-zinc-700/50"}`}>
-              <span className={`text-sm font-medium flex items-center gap-2 ${isReadingMode?"text-zinc-800":"text-zinc-300"}`}>
+          <div className={`flex h-[40dvh] max-h-[32rem] w-full shrink-0 flex-col border shadow-2xl backdrop-blur-xl lg:h-auto lg:max-h-none lg:w-[30rem] lg:border-b-0 lg:border-r-0 lg:border-t-0 lg:shadow-none ${isReadingMode?"border-zinc-300/80 bg-white/80 lg:border-l-zinc-300 lg:bg-white/75":"border-white/8 bg-zinc-950/78 lg:border-l-white/8 lg:bg-zinc-950/68"}`}>
+            <div className={`flex items-center justify-between border-b px-4 py-3 ${isReadingMode?"border-zinc-300/70":"border-white/8"}`}>
+              <span className={`flex items-center gap-2 text-sm font-medium ${isReadingMode?"text-zinc-800":"text-zinc-200"}`}>
                 <MessageSquare size={13} className="text-amber-400"/> Chat
                 <span className={`text-xs ${isReadingMode?"text-zinc-500":"text-zinc-600"}`}>{users.length} people</span>
               </span>
-              <button onClick={()=>setShowChat(false)} className={`flex items-center gap-1 transition-colors text-xs ${isReadingMode?"text-zinc-500 hover:text-zinc-800":"text-zinc-400 hover:text-zinc-200"}`}>
+              <button onClick={()=>setShowChat(false)} className={`flex items-center gap-1 text-xs transition-all duration-200 ${isReadingMode?"text-zinc-500 hover:text-zinc-800":"text-zinc-400 hover:text-zinc-200"}`}>
                 <X size={13}/> Close
               </button>
             </div>
-            <div className={`px-4 py-2 border-b flex items-center gap-1.5 flex-wrap ${isReadingMode?"border-zinc-300/60":"border-zinc-700/40"}`}>
+            <div className={`flex items-center gap-1.5 border-b px-4 py-2.5 flex-wrap ${isReadingMode?"border-zinc-300/60":"border-white/8"}`}>
               {users.map(u=>(
                 <div key={u.uid} title={`@${u.username||u.name}`}>
                   {renderUserAvatar(u,"w-6 h-6","text-[10px]",u.name)}
@@ -3834,7 +3836,7 @@ function RoomView({
               ))}
             </div>
             <div
-              className="flex-1 overflow-y-auto p-3 flex flex-col gap-3"
+              className="flex flex-1 flex-col gap-3 overflow-y-auto p-3.5"
               onScroll={()=>setClosePickerSignal(v=>v+1)}
             >
               {messages.length===0&&<p className={`text-xs text-center mt-8 ${isReadingMode?"text-zinc-500":"text-zinc-700"}`}>No messages yet!</p>}
@@ -3858,23 +3860,23 @@ function RoomView({
                 sessionMode={sessionMode}
               />
             )}
-            <form onSubmit={sendMessage} className={`p-3 border-t flex gap-2 items-center safe-bottom ${isReadingMode?"border-zinc-300/70":"border-zinc-700/50"}`}>
+            <form onSubmit={sendMessage} className={`safe-bottom flex items-center gap-2 border-t p-3 ${isReadingMode?"border-zinc-300/70":"border-white/8"}`}>
               {/* Sparkle button — opens preset messages */}
               <button type="button" onClick={()=>setShowPresets(s=>!s)}
                 title="Quick messages"
-                className={`p-2 rounded-lg border transition-colors shrink-0
+                className={`shrink-0 rounded-xl border p-2 transition-all duration-200
                   ${showPresets
-                    ?"bg-amber-500/20 border-amber-500/40 text-amber-400"
-                    :"bg-zinc-800 border-zinc-700 text-zinc-500 hover:text-amber-400 hover:border-amber-500/30"}`}>
+                    ?"bg-amber-500/12 border-amber-400/18 text-amber-300"
+                    :"bg-white/[0.03] border-white/8 text-zinc-500 hover:text-amber-300 hover:border-amber-400/18"}`}>
                 ✨
               </button>
               <input value={chatInput} onChange={e=>setChatInput(e.target.value)}
                 placeholder={sessionMode==="study"?"Ask a question, raise hand, share notes...":chatPlaceholder} maxLength={500}
                 onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(e);}}}
-                className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500/50 transition-colors min-w-0 ${
+                className={`min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-sm transition-all duration-200 focus:border-amber-500/50 focus:outline-none ${
                   isReadingMode
                     ?"bg-white border-zinc-300 text-zinc-900 placeholder-zinc-500"
-                    :"bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-600"
+                    :"bg-white/[0.04] border-white/10 text-zinc-100 placeholder-zinc-500"
                 }`}
               />
               <button
@@ -3882,10 +3884,10 @@ function RoomView({
                 onClick={sendBookmark}
                 disabled={!videoLoaded||isReadingMode}
                 title="Bookmark current time"
-                className={`p-2 border rounded-lg disabled:opacity-30 transition-colors shrink-0 ${
+                className={`shrink-0 rounded-xl border p-2 disabled:opacity-30 transition-all duration-200 ${
                   isReadingMode
                     ?"bg-zinc-100 border-zinc-300 text-zinc-500 hover:bg-zinc-200"
-                    :"bg-zinc-800 hover:bg-amber-500/20 border-zinc-700 text-zinc-500 hover:text-amber-400"
+                    :"bg-white/[0.03] border-white/8 text-zinc-500 hover:bg-amber-500/12 hover:text-amber-300"
                 }`}
               >
                 <Bookmark size={14}/>
@@ -3894,14 +3896,14 @@ function RoomView({
                 <button
                   type="button"
                   onClick={handleRaiseHand}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs hover:bg-amber-500/25 transition-colors shrink-0"
+                  className="shrink-0 flex items-center gap-1.5 rounded-xl border border-amber-400/18 bg-amber-500/12 px-3 py-2 text-xs text-amber-200 transition-all duration-200 hover:bg-amber-500/18"
                   title="Raise your hand"
                 >
                   ✋ Raise hand
                 </button>
               )}
               <button type="submit" disabled={!chatInput.trim()}
-                className="p-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg disabled:opacity-40 transition-colors shrink-0">
+                className="shrink-0 rounded-xl bg-gradient-to-r from-amber-400 to-orange-300 p-2 text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:to-orange-200 disabled:opacity-40">
                 <Send size={14}/>
               </button>
             </form>
