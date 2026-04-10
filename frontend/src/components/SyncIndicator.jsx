@@ -23,9 +23,9 @@ function SyncIndicator({memberTimes,myUid,videoLoaded}){
   const inSync=gap<2;
 
   return(
-    <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border
-      ${inSync?"bg-green-950/40 text-green-400 border-green-800/40":"bg-red-950/40 text-red-400 border-red-800/50"}`}>
-      <Clock size={10}/>
+    <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-[0_12px_30px_rgba(0,0,0,0.18)]
+      ${inSync?"border-emerald-400/20 bg-emerald-500/10 text-emerald-200":"border-red-500/20 bg-red-500/10 text-red-200"}`}>
+      <Clock size={11}/>
       <span className="font-mono">
         {inSync
           ? "In sync"
@@ -33,7 +33,7 @@ function SyncIndicator({memberTimes,myUid,videoLoaded}){
         }
       </span>
       {!inSync&&(
-        <span className="hidden sm:inline text-[10px] opacity-70">
+        <span className="hidden text-[10px] opacity-70 sm:inline">
           {/* Surface raw member time samples so the host can see who is behind. */}
           · {Object.values(memberTimes).map(t=>`@${t.username} ${fmt(t.time)}`).join(" / ")}
         </span>
