@@ -8,3 +8,31 @@
   position: relative;
   isolation: isolate;
 }
+
+#root::before,
+#root::after {
+  content: '';
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+
+#root::before {
+  top: -14rem;
+  left: -10rem;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.24) 0%, rgba(249, 115, 22, 0.04) 60%, transparent 76%);
+}
+
+#root::after {
+  right: -12rem;
+  bottom: -16rem;
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.03) 62%, transparent 78%);
+}
