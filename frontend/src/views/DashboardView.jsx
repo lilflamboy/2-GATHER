@@ -303,17 +303,17 @@ function Toggle({ checked, onChange, label, help }) {
     <button
       type="button"
       onClick={onChange}
-      className="w-full flex items-start justify-between gap-3 rounded-xl border border-zinc-700/70 bg-zinc-900/60 p-3 text-left hover:border-zinc-600 transition-colors"
+      className="group flex w-full items-start justify-between gap-4 rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.05] to-white/[0.02] p-4 text-left shadow-lg shadow-black/30 transition-all duration-200 hover:border-white/15 hover:from-white/[0.11] hover:via-white/[0.06] hover:to-white/[0.03]"
     >
       <div>
-        <p className="text-sm text-zinc-100 font-medium">{label}</p>
-        <p className="text-xs text-zinc-500 mt-0.5">{help}</p>
+        <p className="text-sm font-semibold text-zinc-100">{label}</p>
+        <p className="mt-1 text-xs leading-6 text-zinc-400">{help}</p>
       </div>
       <span
-        className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${checked ? "bg-emerald-500" : "bg-zinc-700"}`}
+        className={`relative h-7 w-12 shrink-0 rounded-full border border-white/10 shadow-inner shadow-black/40 transition-all duration-200 ${checked ? "bg-gradient-to-r from-amber-400 via-orange-400 to-violet-500" : "bg-zinc-800/90"}`}
       >
         <span
-          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${checked ? "translate-x-5" : "translate-x-0.5"}`}
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-lg shadow-black/40 transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`}
         />
       </span>
     </button>
@@ -327,9 +327,9 @@ function Toggle({ checked, onChange, label, help }) {
  */
 function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCode, className = "" }) {
   return (
-    <aside className={`glass-panel p-3 h-fit ${className}`.trim()}>
-      <div className="mb-3 text-xs text-zinc-500 uppercase tracking-wide px-2">Account</div>
-      <div className="space-y-1">
+    <aside className={`glass-panel h-fit overflow-hidden rounded-[30px] border border-white/10 bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent p-4 shadow-[0_30px_90px_-55px_rgba(0,0,0,0.95)] backdrop-blur-xl ${className}`.trim()}>
+      <div className="mb-4 px-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-zinc-500">Account</div>
+      <div className="space-y-1.5">
         {tabs.map((item) => {
           const Icon = item.icon;
           const active = tab === item.key;
@@ -337,9 +337,9 @@ function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCod
             <button
               key={item.key}
               onClick={() => onSelectTab(item.key)}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${active
-                ? "bg-amber-400/20 border border-amber-300/30 text-amber-200"
-                : "text-zinc-300 hover:bg-zinc-800/70"
+              className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm transition-all duration-200 ${active
+                ? "border-amber-300/25 bg-gradient-to-r from-amber-400/20 via-orange-400/10 to-violet-500/15 text-amber-100 shadow-lg shadow-amber-950/20"
+                : "border-transparent text-zinc-300 hover:border-white/10 hover:bg-white/[0.05] hover:text-zinc-100"
               }`}
             >
               <Icon size={14} />
@@ -349,11 +349,11 @@ function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCod
         })}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-zinc-700/50 text-xs text-zinc-500">
-        <p className="mb-1">Live friends online</p>
-        <p className="text-zinc-200 font-semibold">{onlineFriends.length}</p>
-        <p className="mt-3 mb-1">Active room</p>
-        <p className="text-zinc-300 font-mono">{activeRoomCode || "None"}</p>
+      <div className="mt-5 border-t border-white/10 pt-5 text-xs text-zinc-500">
+        <p className="mb-1 uppercase tracking-[0.2em] text-[10px]">Live friends online</p>
+        <p className="text-xl font-semibold text-zinc-100">{onlineFriends.length}</p>
+        <p className="mb-1 mt-4 uppercase tracking-[0.2em] text-[10px]">Active room</p>
+        <p className="font-mono text-zinc-300">{activeRoomCode || "None"}</p>
       </div>
     </aside>
   );
@@ -1157,28 +1157,33 @@ export default function DashboardView({
   };
 
   return (
-    <div className="min-h-screen bg-screen relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-screen">
       <div className="grain-overlay" />
 
       {/* Header keeps global navigation, compact notifications, and sign-out in one consistent place. */}
-      <header className="relative z-40 px-4 sm:px-6 py-4 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+      <header className="relative z-40 border-b border-white/10 bg-zinc-950/75 px-4 py-5 backdrop-blur-2xl sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 rounded-lg bg-zinc-900/70 border border-zinc-700/60 text-zinc-300 hover:text-zinc-100 transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
               title="Back"
             >
               <ArrowLeft size={15} />
             </button>
-            <div className="flex items-center gap-2">
-              <Film size={18} className="text-amber-400" />
-              <p className="font-display text-xl text-zinc-100">Lumiere Settings</p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-400/20 to-violet-500/15 text-amber-300 shadow-lg shadow-black/30">
+                <Film size={18} className="text-amber-300" />
+              </div>
+              <div>
+                <p className="font-display text-[1.125rem] font-semibold tracking-tight text-white sm:text-[1.35rem]">Lumiere Settings</p>
+                <p className="hidden text-[11px] uppercase tracking-[0.3em] text-zinc-500 sm:block">Streaming profile hub</p>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="hidden sm:inline text-zinc-500 font-mono">@{username}</span>
+            <span className="hidden font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-500 sm:inline">@{username}</span>
             <button
               type="button"
               onClick={() => {
@@ -1188,7 +1193,7 @@ export default function DashboardView({
                   return next;
                 });
               }}
-              className="lg:hidden relative flex items-center justify-center w-9 h-9 rounded-lg bg-zinc-900/75 border border-zinc-700/70 text-zinc-300 hover:text-zinc-100 transition-colors"
+              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white lg:hidden"
               title="Menu"
             >
               <Menu size={14} />
@@ -1203,47 +1208,47 @@ export default function DashboardView({
                     return next;
                   });
                 }}
-                className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-zinc-900/75 border border-zinc-700/70 text-zinc-300 hover:text-zinc-100 transition-colors"
+                className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                 title="Notifications"
               >
                 <Bell size={14} />
                 {unreadHeaderNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-1 text-[10px] font-bold text-zinc-950 shadow-lg shadow-amber-950/30">
                     {unreadHeaderNotifications > 9 ? "9+" : unreadHeaderNotifications}
                   </span>
                 )}
               </button>
               {showHeaderNotifications && (
-                <div className="fixed left-2 right-2 top-[4.4rem] sm:left-auto sm:right-6 sm:w-80 rounded-xl border border-zinc-700 bg-zinc-900/95 backdrop-blur-xl shadow-2xl z-[90] p-2">
-                  <div className="px-2 py-1.5 text-[11px] uppercase tracking-wide text-zinc-500 flex items-center justify-between">
+                <div className="fixed left-2 right-2 top-[4.7rem] z-[90] rounded-[28px] border border-white/10 bg-zinc-950/92 p-3 shadow-[0_40px_120px_-55px_rgba(0,0,0,1)] backdrop-blur-2xl sm:left-auto sm:right-6 sm:w-80">
+                  <div className="flex items-center justify-between px-2 py-1.5 text-[11px] uppercase tracking-[0.24em] text-zinc-500">
                     <span>Notifications</span>
                     <button
                       type="button"
                       disabled={notificationBusy || notificationsUnread === 0}
                       onClick={onMarkAllNotificationsRead}
-                      className="text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-300 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Mark all read
                     </button>
                   </div>
-                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                     {incomingRequests.map((item) => (
-                      <div key={`incoming-${item.uid}`} className="rounded-lg border border-zinc-700/60 bg-zinc-900/80 p-2">
-                        <p className="text-xs text-zinc-200">
+                      <div key={`incoming-${item.uid}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
+                        <p className="text-xs leading-6 text-zinc-200">
                           <span className="font-semibold">@{item.username || "user"}</span> sent you a friend request
                         </p>
-                        <div className="mt-2 flex items-center gap-1.5">
+                        <div className="mt-3 flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => onRespondRequest(item.uid, "accept")}
-                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[11px] text-zinc-950 font-semibold"
+                            className="rounded-full bg-emerald-500 px-3.5 py-2 text-[11px] font-semibold text-zinc-950 transition-all duration-200 hover:bg-emerald-400"
                           >
                             Accept
                           </button>
                           <button
                             type="button"
                             onClick={() => onRespondRequest(item.uid, "reject")}
-                            className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 text-[11px] text-zinc-100"
+                            className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[11px] text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                           >
                             Decline
                           </button>
@@ -1251,33 +1256,33 @@ export default function DashboardView({
                       </div>
                     ))}
                     {(invites || []).map((invite) => (
-                      <div key={`invite-${invite.id}`} className="rounded-lg border border-zinc-700/60 bg-zinc-900/80 p-2">
-                        <p className="text-xs text-zinc-200">
+                      <div key={`invite-${invite.id}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
+                        <p className="text-xs leading-6 text-zinc-200">
                           <span className="font-semibold">{invite.fromUsername ? `@${invite.fromUsername}` : invite.fromName}</span> invited you
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5 font-mono">{invite.roomCode}</p>
+                        <p className="mt-1 font-mono text-[11px] text-zinc-500">{invite.roomCode}</p>
                         <button
                           type="button"
                           onClick={() => onAcceptInvite?.(invite)}
-                          className="mt-2 px-2.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-[11px] text-zinc-950 font-semibold"
+                          className="mt-3 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-[11px] font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
                         >
                           Join room
                         </button>
                       </div>
                     ))}
                     {passiveNotifications.slice(0, 6).map((item) => (
-                      <div key={`persisted-${item.id}`} className={`rounded-lg border p-2 ${item.isRead ? "border-zinc-800/70 bg-zinc-900/60" : "border-zinc-700/60 bg-zinc-900/80"}`}>
+                      <div key={`persisted-${item.id}`} className={`rounded-2xl border p-3 ${item.isRead ? "border-white/5 bg-white/[0.02]" : "border-white/10 bg-white/[0.05]"}`}>
                         <p className={`text-xs ${item.isRead ? "text-zinc-400" : "text-zinc-200"}`}>
                           {notificationLabel(item)}
                         </p>
-                        <div className="mt-1.5 flex items-center justify-between">
+                        <div className="mt-2 flex items-center justify-between gap-2">
                           <p className="text-[11px] text-zinc-500">{fmtRelativeTime(item.createdAt)}</p>
                           {!item.isRead && (
                             <button
                               type="button"
                               onClick={() => onMarkNotificationRead(item.id)}
                               disabled={notificationBusy}
-                              className="text-[11px] px-2 py-1 rounded-md border border-zinc-700 text-zinc-300 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Mark read
                             </button>
@@ -1294,7 +1299,7 @@ export default function DashboardView({
             </div>
             <button
               onClick={onSignOut}
-              className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg bg-zinc-900/75 border border-zinc-700/70 text-zinc-300 hover:text-red-300 transition-colors"
+              className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-100 sm:px-4"
             >
               <LogOut size={13} />
               <span className="hidden sm:inline">Sign out</span>
@@ -1303,7 +1308,7 @@ export default function DashboardView({
         </div>
       </header>
 
-      <main className="relative z-0 max-w-6xl mx-auto p-4 sm:p-6 grid lg:grid-cols-[220px,1fr] gap-4 sm:gap-6">
+      <main className="relative z-0 mx-auto grid max-w-7xl items-start gap-5 p-4 sm:gap-7 sm:p-6 lg:grid-cols-[260px,1fr]">
         <DashboardSidebar
           tabs={tabs}
           tab={tab}
@@ -1313,31 +1318,31 @@ export default function DashboardView({
           className="hidden lg:block"
         />
 
-        <section className="glass-panel p-4 sm:p-5 min-h-[30rem]">
+        <section className="glass-panel min-h-[32rem] overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-5 shadow-[0_40px_120px_-60px_rgba(0,0,0,1)] sm:p-7">
           {loading ? (
-            <div className="h-56 flex items-center justify-center text-zinc-500 text-sm">Loading settings...</div>
+            <div className="flex h-64 items-center justify-center text-sm text-zinc-500">Loading settings...</div>
           ) : (
             <>
               {/* Profile tab handles editable identity fields and photo updates. */}
               {tab === "profile" && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
+                <div className="space-y-6">
+                  <div className="mb-0 flex flex-col items-start gap-4 rounded-[28px] border border-white/10 bg-gradient-to-br from-amber-400/12 via-white/[0.05] to-violet-500/12 p-5 shadow-lg shadow-black/30 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                     {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt="" className="w-14 h-14 rounded-2xl border border-zinc-700 object-cover" />
+                      <img src={profilePhotoPreview} alt="" className="h-16 w-16 rounded-[22px] border border-white/10 object-cover shadow-lg shadow-black/40 sm:h-20 sm:w-20" />
                     ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-300">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-amber-300/20 bg-gradient-to-br from-amber-400/20 to-violet-500/15 text-amber-300 shadow-lg shadow-black/40 sm:h-20 sm:w-20">
                         <UserRound size={20} />
                       </div>
                     )}
-                    <div>
-                      <p className="text-zinc-100 font-semibold text-lg">{profile?.displayName || "Profile"}</p>
-                      <p className="text-zinc-500 text-sm font-mono">@{profile?.username || username}</p>
+                    <div className="flex-1">
+                      <p className="text-xl font-semibold text-zinc-100">{profile?.displayName || "Profile"}</p>
+                      <p className="mt-1 font-mono text-sm text-zinc-400">@{profile?.username || username}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => photoInputRef.current?.click()}
                           disabled={photoProcessing}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-zinc-200 text-xs disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-2 text-xs font-semibold text-zinc-950 shadow-lg shadow-amber-950/25 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
                         >
                           <ImagePlus size={12} />
                           {photoProcessing ? "Processing..." : "Change photo"}
@@ -1346,7 +1351,7 @@ export default function DashboardView({
                           <button
                             type="button"
                             onClick={onRemoveProfilePhoto}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100"
                           >
                             Remove
                           </button>
@@ -1362,23 +1367,23 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <form onSubmit={onSaveProfile} className="space-y-3">
+                  <form onSubmit={onSaveProfile} className="space-y-5 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-inner shadow-black/20 sm:p-6">
                     <div>
-                      <label className="text-xs text-zinc-500">Display name</label>
+                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Display name</label>
                       <input
                         value={profileForm.displayName}
                         onChange={(e) => setProfileForm((prev) => ({ ...prev, displayName: e.target.value }))}
-                        className="mt-1 w-full bg-zinc-900/70 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                        className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:bg-black/40 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                         maxLength={60}
                         required
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-zinc-500">Bio</label>
+                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Bio</label>
                       <textarea
                         value={profileForm.bio}
                         onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
-                        className="mt-1 w-full min-h-24 bg-zinc-900/70 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                        className="mt-2 min-h-28 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:bg-black/40 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                         maxLength={240}
                         placeholder="Write something about your movie taste..."
                       />
@@ -1386,7 +1391,7 @@ export default function DashboardView({
                     <button
                       type="submit"
                       disabled={savingProfile}
-                      className="inline-flex items-center gap-2 bg-amber-300 hover:bg-amber-200 disabled:opacity-60 text-zinc-950 font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-lg shadow-amber-900/25"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-amber-950/30 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
                     >
                       <Check size={14} />
                       {savingProfile ? "Saving..." : "Save profile"}
@@ -1397,39 +1402,39 @@ export default function DashboardView({
 
               {/* Friends tab covers search, incoming requests, accepted friends, and invite actions. */}
               {tab === "friends" && (
-                <div className="space-y-5">
-                  <div>
-                    <p className="text-zinc-100 font-semibold">Find friends</p>
+                <div className="space-y-6">
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Find friends</p>
                     <div className="mt-2 flex gap-2">
-                      <div className="flex-1 flex items-center gap-2 bg-zinc-900/70 border border-zinc-700 rounded-lg px-3">
+                      <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4">
                         <Search size={14} className="text-zinc-500" />
                         <input
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          className="flex-1 bg-transparent py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                          className="flex-1 bg-transparent py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
                           placeholder="Search username or name"
                         />
                       </div>
                     </div>
-                    {searching && <p className="mt-2 text-xs text-zinc-500">Searching...</p>}
+                    {searching && <p className="mt-3 text-xs text-zinc-500">Searching...</p>}
                     {searchResults.length > 0 && (
-                      <div className="mt-2 space-y-2">
+                      <div className="mt-4 space-y-2">
                         {searchResults.map((item) => (
-                          <div key={item.uid} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-700/60 bg-zinc-900/55 px-3 py-2">
+                          <div key={item.uid} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-sm shadow-black/20">
                             <div>
                               <p className="text-sm text-zinc-100">{item.displayName}</p>
-                              <p className="text-xs text-zinc-500 font-mono">@{item.username || "user"}</p>
+                              <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
                             </div>
                             {item.relationship === "none" && (
                               <button
                                 onClick={() => onSendRequest(item.uid)}
-                                className="text-xs px-2.5 py-1.5 rounded-lg bg-amber-300 hover:bg-amber-200 text-zinc-950 font-semibold"
+                                className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
                               >
                                 <span className="inline-flex items-center gap-1"><UserPlus size={12} /> Add</span>
                               </button>
                             )}
                             {item.relationship !== "none" && (
-                              <span className="text-xs px-2 py-1 rounded-lg border border-zinc-700 text-zinc-400 capitalize">{item.relationship}</span>
+                              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs capitalize text-zinc-400">{item.relationship}</span>
                             )}
                           </div>
                         ))}
@@ -1437,26 +1442,26 @@ export default function DashboardView({
                     )}
                   </div>
 
-                  <div>
-                    <p className="text-zinc-100 font-semibold mb-2">Incoming requests</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Incoming requests</p>
                     {incomingRequests.length === 0 && <p className="text-xs text-zinc-600">No pending requests</p>}
                     <div className="space-y-2">
                       {incomingRequests.map((item) => (
-                        <div key={item.uid} className="flex items-center justify-between rounded-lg border border-zinc-700/60 bg-zinc-900/50 px-3 py-2">
+                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <div>
                             <p className="text-sm text-zinc-100">{item.displayName}</p>
-                            <p className="text-xs text-zinc-500 font-mono">@{item.username || "user"}</p>
+                            <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
                           </div>
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-2">
                             <button
                               onClick={() => onRespondRequest(item.uid, "accept")}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-xs text-white"
+                              className="rounded-full bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:bg-emerald-400"
                             >
                               Accept
                             </button>
                             <button
                               onClick={() => onRespondRequest(item.uid, "reject")}
-                              className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-xs text-zinc-100"
+                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                             >
                               Decline
                             </button>
@@ -1466,17 +1471,17 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-zinc-100 font-semibold mb-2">Your friends</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Your friends</p>
                     {friends.length === 0 && <p className="text-xs text-zinc-600">No friends yet</p>}
                     <div className="space-y-2">
                       {friends.map((item) => (
-                        <div key={item.uid} className="flex items-center justify-between rounded-lg border border-zinc-700/60 bg-zinc-900/50 px-3 py-2">
-                          <div className="flex items-center gap-2">
+                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                          <div className="flex items-center gap-3">
                             <span className={`w-2 h-2 rounded-full ${item.online ? "bg-emerald-400" : "bg-zinc-600"}`} />
                             <div>
                               <p className="text-sm text-zinc-100">{item.displayName}</p>
-                              <p className="text-xs text-zinc-500 font-mono">@{item.username || "user"}</p>
+                              <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1484,7 +1489,7 @@ export default function DashboardView({
                               value={relationshipByPartnerUid[item.uid]?.relationshipType || "friends"}
                               onChange={(e) => onUpdateRelationshipTag(item.uid, e.target.value)}
                               disabled={tagUpdatingUid === item.uid}
-                              className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-100 focus:outline-none focus:border-amber-400/50 disabled:opacity-60"
+                              className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
                               title="Tag relationship"
                             >
                               {RELATIONSHIP_TAG_OPTIONS.map((option) => (
@@ -1496,7 +1501,7 @@ export default function DashboardView({
                             <button
                               onClick={() => onInvite(item.uid)}
                               disabled={!item.online}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-300 hover:bg-amber-200 disabled:opacity-45 disabled:cursor-not-allowed text-zinc-950"
+                              className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:cursor-not-allowed disabled:opacity-45"
                               title={item.online ? "Invite to watch" : "Friend is offline"}
                             >
                               <span className="inline-flex items-center gap-1"><Radio size={12} /> Invite</span>
@@ -1507,7 +1512,7 @@ export default function DashboardView({
                     </div>
 
                     {friends.length > 0 && (
-                      <p className="mt-2 text-xs text-zinc-600">
+                      <p className="mt-3 text-xs text-zinc-500">
                         Invite works instantly for online friends.
                       </p>
                     )}
@@ -1519,20 +1524,20 @@ export default function DashboardView({
               {tab === "couple" && (
                 <div className="space-y-4">
                   {friends.length === 0 && (
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 text-sm text-zinc-500">
+                    <div className="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
                       Add at least one friend to unlock private Couple Space.
                     </div>
                   )}
 
                   {friends.length > 0 && (
                     <>
-                      <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                        <p className="text-zinc-100 font-semibold mb-3">Private Couple Space</p>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                      <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/10 via-white/[0.05] to-amber-400/10 p-5 shadow-lg shadow-black/25">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Private Couple Space</p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                           <select
                             value={couplePartnerUid}
                             onChange={(e) => setCouplePartnerUid(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           >
                             {friends.map((friend) => (
                               <option key={friend.uid} value={friend.uid}>
@@ -1543,36 +1548,36 @@ export default function DashboardView({
                           <button
                             onClick={() => onInvite(couplePartnerUid)}
                             disabled={!couplePartnerProfile?.online}
-                            className="px-3 py-2 rounded-lg text-xs font-medium bg-amber-300 hover:bg-amber-200 disabled:opacity-45 disabled:cursor-not-allowed text-zinc-950"
+                            className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:cursor-not-allowed disabled:opacity-45"
                           >
                             <span className="inline-flex items-center gap-1"><Radio size={12} /> Invite Partner</span>
                           </button>
                           {couplePartnerProfile && (
-                            <span className={`text-xs px-2 py-1 rounded-full border ${couplePartnerProfile.online ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40" : "bg-zinc-900/40 text-zinc-500 border-zinc-700"}`}>
+                            <span className={`rounded-full border px-3 py-1.5 text-xs ${couplePartnerProfile.online ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200" : "border-white/10 bg-white/[0.03] text-zinc-400"}`}>
                               {couplePartnerProfile.online ? "Partner online" : "Partner offline"}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <form onSubmit={onAddWatchlistItem} className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 space-y-2">
-                        <p className="text-zinc-100 font-semibold">Shared Watchlist</p>
+                      <form onSubmit={onAddWatchlistItem} className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared Watchlist</p>
                         <input
                           value={watchTitle}
                           onChange={(e) => setWatchTitle(e.target.value)}
                           placeholder="Movie title (required)"
                           maxLength={120}
-                          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                          className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           required
                         />
-                        <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3">
+                        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4">
                           <Link2 size={13} className="text-zinc-500" />
                           <input
                             value={watchUrl}
                             onChange={(e) => setWatchUrl(e.target.value)}
                             placeholder="Trailer / OTT link (optional)"
                             maxLength={500}
-                            className="flex-1 bg-transparent py-2 text-sm text-zinc-100 focus:outline-none"
+                            className="flex-1 bg-transparent py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
                           />
                         </div>
                         <textarea
@@ -1580,32 +1585,32 @@ export default function DashboardView({
                           onChange={(e) => setWatchNotes(e.target.value)}
                           placeholder="Memory note (optional)"
                           maxLength={260}
-                          className="w-full min-h-20 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                          className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                         />
                         <button
                           type="submit"
                           disabled={coupleBusy}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-300 hover:bg-amber-200 disabled:opacity-60 text-zinc-950 text-sm font-semibold"
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-sm font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
                         >
                           <Plus size={14} />
                           Add to watchlist
                         </button>
                       </form>
 
-                      <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                        <p className="text-zinc-100 font-semibold mb-2">Watchlist items</p>
+                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Watchlist items</p>
                         {coupleLoading && <p className="text-xs text-zinc-500">Loading couple space...</p>}
                         {!coupleLoading && (coupleSpace.watchlist?.length || 0) === 0 && (
                           <p className="text-xs text-zinc-600">No items yet. Add your next movie date idea.</p>
                         )}
                         <div className="space-y-2">
                           {(coupleSpace.watchlist || []).map((item) => (
-                            <div key={item.id} className="rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-2">
+                            <div key={item.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                               <div className="flex items-start justify-between gap-2">
                                 <button
                                   type="button"
                                   onClick={() => onUpdateWatchlistItem(item.id, "toggle_done", !item.done)}
-                                  className="inline-flex items-center gap-2 text-left"
+                                  className="inline-flex items-start gap-3 text-left"
                                 >
                                   {item.done ? <CheckSquare size={15} className="text-emerald-400" /> : <Square size={15} className="text-zinc-500" />}
                                   <span className={`text-sm ${item.done ? "text-zinc-500 line-through" : "text-zinc-100"}`}>{item.title}</span>
@@ -1613,18 +1618,18 @@ export default function DashboardView({
                                 <button
                                   type="button"
                                   onClick={() => onUpdateWatchlistItem(item.id, "remove")}
-                                  className="p-1.5 rounded-lg text-zinc-500 hover:text-red-300 hover:bg-zinc-800 transition-colors"
+                                  className="rounded-full border border-white/10 bg-white/[0.03] p-2 text-zinc-500 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-200"
                                 >
                                   <Trash2 size={13} />
                                 </button>
                               </div>
-                              {!!item.notes && <p className="text-xs text-zinc-500 mt-1 ml-7">{item.notes}</p>}
+                              {!!item.notes && <p className="ml-7 mt-2 text-xs text-zinc-400">{item.notes}</p>}
                               {!!item.url && (
                                 <a
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-xs text-amber-300 hover:text-amber-200 mt-1 ml-7 inline-flex"
+                                  className="ml-7 mt-2 inline-flex text-xs text-amber-300 transition-colors duration-200 hover:text-amber-200"
                                 >
                                   Open link
                                 </a>
@@ -1642,37 +1647,37 @@ export default function DashboardView({
               {tab === "memories" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">This week</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{fmtDuration(memories.summary?.weekSeconds)}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This week</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.weekSeconds)}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">This month</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{fmtDuration(memories.summary?.monthSeconds)}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This month</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.monthSeconds)}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">This year</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{fmtDuration(memories.summary?.yearSeconds)}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This year</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.yearSeconds)}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">All time</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{fmtDuration(memories.summary?.allSeconds)}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">All time</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.allSeconds)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold flex items-center gap-2"><Heart size={14} className="text-amber-300" /> Emotional moments</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100"><Heart size={14} className="text-amber-300" /> Emotional moments</p>
                     {memories.byFriend?.length === 0 && (
-                      <p className="text-zinc-600 text-sm mt-2">Watch sessions with friends will appear here automatically.</p>
+                      <p className="mt-3 text-sm text-zinc-500">Watch sessions with friends will appear here automatically.</p>
                     )}
 
                     <div className="mt-3 space-y-2">
                       {memories.byFriend?.map((item) => (
-                        <div key={item.uid} className="rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-2">
+                        <div key={item.uid} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <p className="text-sm text-zinc-100">
                             You watched <span className="text-amber-300 font-semibold">{fmtDuration(item.allSeconds)}</span> with @{item.username || item.displayName}
                           </p>
-                          <p className="text-xs text-zinc-500 mt-1">
+                          <p className="mt-2 text-xs text-zinc-500">
                             Week: {fmtDuration(item.weekSeconds)} · Month: {fmtDuration(item.monthSeconds)} · Year: {fmtDuration(item.yearSeconds)}
                           </p>
                         </div>
@@ -1680,17 +1685,17 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <form onSubmit={onAddSharedMemory} className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 space-y-2">
-                    <p className="text-zinc-100 font-semibold">Shared memory note</p>
+                  <form onSubmit={onAddSharedMemory} className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared memory note</p>
                     {friends.length === 0 ? (
-                      <p className="text-xs text-zinc-600">Add friends to create shared memories.</p>
+                      <p className="text-xs text-zinc-500">Add friends to create shared memories.</p>
                     ) : (
                       <>
                         <div className="grid sm:grid-cols-2 gap-2">
                           <select
                             value={memoryPartnerUid}
                             onChange={(e) => setMemoryPartnerUid(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           >
                             {friends.map((friend) => (
                               <option key={friend.uid} value={friend.uid}>
@@ -1703,7 +1708,7 @@ export default function DashboardView({
                             onChange={(e) => setMemoryRoomCode(e.target.value.toUpperCase())}
                             placeholder="Room code (optional)"
                             maxLength={8}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 font-mono"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           />
                         </div>
                         <textarea
@@ -1711,14 +1716,14 @@ export default function DashboardView({
                           onChange={(e) => setMemoryNote(e.target.value)}
                           placeholder="Write something meaningful, like: We watched this after 3 months apart."
                           maxLength={600}
-                          className="w-full min-h-24 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500/50"
+                          className="min-h-28 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           required
                         />
                         <div className="grid sm:grid-cols-2 gap-2">
                           <select
                             value={memorySessionMode}
                             onChange={(e) => setMemorySessionMode(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           >
                             <option value="watch">Watch session</option>
                             <option value="podcast">Podcast sync</option>
@@ -1730,7 +1735,7 @@ export default function DashboardView({
                             onChange={(e) => setMemoryGenre(e.target.value)}
                             placeholder="Genre (optional)"
                             maxLength={48}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           />
                         </div>
                         <div className="grid sm:grid-cols-3 gap-2">
@@ -1739,21 +1744,21 @@ export default function DashboardView({
                             onChange={(e) => setMemoryMoodTag(e.target.value)}
                             placeholder="Mood tag (optional)"
                             maxLength={48}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           />
                           <input
                             value={memoryHighlightTimestamp}
                             onChange={(e) => setMemoryHighlightTimestamp(e.target.value)}
                             placeholder="Highlight HH:MM:SS"
                             maxLength={12}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 font-mono"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           />
                           <input
                             value={memorySessionMinutes}
                             onChange={(e) => setMemorySessionMinutes(e.target.value.replace(/[^0-9]/g, ""))}
                             placeholder="Session mins"
                             maxLength={4}
-                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                           />
                         </div>
                         <input
@@ -1761,12 +1766,12 @@ export default function DashboardView({
                           onChange={(e) => setMemoryReactionCount(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="Reaction count (optional)"
                           maxLength={4}
-                          className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                          className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                         />
                         <button
                           type="submit"
                           disabled={savingMemory}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-300 hover:bg-amber-200 disabled:opacity-60 text-zinc-950 text-sm font-semibold"
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-sm font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
                         >
                           <Plus size={14} />
                           {savingMemory ? "Saving..." : "Save memory note"}
@@ -1775,16 +1780,16 @@ export default function DashboardView({
                     )}
                   </form>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold">Shared memory archive</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared memory archive</p>
                     {sharedMemories.length === 0 && (
-                      <p className="text-xs text-zinc-600 mt-2">No shared memory notes yet.</p>
+                      <p className="mt-3 text-xs text-zinc-500">No shared memory notes yet.</p>
                     )}
                     <div className="mt-2 space-y-2">
                       {sharedMemories.map((item) => (
-                        <div key={item.id} className="rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-2">
+                        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <p className="text-sm text-zinc-100">{item.memoryNote}</p>
-                          <p className="text-xs text-zinc-500 mt-1">
+                          <p className="mt-2 text-xs text-zinc-500">
                             With @{item.partner?.username || item.partner?.displayName || "friend"}
                             {item.roomCode ? ` · Room ${item.roomCode}` : ""}
                             {item.date ? ` · ${new Date(item.date).toLocaleDateString()}` : ""}
@@ -1805,65 +1810,65 @@ export default function DashboardView({
               {/* Intelligence tab derives story cards, compatibility, milestones, and timeline views from saved memories. */}
               {tab === "intelligence" && (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold flex items-center gap-2">
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/12 via-white/[0.05] to-amber-400/10 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
                       <Sparkles size={14} className="text-amber-300" />
                       Relationship Intelligence
                     </p>
-                    <p className="text-zinc-500 text-xs mt-1">
+                    <p className="mt-2 text-xs text-zinc-400">
                       Experience-layer analytics from your shared sessions and memory notes.
                     </p>
                   </div>
 
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Hours together</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{relationshipIntel.totalSharedHours.toFixed(1)}h</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Hours together</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.totalSharedHours.toFixed(1)}h</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Shared streak</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{relationshipIntel.streakDays} day{relationshipIntel.streakDays === 1 ? "" : "s"}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Shared streak</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.streakDays} day{relationshipIntel.streakDays === 1 ? "" : "s"}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Longest session</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Longest session</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">
                         {relationshipIntel.longestSessionMinutes > 0 ? `${relationshipIntel.longestSessionMinutes}m` : "Not set"}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Dominant genre</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{relationshipIntel.topGenre}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Dominant genre</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.topGenre}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold mb-2">AI-generated story</p>
-                    <p className="text-sm text-zinc-300 leading-relaxed">{relationshipIntel.yearStory}</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">AI-generated story</p>
+                    <p className="text-sm leading-7 text-zinc-300">{relationshipIntel.yearStory}</p>
                     <div className="mt-3 space-y-1.5">
                       {relationshipIntel.relationshipInsights.map((line, idx) => (
-                        <p key={`insight-${idx}`} className="text-xs text-zinc-500">
+                        <p key={`insight-${idx}`} className="text-xs leading-6 text-zinc-500">
                           {line}
                         </p>
                       ))}
                     </div>
-                    <p className="mt-3 text-xs text-amber-300">{relationshipIntel.anniversaryText}</p>
+                    <p className="mt-4 text-xs text-amber-300">{relationshipIntel.anniversaryText}</p>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold mb-2">Compatibility index</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Compatibility index</p>
                     {relationshipIntel.compatibilityCards.length === 0 && (
-                      <p className="text-xs text-zinc-600">Add friends and save shared memories to unlock compatibility scoring.</p>
+                      <p className="text-xs text-zinc-500">Add friends and save shared memories to unlock compatibility scoring.</p>
                     )}
                     <div className="space-y-2">
                       {relationshipIntel.compatibilityCards.slice(0, 6).map((item) => (
-                        <div key={item.uid} className="rounded-lg border border-zinc-700/50 bg-zinc-900/45 px-3 py-2">
+                        <div key={item.uid} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm text-zinc-100">{item.label}</p>
-                            <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-500/35 bg-emerald-500/10 text-emerald-200">
+                            <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-100">
                               {item.compatibilityIndex}%
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-500 mt-1">
+                          <p className="mt-2 text-xs text-zinc-500">
                             {item.hours.toFixed(1)}h together · {item.streakDays}d streak · Genre: {item.favoriteGenre} · Mood: {item.favoriteMood}
                           </p>
                         </div>
@@ -1871,16 +1876,16 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold mb-2">Emotional timeline</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Emotional timeline</p>
                     {relationshipIntel.timeline.length === 0 && (
-                      <p className="text-xs text-zinc-600">No timeline yet. Save a shared memory with mood, timestamp, and reactions.</p>
+                      <p className="text-xs text-zinc-500">No timeline yet. Save a shared memory with mood, timestamp, and reactions.</p>
                     )}
                     <div className="space-y-2">
                       {relationshipIntel.timeline.map((item) => (
-                        <div key={item.id} className="rounded-lg border border-zinc-700/50 bg-zinc-900/45 px-3 py-2">
+                        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <p className="text-sm text-zinc-100">{item.note}</p>
-                          <p className="text-xs text-zinc-500 mt-1">
+                          <p className="mt-2 text-xs text-zinc-500">
                             {item.label} · {new Date(item.date).toLocaleDateString()} · {item.sessionMode}
                             {item.genre ? ` · ${item.genre}` : ""}
                             {item.highlightTimestamp ? ` · Highlight ${item.highlightTimestamp}` : ""}
@@ -1894,15 +1899,15 @@ export default function DashboardView({
                   </div>
 
                   <div className="grid lg:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                      <p className="text-zinc-100 font-semibold mb-2">Milestone badges</p>
+                    <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Milestone badges</p>
                       <div className="flex flex-wrap gap-2">
                         {relationshipIntel.milestones.map((badge) => (
                           <span
                             key={badge.key}
-                            className={`text-xs px-2.5 py-1 rounded-full border ${badge.achieved
-                              ? "border-amber-500/35 bg-amber-500/10 text-amber-200"
-                              : "border-zinc-700 bg-zinc-900/70 text-zinc-500"
+                            className={`rounded-full border px-3 py-1.5 text-xs ${badge.achieved
+                              ? "border-amber-400/25 bg-amber-400/10 text-amber-100"
+                              : "border-white/10 bg-white/[0.03] text-zinc-500"
                             }`}
                           >
                             {badge.achieved ? "Unlocked" : "Locked"} · {badge.label}
@@ -1911,12 +1916,12 @@ export default function DashboardView({
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                      <p className="text-zinc-100 font-semibold mb-2">Mode expansion tracker</p>
+                    <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Mode expansion tracker</p>
                       <p className="text-xs text-zinc-500">Podcast sync, co-reading, and study sessions are now tracked alongside watch sessions.</p>
                       <div className="mt-3 space-y-2">
                         {relationshipIntel.modeUsage.map((mode) => (
-                          <div key={mode.mode} className="flex items-center justify-between rounded-lg border border-zinc-700/50 bg-zinc-900/45 px-3 py-2">
+                          <div key={mode.mode} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                             <span className="text-sm text-zinc-200">{mode.label}</span>
                             <span className="text-xs text-zinc-400">{mode.count} memories</span>
                           </div>
@@ -1930,9 +1935,9 @@ export default function DashboardView({
               {/* Notifications tab expands the compact header feed into a full inbox with room-join actions. */}
               {tab === "notifications" && (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-amber-400/10 via-white/[0.04] to-violet-500/10 p-5 shadow-lg shadow-black/25">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-zinc-100 font-semibold flex items-center gap-2">
+                      <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
                         <Bell size={14} className="text-amber-300" />
                         Notifications
                       </p>
@@ -1940,36 +1945,36 @@ export default function DashboardView({
                         type="button"
                         onClick={onMarkAllNotificationsRead}
                         disabled={notificationBusy || notificationsUnread === 0}
-                        className="text-xs px-2.5 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Mark all read
                       </button>
                     </div>
-                    <p className="text-zinc-500 text-xs mt-1">
+                    <p className="mt-2 text-xs text-zinc-400">
                       Friend requests, room invites, and social updates.
                     </p>
                   </div>
 
                   {(incomingRequests.length > 0 || (invites?.length || 0) > 0) && (
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 space-y-3">
-                      <p className="text-zinc-100 text-sm font-medium">Action required</p>
+                    <div className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Action required</p>
                       {incomingRequests.map((item) => (
-                        <div key={`notif-incoming-${item.uid}`} className="rounded-lg border border-zinc-700/60 bg-zinc-900/60 p-3">
+                        <div key={`notif-incoming-${item.uid}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                           <p className="text-sm text-zinc-100">
                             @{item.username || "user"} sent you a friend request
                           </p>
-                          <div className="mt-2 flex items-center gap-2">
+                          <div className="mt-3 flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => onRespondRequest(item.uid, "accept")}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-xs text-zinc-950 font-semibold"
+                              className="rounded-full bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:bg-emerald-400"
                             >
                               Accept
                             </button>
                             <button
                               type="button"
                               onClick={() => onRespondRequest(item.uid, "reject")}
-                              className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-xs text-zinc-100"
+                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                             >
                               Decline
                             </button>
@@ -1977,15 +1982,15 @@ export default function DashboardView({
                         </div>
                       ))}
                       {(invites || []).map((invite) => (
-                        <div key={`notif-invite-${invite.id}`} className="rounded-lg border border-zinc-700/60 bg-zinc-900/60 p-3">
+                        <div key={`notif-invite-${invite.id}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                           <p className="text-sm text-zinc-100">
                             {invite.fromUsername ? `@${invite.fromUsername}` : invite.fromName} invited you
                           </p>
-                          <p className="text-xs text-zinc-500 mt-1 font-mono">{invite.roomCode}</p>
+                          <p className="mt-2 font-mono text-xs text-zinc-500">{invite.roomCode}</p>
                           <button
                             type="button"
                             onClick={() => onAcceptInvite?.(invite)}
-                            className="mt-2 px-2.5 py-1.5 rounded-lg bg-amber-300 hover:bg-amber-200 text-xs text-zinc-950 font-semibold"
+                            className="mt-3 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
                           >
                             Join room
                           </button>
@@ -1996,12 +2001,12 @@ export default function DashboardView({
 
                   <div className="space-y-2">
                     {notifications.length === 0 && (
-                      <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 text-sm text-zinc-500">
+                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-500 shadow-lg shadow-black/25">
                         No notifications yet.
                       </div>
                     )}
                     {notifications.map((item) => (
-                      <div key={`notif-${item.id}`} className={`rounded-xl border p-3 ${item.isRead ? "border-zinc-800/60 bg-zinc-900/45" : "border-zinc-700/60 bg-zinc-900/60"}`}>
+                      <div key={`notif-${item.id}`} className={`rounded-[24px] border p-4 shadow-lg shadow-black/20 ${item.isRead ? "border-white/5 bg-white/[0.02]" : "border-white/10 bg-white/[0.05]"}`}>
                         <p className={`text-sm ${item.isRead ? "text-zinc-400" : "text-zinc-100"}`}>
                           {notificationLabel(item)}
                         </p>
@@ -2012,7 +2017,7 @@ export default function DashboardView({
                               <button
                                 type="button"
                                 onClick={() => onJoinRoomFromNotification(item)}
-                                className="px-2.5 py-1.5 rounded-lg bg-amber-300 hover:bg-amber-200 text-xs text-zinc-950 font-semibold"
+                                className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
                               >
                                 Join
                               </button>
@@ -2022,7 +2027,7 @@ export default function DashboardView({
                                 type="button"
                                 onClick={() => onMarkNotificationRead(item.id)}
                                 disabled={notificationBusy}
-                                className="px-2.5 py-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-xs text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 Mark read
                               </button>
@@ -2038,26 +2043,26 @@ export default function DashboardView({
               {/* Activity tab is the user's personal audit/history feed. */}
               {tab === "activity" && (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold flex items-center gap-2">
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-violet-500/10 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
                       <Bell size={14} className="text-amber-300" />
                       Your activity
                     </p>
-                    <p className="text-zinc-500 text-xs mt-1">
+                    <p className="mt-2 text-xs text-zinc-400">
                       Recent account actions, invites, and room activity.
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     {activityFeed.length === 0 && (
-                      <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4 text-sm text-zinc-500">
+                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-500 shadow-lg shadow-black/25">
                         No activity yet.
                       </div>
                     )}
                     {activityFeed.map((item, idx) => (
-                      <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-3">
+                      <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 shadow-lg shadow-black/20">
                         <p className="text-sm text-zinc-100 capitalize">{activityLabel(item)}</p>
-                        <p className="text-xs text-zinc-500 mt-1">
+                        <p className="mt-2 text-xs text-zinc-500">
                           {item.roomCode ? `Room ${item.roomCode} · ` : ""}
                           {fmtRelativeTime(item.occurredAt)}
                         </p>
@@ -2071,40 +2076,40 @@ export default function DashboardView({
               {tab === "metadata" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Users</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{projectOverview.counts?.users ?? 0}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Users</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.users ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Rooms / Active</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Rooms / Active</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">
                         {(projectOverview.counts?.rooms ?? 0)} / {(projectOverview.counts?.activeRooms ?? 0)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Relationships</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{projectOverview.counts?.relationships ?? 0}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Relationships</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.relationships ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Shared Memories</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{projectOverview.counts?.sharedMemories ?? 0}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Shared Memories</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.sharedMemories ?? 0}</p>
                     </div>
-                    <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/55 p-3">
-                      <p className="text-xs text-zinc-500">Unread notifications</p>
-                      <p className="text-zinc-100 text-lg font-semibold mt-1">{projectOverview.counts?.notifications ?? 0}</p>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Unread notifications</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.notifications ?? 0}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold mb-2">Recent activity (you)</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Recent activity (you)</p>
                     {(projectOverview.recentActivity || []).length === 0 && (
-                      <p className="text-zinc-600 text-sm">No activity yet.</p>
+                      <p className="text-sm text-zinc-500">No activity yet.</p>
                     )}
                     <div className="space-y-2">
                       {(projectOverview.recentActivity || []).map((item, idx) => (
-                        <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-lg border border-zinc-700/50 bg-zinc-900/40 px-3 py-2">
+                        <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                           <p className="text-sm text-zinc-100">{item.type}</p>
-                          <p className="text-xs text-zinc-500 mt-1">
+                          <p className="mt-2 text-xs text-zinc-500">
                             {item.roomCode ? `Room ${item.roomCode} · ` : ""}
                             {item.occurredAt ? new Date(item.occurredAt).toLocaleString() : ""}
                           </p>
@@ -2113,9 +2118,9 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-4">
-                    <p className="text-zinc-100 font-semibold">Architecture note</p>
-                    <p className="text-zinc-400 text-sm mt-2">
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Architecture note</p>
+                    <p className="mt-3 text-sm leading-7 text-zinc-400">
                       Sync state remains in live server memory for low-latency control. Long-term entities are stored in MongoDB:
                       users, rooms, participants, relationships, invites, activity, video metadata, and shared memories.
                     </p>
@@ -2126,12 +2131,12 @@ export default function DashboardView({
               {/* Settings tab exposes privacy toggles, browser push preference, and sign-out. */}
               {tab === "settings" && (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-3 text-sm text-zinc-400">
-                    <p className="text-zinc-200 font-medium flex items-center gap-2">
+                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-violet-500/10 p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
                       <Ghost size={14} className="text-amber-300" />
                       Privacy and alerts
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">Tune notifications and visibility the way you like.</p>
+                    <p className="mt-2 text-xs text-zinc-400">Tune notifications and visibility the way you like.</p>
                   </div>
                   <Toggle
                     checked={!!profile?.settings?.inviteNotifications}
@@ -2158,16 +2163,16 @@ export default function DashboardView({
                     help="Get browser alerts for invites and friend requests"
                   />
 
-                  <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/50 p-3 text-sm text-zinc-400">
-                    <p className="text-zinc-200 font-medium flex items-center gap-2"><Sparkles size={14} className="text-amber-300" /> Suggested next upgrades</p>
-                    <p className="mt-2">1. Add mobile app with FCM push for true background notifications.</p>
-                    <p>2. Add couple anniversaries + relationship timeline highlights.</p>
-                    <p>3. Add AI picks based on your shared watchlist taste.</p>
+                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100"><Sparkles size={14} className="text-amber-300" /> Suggested next upgrades</p>
+                    <p className="mt-3 leading-7">1. Add mobile app with FCM push for true background notifications.</p>
+                    <p className="leading-7">2. Add couple anniversaries + relationship timeline highlights.</p>
+                    <p className="leading-7">3. Add AI picks based on your shared watchlist taste.</p>
                   </div>
 
                   <button
                     onClick={onSignOut}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm shadow-lg shadow-red-900/20"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-rose-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-950/30 transition-all duration-200 hover:from-red-400 hover:to-rose-400"
                   >
                     <LogOut size={14} />
                     Sign out
@@ -2183,15 +2188,15 @@ export default function DashboardView({
         <>
           {/* Mobile wraps the sidebar in an overlay drawer instead of a persistent left column. */}
           <div className="lg:hidden fixed inset-x-0 top-[4.2rem] bottom-0 z-40">
-            <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px]" />
-            <div ref={mobileMenuRef} className="absolute left-3 right-3 top-3">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <div ref={mobileMenuRef} className="absolute left-3 right-3 top-4">
               <DashboardSidebar
                 tabs={tabs}
                 tab={tab}
                 onSelectTab={selectTab}
                 onlineFriends={onlineFriends}
                 activeRoomCode={activeRoomCode}
-                className="max-h-[calc(100dvh-6rem)] overflow-y-auto"
+                className="max-h-[calc(100dvh-6.5rem)] overflow-y-auto"
               />
             </div>
           </div>
