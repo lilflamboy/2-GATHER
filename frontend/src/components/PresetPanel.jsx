@@ -29,29 +29,28 @@ function PresetPanel({onSelect,onClose,sessionMode="watch"}){
     setFilter("all");
   },[sessionMode]);
   return(
-    <div className="border-t border-zinc-800/60 bg-zinc-900/95 p-2">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-zinc-500 text-xs font-medium">Quick messages</span>
-        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 transition-colors"><X size={12}/></button>
+    <div className="border-t border-white/8 bg-zinc-950/95 p-3 backdrop-blur-xl">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">Quick messages</span>
+        <button onClick={onClose} className="rounded-full border border-white/8 bg-white/[0.03] p-1.5 text-zinc-500 transition-all duration-200 hover:border-white/16 hover:text-zinc-300"><X size={12}/></button>
       </div>
       {/* Category tabs */}
-      <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
         {cats.map(c=>(
           <button key={c.key} onClick={()=>setFilter(c.key)}
-            className={`text-xs px-2 py-1 rounded-lg whitespace-nowrap transition-colors shrink-0
-              ${filter===c.key?"bg-amber-500/20 text-amber-300 border border-amber-500/30":"bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>
+            className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-all duration-200
+              ${filter===c.key?"border-amber-400/20 bg-amber-500/10 text-amber-100":"border-white/8 bg-white/[0.03] text-zinc-500 hover:border-white/16 hover:text-zinc-300"}`}>
             {c.label}
           </button>
         ))}
       </div>
       {/* Messages grid */}
-      <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
+      <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
         {filtered.map((m,i)=>(
           <button key={i} onClick={()=>onSelect(m.text)}
-            className="flex items-center gap-2 text-left px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/80
-              text-zinc-300 text-xs transition-colors border border-transparent hover:border-zinc-600/50">
-            <span className="text-base shrink-0">{m.emoji}</span>
-            <span className="leading-tight">{m.text}</span>
+            className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3.5 py-3 text-left text-xs text-zinc-300 transition-all duration-200 hover:border-amber-400/15 hover:bg-amber-500/[0.08]">
+            <span className="shrink-0 text-lg">{m.emoji}</span>
+            <span className="leading-6">{m.text}</span>
           </button>
         ))}
       </div>
