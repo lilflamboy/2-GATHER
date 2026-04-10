@@ -127,43 +127,43 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
 
   return(
     <div ref={winRef} style={{left:pos.x,top:pos.y,width:minimized?200:size.w,zIndex:500}}
-      className={`absolute rounded-2xl overflow-hidden shadow-2xl border select-none transition-[transform,opacity,box-shadow] duration-200 ${
+      className={`absolute select-none overflow-hidden rounded-[1.6rem] border shadow-[0_30px_90px_rgba(0,0,0,0.5)] transition-[transform,opacity,box-shadow] duration-200 ${
         isConnecting
-          ?"border-amber-400/40 bg-zinc-950/95 shadow-[0_26px_70px_rgba(251,191,36,0.16)] ring-1 ring-amber-400/20"
-          :"border-zinc-700/60 bg-zinc-900/95 shadow-[0_26px_70px_rgba(0,0,0,0.45)] ring-1 ring-black/20"
+          ?"border-amber-400/24 bg-zinc-950/95 shadow-[0_28px_80px_rgba(251,146,60,0.16)] ring-1 ring-amber-400/14"
+          :"border-white/10 bg-zinc-950/95 shadow-[0_28px_80px_rgba(0,0,0,0.48)] ring-1 ring-black/20"
       }`}>
       <div onMouseDown={onDragStart} onTouchStart={onDragStart}
-        className={`flex items-center justify-between px-3 py-2 cursor-grab active:cursor-grabbing border-b ${
+        className={`flex cursor-grab items-center justify-between border-b px-3.5 py-2.5 active:cursor-grabbing ${
           isConnecting
-            ?"bg-zinc-900/95 border-amber-400/20"
-            :"bg-zinc-800/90 border-zinc-700/40"
+            ?"border-amber-400/14 bg-zinc-950/95"
+            :"border-white/8 bg-zinc-900/92"
         }`}>
         <div className="flex items-center gap-2">
           <GripHorizontal size={13} className="text-zinc-500"/>
           {isConnecting
             ?<LoaderCircle size={13} className="text-amber-300 animate-spin"/>
-            :<span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/>
+            :<span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse"/>
           }
-          <span className={`text-xs font-medium ${isConnecting?"text-amber-100":"text-zinc-300"}`}>
+          <span className={`text-xs font-medium ${isConnecting?"text-amber-100":"text-zinc-200"}`}>
             {isConnecting?"Starting Call":"Live Call"}
           </span>
-          <span className="text-zinc-500 text-xs">{totalTiles}p</span>
+          <span className="text-xs text-zinc-500">{totalTiles}p</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={toggleMaximize}
-            className="call-btn w-6 h-6 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-300 text-[10px] transition-colors">
+            className="call-btn flex h-7 w-7 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-[10px] text-zinc-300 transition-all duration-200 hover:border-white/16 hover:bg-white/[0.08]">
             {maximized?<Minimize size={12}/>:<Maximize size={12}/>}
           </button>
           <button onClick={()=>setMinimized(m=>!m)}
-            className="call-btn w-5 h-5 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center text-zinc-400 text-[10px] transition-colors">
+            className="call-btn flex h-6 w-6 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-[10px] text-zinc-400 transition-all duration-200 hover:border-white/16 hover:bg-white/[0.08]">
             {minimized?"▲":"▼"}
           </button>
         </div>
       </div>
       {!minimized&&isConnecting&&(
-        <div style={{height:size.h}} className="flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_42%),linear-gradient(180deg,_rgba(12,10,9,0.98),_rgba(9,9,11,0.96))] px-5">
+        <div style={{height:size.h}} className="flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.16),_transparent_42%),linear-gradient(180deg,_rgba(12,10,9,0.98),_rgba(9,9,11,0.96))] px-5">
           <div className="max-w-xs text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-400/30 bg-amber-300/10">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-400/20 bg-amber-300/10 shadow-[0_18px_40px_rgba(251,146,60,0.14)]">
               <LoaderCircle size={22} className="animate-spin text-amber-300"/>
             </div>
             <p className="text-sm font-semibold text-amber-100">Allow mic and camera to continue</p>
@@ -174,7 +174,7 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
         </div>
       )}
       {!minimized&&!isConnecting&&(
-        <div style={{height:size.h,gridTemplateColumns:`repeat(${cols},1fr)`}} className="grid gap-1 p-1 bg-zinc-950">
+        <div style={{height:size.h,gridTemplateColumns:`repeat(${cols},1fr)`}} className="grid gap-1.5 bg-zinc-950 p-1.5">
           {/* Always render the local stream first so mic/cam toggles feel anchored to "you". */}
           <VideoTile stream={localStreamRef.current} name={myName} muted/>
           {remoteEntries.map(([uid,stream])=>{
@@ -183,35 +183,35 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
           })}
           {/* An empty remote state keeps the call window useful before anyone else joins. */}
           {remoteEntries.length===0&&(
-            <div className="flex items-center justify-center bg-zinc-900 rounded-xl">
-              <span className="text-zinc-600 text-xs text-center px-3">Waiting for others<br/>to join…</span>
+            <div className="flex items-center justify-center rounded-[1.35rem] border border-white/8 bg-white/[0.03]">
+              <span className="px-3 text-center text-xs leading-6 text-zinc-500">Waiting for others<br/>to join…</span>
             </div>
           )}
         </div>
       )}
-      <div className={`call-btn flex items-center justify-center gap-2 px-3 py-2 ${isConnecting?"bg-zinc-950/95":"bg-zinc-800/90"}`}>
+      <div className={`call-btn flex items-center justify-center gap-2 border-t px-3.5 py-2.5 ${isConnecting?"border-amber-400/10 bg-zinc-950/95":"border-white/8 bg-zinc-900/92"}`}>
         {isConnecting?(
           <>
             <span className="mr-auto text-[11px] text-zinc-400">Waiting for browser permission</span>
             <button onClick={onLeave}
-              className="call-btn w-9 h-9 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center text-white transition-colors">
+              className="call-btn flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500">
               <PhoneOff size={15}/>
             </button>
           </>
         ):(
           <>
             <button onClick={onToggleMic}
-              className={`call-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
-                ${micOn?"bg-zinc-700 hover:bg-zinc-600 text-zinc-300":"bg-red-600 hover:bg-red-500 text-white"}`}>
+              className={`call-btn flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200
+                ${micOn?"border border-white/10 bg-white/[0.05] text-zinc-200 hover:border-white/18 hover:bg-white/[0.08]":"bg-red-600 text-white hover:bg-red-500"}`}>
               {micOn?<Mic size={15}/>:<MicOff size={15}/>}
             </button>
             <button onClick={onToggleCam}
-              className={`call-btn w-9 h-9 rounded-full flex items-center justify-center transition-colors
-                ${camOn?"bg-blue-600 hover:bg-blue-500 text-white":"bg-zinc-700 hover:bg-zinc-600 text-zinc-400"}`}>
+              className={`call-btn flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200
+                ${camOn?"bg-violet-500 text-white hover:bg-violet-400":"border border-white/10 bg-white/[0.05] text-zinc-400 hover:border-white/18 hover:bg-white/[0.08]"}`}>
               {camOn?<Video size={15}/>:<VideoOff size={15}/>}
             </button>
             <button onClick={onLeave}
-              className="call-btn w-9 h-9 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center text-white transition-colors">
+              className="call-btn flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500">
               <PhoneOff size={15}/>
             </button>
           </>
@@ -219,7 +219,7 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
       </div>
       {!minimized&&!isConnecting&&(
         <div onMouseDown={onResizeStart} onTouchStart={onResizeStart}
-          className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1">
+          className="absolute bottom-0 right-0 flex h-7 w-7 cursor-se-resize items-end justify-end p-1.5">
           <svg width="10" height="10" viewBox="0 0 10 10" className="text-zinc-600">
             <path d="M9 1L1 9M9 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
