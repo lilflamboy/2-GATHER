@@ -27,8 +27,8 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
   const avatarInitial=(msg.senderName||msg.senderUsername||"U").trim()[0]?.toUpperCase()||"U";
   const hasAvatar=!!msg.photoURL&&!avatarFailed;
   const avatarEl=hasAvatar
-    ?<img src={msg.photoURL} alt={senderLabel} onError={()=>setAvatarFailed(true)} className="w-7 h-7 rounded-full border border-zinc-700 object-cover"/>
-    :<div className="w-7 h-7 rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center text-[11px] text-amber-300 font-semibold">
+    ?<img src={msg.photoURL} alt={senderLabel} onError={()=>setAvatarFailed(true)} className="h-8 w-8 rounded-full border border-white/10 object-cover shadow-[0_8px_20px_rgba(0,0,0,0.3)]"/>
+    :<div className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/18 bg-gradient-to-br from-amber-500/18 to-violet-500/12 text-[11px] font-semibold text-amber-200 shadow-[0_8px_20px_rgba(0,0,0,0.24)]">
       {avatarInitial}
     </div>;
 
@@ -47,17 +47,17 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
     const variant = msg.meta?.variant;
     const variantClass =
       variant === "offline"
-        ? "bg-red-950/60 border-red-800/50 text-red-400"
+        ? "border-red-500/20 bg-red-500/10 text-red-200"
         : variant === "waiting"
-          ? "bg-amber-950/60 border-amber-800/50 text-amber-300"
-          : "bg-green-950/60 border-green-800/50 text-green-400";
+          ? "border-amber-400/20 bg-amber-500/10 text-amber-200"
+          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
     return(
       <div className="flex items-center gap-2 my-1">
-        <div className="flex-1 h-px bg-zinc-800"/>
-        <span className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${variantClass}`}>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-white/16"/>
+        <span className={`whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-medium tracking-[0.08em] ${variantClass}`}>
           {msg.text}
         </span>
-        <div className="flex-1 h-px bg-zinc-800"/>
+        <div className="h-px flex-1 bg-gradient-to-r from-white/16 via-white/10 to-transparent"/>
       </div>
     );
   }
@@ -87,22 +87,22 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
     <>
       <div
         ref={bubbleRef}
-        className={`group flex items-end gap-2 ${isMe?"justify-end":"justify-start"}`}
+        className={`group flex items-end gap-2.5 ${isMe?"justify-end":"justify-start"}`}
       >
         {!isMe&&avatarEl}
         <div className={`flex flex-col ${isMe?"items-end":"items-start"}`}>
           {/* Sender username — always show for others */}
           {!isMe&&(
-            <span className="text-zinc-500 text-xs mb-0.5 ml-1 font-mono">
+            <span className="mb-1 ml-1 text-[11px] font-mono text-zinc-500">
               @{senderLabel}
             </span>
           )}
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {/* React button left of others' bubbles */}
             {!isMe&&canReact&&(
               <button onClick={openPicker}
-                className="text-lg leading-none p-1.5 rounded-lg hover:bg-zinc-800 shrink-0 transition-colors">
+                className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] p-2 text-lg leading-none text-zinc-400 transition-all duration-200 hover:border-amber-400/18 hover:bg-amber-500/10 hover:text-amber-200">
                 😊
               </button>
             )}
@@ -110,21 +110,21 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
             {/* Message bubble */}
             <div
               onClick={isBookmark?()=>onBookmarkSeek(msg.meta?.seekTime):undefined}
-              className={`px-3 py-2 rounded-xl text-sm max-w-[85%] break-words leading-relaxed
+              className={`max-w-[85%] break-words rounded-2xl border px-3.5 py-2.5 text-sm leading-7 shadow-[0_16px_42px_rgba(0,0,0,0.2)]
                 ${isBookmark
-                  ?"bg-amber-500/15 border border-amber-500/30 text-amber-300 cursor-pointer hover:bg-amber-500/25 transition-colors"
+                  ?"cursor-pointer border-amber-400/20 bg-amber-500/10 text-amber-100 transition-all duration-200 hover:border-amber-300/28 hover:bg-amber-500/16"
                   :isMe
-                    ?"bg-amber-500/20 text-amber-100 rounded-br-sm"
-                    :"bg-zinc-800 text-zinc-300 rounded-bl-sm"}`}>
+                    ?"rounded-br-md border-amber-400/18 bg-gradient-to-br from-amber-500/18 to-orange-400/10 text-amber-50"
+                    :"rounded-bl-md border-white/8 bg-white/[0.04] text-zinc-200"}`}>
               {isBookmark&&<span className="mr-1">📍</span>}
               {msg.text}
-              {isBookmark&&<span className="text-amber-500/50 text-[10px] ml-1.5">↩ seek all</span>}
+              {isBookmark&&<span className="ml-1.5 text-[10px] text-amber-200/55">↩ seek all</span>}
             </div>
 
             {/* React button right of my bubbles */}
             {isMe&&canReact&&(
               <button onClick={openPicker}
-                className="text-lg leading-none p-1.5 rounded-lg hover:bg-zinc-800 shrink-0 transition-colors">
+                className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] p-2 text-lg leading-none text-zinc-400 transition-all duration-200 hover:border-amber-400/18 hover:bg-amber-500/10 hover:text-amber-200">
                 😊
               </button>
             )}
@@ -132,14 +132,14 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
 
           {/* Reaction pills — shown below bubble */}
           {canReact&&reactions.length>0&&(
-            <div className={`flex flex-wrap items-center gap-1 mt-1 ${isMe?"mr-8":"ml-8"}`}>
+            <div className={`mt-2 flex flex-wrap items-center gap-1.5 ${isMe?"mr-10":"ml-10"}`}>
               {/* Reaction counts reflect the server-owned emoji map for this message. */}
               {reactions.map(([emoji,uids])=>(
                 <button key={emoji} onClick={()=>onReact(msg.id,emoji)}
-                  className={`flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full border transition-all active:scale-95
+                  className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-all active:scale-95
                     ${uids.includes(myUid)
-                      ?"bg-amber-500/20 border-amber-500/40 text-amber-300"
-                      :"bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:border-zinc-500"}`}>
+                      ?"border-amber-400/22 bg-amber-500/10 text-amber-100"
+                      :"border-white/8 bg-white/[0.03] text-zinc-400 hover:border-white/16"}`}>
                   <span>{emoji}</span>
                   <span className="font-medium">{uids.length}</span>
                 </button>
@@ -147,7 +147,7 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
             </div>
           )}
 
-          <span className="text-zinc-700 text-[10px] mt-0.5">
+          <span className="mt-1 text-[10px] text-zinc-600">
             {new Date(msg.timestamp).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
           </span>
         </div>
