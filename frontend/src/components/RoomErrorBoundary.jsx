@@ -42,13 +42,13 @@ class RoomErrorBoundary extends Component {
     const stack = String(this.state.error?.stack || "").split("\n").slice(0, 8).join("\n");
 
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6">
-        <div className="w-full max-w-3xl rounded-3xl border border-red-500/30 bg-zinc-900/90 p-6 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.2em] text-red-300">Room crashed</p>
-          <h2 className="mt-2 font-display text-2xl text-zinc-50">The room UI hit a runtime error.</h2>
-          <p className="mt-3 text-sm text-zinc-300">{message}</p>
+      <div className="bg-screen flex min-h-screen items-center justify-center px-6 py-10 text-zinc-100">
+        <div className="w-full max-w-3xl rounded-[2rem] border border-red-500/20 bg-zinc-950/90 p-7 shadow-[0_36px_120px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <p className="text-xs uppercase tracking-[0.26em] text-red-200">Room crashed</p>
+          <h2 className="mt-3 font-display text-[2.15rem] leading-none text-zinc-50">The room UI hit a runtime error.</h2>
+          <p className="mt-4 text-sm leading-7 text-zinc-300">{message}</p>
           {!!stack&&(
-            <pre className="mt-4 overflow-x-auto rounded-2xl border border-zinc-800 bg-black/40 p-4 text-xs text-zinc-300 whitespace-pre-wrap">
+            <pre className="mt-5 overflow-x-auto whitespace-pre-wrap rounded-[1.5rem] border border-white/8 bg-black/35 p-4 text-xs leading-6 text-zinc-300">
               {stack}
             </pre>
           )}
@@ -57,14 +57,14 @@ class RoomErrorBoundary extends Component {
             <button
               type="button"
               onClick={()=>window.location.reload()}
-              className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
+              className="rounded-full bg-gradient-to-r from-amber-400 to-orange-300 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition-all duration-200 hover:-translate-y-0.5 hover:from-amber-300 hover:to-orange-200"
             >
               Reload app
             </button>
             <button
               type="button"
               onClick={this.props.onReset}
-              className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-500 hover:text-zinc-50"
+              className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-200 transition-all duration-200 hover:border-white/20 hover:text-zinc-50"
             >
               Leave room
             </button>
