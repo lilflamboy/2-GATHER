@@ -256,7 +256,7 @@ export default function App(){
       {/* Only RoomView is wrapped in an error boundary because it is the only high-complexity realtime surface with many async subsystems. */}
       {authSession.user&&room.view==="room"&&room.roomCode&&(
         <RoomErrorBoundary onReset={roomActions.handleLeave}>
-          <RoomView user={authSession.user} username={authSession.username} socket={socket.socketRef.current}
+          <RoomView user={authSession.user} username={authSession.username} avatarUrl={authSession.avatarUrl} socket={socket.socketRef.current}
             roomCode={room.roomCode} roomType={room.roomType} sessionMode={room.sessionMode} roomMoodTag={room.roomMoodTag}
             roomContentUrl={room.roomContentUrl} roomContentType={room.roomContentType} roomCreatedBy={room.roomCreatedBy}
             maxParticipants={room.roomMaxParticipants} initialUsers={room.roomUsers}

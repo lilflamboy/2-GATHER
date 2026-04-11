@@ -197,6 +197,7 @@ const preflightYouTubeEmbed = async (videoId) => {
 function RoomView({
   user,
   username,
+  avatarUrl="",
   socket,
   roomCode,
   roomType="friends",
@@ -347,6 +348,7 @@ function RoomView({
       videoScheduleTimeoutRef.current=null;
     }
   },[]);
+  const currentUserPhotoUrl=String(avatarUrl||user?.photoURL||"");
   const markAvatarBroken=useCallback((uid)=>{
     if(!uid)return;
     setBrokenAvatarUids(prev=>prev[uid]?prev:{...prev,[uid]:true});
@@ -356,18 +358,21 @@ function RoomView({
     const safeUid=String(participant?.uid||"");
     const label=altLabel||participant?.name||participant?.username||"User";
     const initial=(participant?.name||participant?.username||label||"U").trim()[0]?.toUpperCase()||"U";
-    const showPhoto=!!participant?.photoURL&&!brokenAvatarUids[safeUid];
+    const participantPhotoUrl=safeUid===String(user?.uid||"")
+      ? String(participant?.photoURL||currentUserPhotoUrl||"")
+      : String(participant?.photoURL||"");
+    const showPhoto=!!participantPhotoUrl&&!brokenAvatarUids[safeUid];
     return showPhoto
       ?<img
-        src={participant.photoURL}
+        src={participantPhotoUrl}
         alt={label}
         onError={()=>markAvatarBroken(safeUid)}
-        className={`${sizeClass} rounded-full border border-zinc-700 object-cover`}
+        className={`${sizeClass} rounded-full border border-white/12 object-cover shadow-[0_10px_24px_rgba(0,0,0,0.22)]`}
       />
-      :<div className={`${sizeClass} rounded-full bg-amber-500/20 border border-zinc-700 flex items-center justify-center ${textClass} text-amber-400 font-semibold`}>
+      :<div className={`${sizeClass} rounded-full bg-amber-500/20 border border-white/12 flex items-center justify-center ${textClass} text-amber-400 font-semibold shadow-[0_10px_24px_rgba(0,0,0,0.16)]`}>
         {initial}
       </div>;
-  },[brokenAvatarUids,markAvatarBroken]);
+  },[brokenAvatarUids,currentUserPhotoUrl,markAvatarBroken,user?.uid]);
   // Old chat rows are rehydrated from the live room roster so reconnects refresh names and photos.
   const resolveMessageAuthor=useCallback((message)=>{
     if(!message||message.uid==="system"){
@@ -375,15 +380,23 @@ function RoomView({
     }
     const liveUser=users.find(entry=>entry.uid===message.uid);
     if(!liveUser){
+      if(message.uid===user?.uid){
+        return {
+          ...message,
+          senderName: message.senderName||user?.displayName||user?.name||"",
+          senderUsername: message.senderUsername||username||"",
+          photoURL: message.photoURL||currentUserPhotoUrl,
+        };
+      }
       return message;
     }
     return {
       ...message,
       senderName: message.senderName||liveUser.name||"",
       senderUsername: message.senderUsername||liveUser.username||"",
-      photoURL: message.photoURL||liveUser.photoURL||"",
+      photoURL: message.photoURL||liveUser.photoURL||(message.uid===user?.uid?currentUserPhotoUrl:""),
     };
-  },[users]);
+  },[currentUserPhotoUrl,user?.displayName,user?.name,user?.uid,username,users]);
   const clearScheduledAudioStart=useCallback(()=>{
     if(audioScheduleTimeoutRef.current){
       clearTimeout(audioScheduleTimeoutRef.current);
@@ -3476,74 +3489,98 @@ function RoomView({
             )}
             {/* Generic load state covers empty watch/study rooms before any media or document is active. */}
             {showGenericLoadState&&(
-              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/96"}`}>
-                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border shadow-xl ${isReadingMode?"border-zinc-300 bg-white shadow-zinc-300/30":"border-white/10 bg-zinc-900 shadow-black/40"}`}>
-                  <Upload size={26} className={isReadingMode?"text-zinc-500":"text-zinc-500"}/>
-                </div>
-                <div className="text-center">
-                  <p className={`font-semibold mb-1 ${isReadingMode?"text-zinc-800":"text-zinc-200"}`}>{uploadPrimary}</p>
-                  <p className={`text-xs ${isReadingMode?"text-zinc-600":"text-zinc-500"}`}>{uploadHint}</p>
-                  {docUploading&&(
-                    <p className="text-amber-300 text-xs mt-1">Uploading PDF for room sharing...</p>
-                  )}
-                </div>
-                {!isStudyStudent&&(
-                  <div className="w-full max-w-xl px-4 space-y-2">
-                    <div className="flex gap-2">
-                      <button onClick={()=>fileInputRef.current?.click()} disabled={!canChangeSource}
-                        className={`font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2 ${
-                          canChangeSource
-                            ?isReadingMode
-                              ?"bg-zinc-900 hover:bg-zinc-700 text-white"
-                              :"bg-gradient-to-r from-amber-400 to-orange-300 hover:from-amber-300 hover:to-orange-200 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.25)]"
-                            :"bg-zinc-800/70 text-zinc-500 cursor-not-allowed"
-                        }`}>
-                        <Upload size={15}/> {uploadButtonLabel}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={openResourceInNewTab}
-                        disabled={!showCompanionLink&&!showReadingFrame}
-                      className={`px-4 py-2.5 rounded-xl border disabled:opacity-45 disabled:cursor-not-allowed text-sm ${isReadingMode?"border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:border-zinc-500":"border-white/10 bg-white/[0.03] text-zinc-300 hover:text-zinc-100 hover:border-white/18"}`}
-                      >
-                        Open linked resource
-                      </button>
+              <div className={`absolute inset-0 z-10 flex items-center justify-center p-4 sm:p-6 ${isReadingMode?"bg-zinc-100":"bg-zinc-950/96"}`}>
+                <div className={`w-full max-w-2xl rounded-[32px] border px-5 py-6 shadow-[0_32px_90px_rgba(0,0,0,0.18)] sm:px-6 sm:py-7 ${
+                  isReadingMode
+                    ?"border-zinc-200 bg-white"
+                    :"border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_36%),radial-gradient(circle_at_90%_0%,_rgba(139,92,246,0.08),_transparent_32%),linear-gradient(180deg,_rgba(10,10,14,0.98),_rgba(4,6,12,0.98))]"
+                }`}>
+                  <div className="mx-auto flex max-w-lg flex-col items-center text-center">
+                    <div className={`flex h-16 w-16 items-center justify-center rounded-2xl border shadow-xl ${
+                      isReadingMode
+                        ?"border-zinc-300 bg-white shadow-zinc-300/30"
+                        :"border-white/10 bg-zinc-900 shadow-black/40"
+                    }`}>
+                      <Upload size={26} className="text-zinc-500"/>
                     </div>
-                    <div className={`flex items-center gap-2 rounded-xl border px-3 ${isReadingMode?"border-zinc-300 bg-white":"border-white/8 bg-zinc-900/70"}`}>
-                      {sessionMode==="reading"?<FileText size={14} className="text-zinc-500 shrink-0"/>:<Link2 size={14} className="text-zinc-500 shrink-0"/>}
-                      <input
-                        value={resourceInput}
-                        onChange={handleResourceInputChange}
-                        disabled={!canChangeSource}
-                        onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
-                        placeholder={engineUi.resourcePlaceholder||"Paste resource link"}
-                        className={`flex-1 bg-transparent py-2 text-sm focus:outline-none ${
-                          isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"
-                        } ${!canChangeSource?"cursor-not-allowed opacity-60":""}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleLoadResourceLink}
-                        disabled={!canChangeSource}
-                        className={`text-[11px] px-2.5 py-1.5 rounded-lg border ${
-                          canChangeSource
-                            ?isReadingMode
-                              ?"bg-zinc-100 hover:bg-zinc-200 border-zinc-300 text-zinc-700"
-                              :"bg-white/[0.06] hover:bg-white/[0.12] border-white/10 text-zinc-200"
-                            :"bg-zinc-800/60 border-zinc-700 text-zinc-500 cursor-not-allowed"
-                        }`}
-                      >
-                        {sessionMode==="watch"?"Load YouTube":"Load Link"}
-                      </button>
-                    </div>
-                    {!canChangeSource&&isReadingMode&&(
-                      <p className="text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
-                    )}
-                    {audioLoadWarning&&!isReadingMode&&(
-                      <p className="text-[11px] text-amber-300">{audioLoadWarning}</p>
+                    <p className={`mt-5 text-[1.95rem] font-semibold leading-tight ${isReadingMode?"text-zinc-900":"text-zinc-100"}`}>
+                      {uploadPrimary}
+                    </p>
+                    <p className={`mt-3 text-sm leading-7 ${isReadingMode?"text-zinc-600":"text-zinc-400"}`}>
+                      {uploadHint}
+                    </p>
+                    {docUploading&&(
+                      <p className={`mt-3 text-xs ${isReadingMode?"text-amber-600":"text-amber-300"}`}>Uploading PDF for room sharing...</p>
                     )}
                   </div>
-                )}
+
+                  {!isStudyStudent&&(
+                    <div className="mx-auto mt-6 w-full max-w-xl space-y-3">
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <button
+                          onClick={()=>fileInputRef.current?.click()}
+                          disabled={!canChangeSource}
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
+                            canChangeSource
+                              ?isReadingMode
+                                ?"bg-zinc-900 text-white hover:bg-zinc-700"
+                                :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.25)] hover:from-amber-300 hover:to-orange-200"
+                              :"cursor-not-allowed bg-zinc-800/70 text-zinc-500"
+                          }`}
+                        >
+                          <Upload size={15}/> {uploadButtonLabel}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openResourceInNewTab}
+                          disabled={!showCompanionLink&&!showReadingFrame}
+                          className={`inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-45 sm:min-w-[15rem] ${
+                            isReadingMode
+                              ?"border-zinc-300 text-zinc-700 hover:border-zinc-500 hover:text-zinc-900"
+                              :"border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/18 hover:text-zinc-100"
+                          }`}
+                        >
+                          Open linked resource
+                        </button>
+                      </div>
+                      <div className={`flex items-center gap-3 rounded-2xl border px-4 ${
+                        isReadingMode?"border-zinc-300 bg-white":"border-white/8 bg-zinc-900/70"
+                      }`}>
+                        {sessionMode==="reading"?<FileText size={14} className="shrink-0 text-zinc-500"/>:<Link2 size={14} className="shrink-0 text-zinc-500"/>}
+                        <input
+                          value={resourceInput}
+                          onChange={handleResourceInputChange}
+                          disabled={!canChangeSource}
+                          onKeyDown={e=>{if(e.key==="Enter")handleLoadResourceLink();}}
+                          placeholder={engineUi.resourcePlaceholder||"Paste resource link"}
+                          className={`flex-1 bg-transparent py-3 text-sm focus:outline-none ${
+                            isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"
+                          } ${!canChangeSource?"cursor-not-allowed opacity-60":""}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleLoadResourceLink}
+                          disabled={!canChangeSource}
+                          className={`rounded-xl border px-3 py-2 text-[11px] ${
+                            canChangeSource
+                              ?isReadingMode
+                                ?"border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                                :"border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/[0.12]"
+                              :"cursor-not-allowed border-zinc-700 bg-zinc-800/60 text-zinc-500"
+                          }`}
+                        >
+                          {sessionMode==="watch"?"Load YouTube":"Load Link"}
+                        </button>
+                      </div>
+                      {!canChangeSource&&isReadingMode&&(
+                        <p className={`text-[11px] ${isReadingMode?"text-amber-600":"text-amber-300"}`}>Only the host can change the document in co-reading.</p>
+                      )}
+                      {audioLoadWarning&&!isReadingMode&&(
+                        <p className="text-[11px] text-amber-300">{audioLoadWarning}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {/* The co-reading panel renders the shared PDF plus host-driven page/zoom controls. */}
@@ -3828,10 +3865,30 @@ function RoomView({
                 <X size={13}/> Close
               </button>
             </div>
-            <div className={`flex items-center gap-1.5 border-b px-4 py-2.5 flex-wrap ${isReadingMode?"border-zinc-300/60":"border-white/8"}`}>
+            <div className={`flex flex-wrap items-center gap-2 border-b px-4 py-3 ${isReadingMode?"border-zinc-300/60":"border-white/8"}`}>
               {users.map(u=>(
-                <div key={u.uid} title={`@${u.username||u.name}`}>
-                  {renderUserAvatar(u,"w-6 h-6","text-[10px]",u.name)}
+                <div
+                  key={u.uid}
+                  title={`@${u.username||u.name}`}
+                  className={`inline-flex max-w-full items-center gap-2 rounded-full border px-2.5 py-1.5 ${
+                    isReadingMode
+                      ?"border-zinc-300 bg-white/70 text-zinc-700"
+                      :"border-white/10 bg-white/[0.03] text-zinc-200"
+                  }`}
+                >
+                  {renderUserAvatar(u,"h-7 w-7","text-[11px]",u.name||u.username)}
+                  <span className={`max-w-[8rem] truncate text-xs ${isReadingMode?"text-zinc-700":"text-zinc-300"}`}>
+                    {u.username?`@${u.username}`:u.name||"User"}
+                  </span>
+                  {u.uid===user.uid&&(
+                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      isReadingMode
+                        ?"bg-zinc-100 text-zinc-500"
+                        :"bg-white/[0.05] text-zinc-500"
+                    }`}>
+                      You
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
