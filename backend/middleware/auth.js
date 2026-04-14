@@ -67,7 +67,8 @@ async function requireHttpAuth(req, res, next) {
     req.authUser = identity
     req.profile = profile
     return next()
-  } catch {
+  } catch (error) {
+    console.error('Token Verification Failed:', error?.code, error?.message)
     return res.status(401).json({ error: 'Authentication failed' })
   }
 }
