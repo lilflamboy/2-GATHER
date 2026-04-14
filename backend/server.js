@@ -190,7 +190,6 @@ const {
   finalizeVideoSession,
 } = require("./services/room.service.js");
 // Middleware handles request auth and last-resort error serialization.
-const { isAllowedOrigin } = require("./config/cors.js");
 const admin = require("./config/firebase.js");
 const { requireHttpAuth } = require("./middleware/auth.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
@@ -243,12 +242,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 const corsOptions = {
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Origin not allowed by CORS"));
-  },
+  origin: true,
   methods: ["GET", "POST", "PATCH"],
   credentials: true,
 };
