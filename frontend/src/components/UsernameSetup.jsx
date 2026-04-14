@@ -8,7 +8,7 @@ import { AtSign } from "lucide-react";
 
 /**
  * Prompts a newly signed-in user to choose their permanent username.
- * @param {{displayName: string, onDone: (username: string) => Promise<boolean|void>}} props - Suggested display name and claim callback.
+ * @param {{displayName: string, onDone: (username: string) => Promise<{ success: true } | { success: false, status: number | null, message: string } | void>}} props - Suggested display name and claim callback.
  * @returns {JSX.Element} The username setup form.
  */
 function UsernameSetup({displayName, onDone}){
@@ -36,9 +36,15 @@ function UsernameSetup({displayName, onDone}){
     if(err){setError(err);return;}
     setSubmitting(true);
     try{
-      const ok=await onDone(value.trim().toLowerCase());
-      if(ok===false){
-        setError("Username unavailable. Try another one.");
+      const result=await onDone(value.trim().toLowerCase());
+      if(result?.success===false){
+        if(result.status===409){
+          setError("That username is already taken.");
+        }else if(result.status===401){
+          setError("Session expired. Please log in again.");
+        }else{
+          setError("Server connection failed. Try again.");
+        }
       }
     }catch(submitError){
       setError(submitError?.message||"Unable to save username");

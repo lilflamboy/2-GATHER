@@ -174,7 +174,7 @@ export function useAuthSession({
   /**
    * Claims a username through the backend and reconnects sockets with that username.
    * @param {string} uname - Desired username entered by the user.
-   * @returns {Promise<boolean>} True when the username was successfully claimed.
+   * @returns {Promise<{ success: true } | { success: false, status: number | null, message: string }>} Claim outcome for UI-specific error handling.
    */
   const handleUsernameSet=useCallback(async(uname)=>{
     try{
@@ -185,10 +185,14 @@ export function useAuthSession({
       setNeedUsername(false);
       const token=await auth.currentUser?.getIdToken();
       if(token)socketApiRef.current.connectSocket(token,claimed);
-      return true;
+      return { success:true };
     }catch(e){
       addToast(e.message||"Could not claim username","error");
-      return false;
+      return {
+        success:false,
+        status:e?.status ?? e?.response?.status ?? null,
+        message:e?.message||"Could not claim username",
+      };
     }
   },[apiClient,addToast,socketApiRef]);
 
