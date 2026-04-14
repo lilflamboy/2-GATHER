@@ -6,7 +6,7 @@
 
 import { useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
-import { SERVER_URL } from "../config/constants";
+import { getApiUrl } from "../config/constants";
 import { loadSession, saveSession, clearSession } from "../utils/storage";
 
 /**
@@ -70,7 +70,7 @@ export function useSocket({
    */
   const connectSocket = useCallback((token,uname)=>{
     cleanupSocket();
-    const socket=io(SERVER_URL,{auth:{token,username:uname},reconnectionAttempts:10,reconnectionDelay:1000,transports:["websocket"]});
+    const socket=io(getApiUrl(),{auth:{token,username:uname},reconnectionAttempts:10,reconnectionDelay:1000,transports:["websocket"]});
     // `connect` marks the socket healthy and tries to restore the saved room in this tab.
     socket.on("connect",()=>{
       setSocketConnected(true);

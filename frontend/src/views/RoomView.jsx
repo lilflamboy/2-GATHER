@@ -12,7 +12,7 @@ import { fmt } from "../utils/media";
 import { isHttpUrl, isDirectMediaUrl } from "../utils/url";
 import { guessDocumentFileName, buildDocumentSignature, isSharedUploadUrl } from "../utils/document";
 import { getBufferedAheadSeconds } from "../utils/buffer";
-import { SERVER_URL, MAX_VIDEO_TIME, MAX_MESSAGES } from "../config/constants";
+import { buildApiUrl, MAX_VIDEO_TIME, MAX_MESSAGES } from "../config/constants";
 import { SESSION_MODE_LABELS, ROOM_TYPE_LABELS } from "../config/roomModes";
 import HeaderNotifications from "../components/HeaderNotifications";
 import SyncIndicator from "../components/SyncIndicator";
@@ -1023,7 +1023,7 @@ function RoomView({
 
       try{
         const token=await auth.currentUser.getIdToken();
-        const res=await fetch(`${SERVER_URL}/api/friends`,{
+        const res=await fetch(buildApiUrl("/api/friends"),{
           headers:{Authorization:`Bearer ${token}`},
         });
         if(!res.ok)return;
@@ -1822,7 +1822,7 @@ function RoomView({
     // Local PDFs are uploaded through the backend first so every participant
     // receives one stable shared URL rather than a local blob URL.
     const token=await currentUser.getIdToken();
-    const res=await fetch(`${SERVER_URL}/api/uploads/document`,{
+    const res=await fetch(buildApiUrl("/api/uploads/document"),{
       method:"POST",
       headers:{
         "Content-Type":"application/json",

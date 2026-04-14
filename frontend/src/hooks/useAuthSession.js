@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { onIdTokenChanged, signOut, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase.js";
-import { SERVER_URL } from "../config/constants";
+import { buildApiUrl } from "../config/constants";
 import { loadSession, loadUsername, saveUsername, clearSession } from "../utils/storage";
 
 /**
@@ -57,7 +57,7 @@ export function useAuthSession({
    * @returns {Promise<any | null>} Backend profile object or null.
    */
   const fetchMyProfile=useCallback(async(token)=>{
-    const res=await fetch(`${SERVER_URL}/api/me`,{
+    const res=await fetch(buildApiUrl("/api/me"),{
       headers:{Authorization:`Bearer ${token}`},
     });
     const data=await res.json().catch(()=>({}));

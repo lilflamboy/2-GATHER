@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { SERVER_URL } from "../config/constants";
+import { buildApiUrl } from "../config/constants";
 
 /**
  * Creates friend-request state and actions used by the lobby, settings, and room UI.
@@ -22,7 +22,7 @@ export function useFriends({ apiClient, addToast }) {
    * @returns {Promise<any>} Raw `/api/friends` payload.
    */
   const fetchFriendsSnapshot=useCallback(async(token)=>{
-    const res=await fetch(`${SERVER_URL}/api/friends`,{
+    const res=await fetch(buildApiUrl("/api/friends"),{
       headers:{Authorization:`Bearer ${token}`},
     });
     const data=await res.json().catch(()=>({}));

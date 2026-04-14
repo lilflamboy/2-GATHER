@@ -4,9 +4,26 @@
  * scattering shared values across hooks and components.
  */
 
-// Resolve the backend base URL from Vite env first, then fall back to the
-// current browser hostname in development so local and LAN testing both work.
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:5001`;
+// Normalize the backend base URL once so every API/socket caller avoids
+// accidental double slashes, while production relies on VITE_API_URL.
+const normalizeBaseUrl = (url) => String(url || "").trim().replace(/\/+$/, "");
+const DEV_API_URL = `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:10000`;
+const API_URL = normalizeBaseUrl(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? DEV_API_URL : ""));
+const getApiUrl = () => {
+  if (!API_URL) {
+    throw new Error("Missing VITE_API_URL for frontend API requests.");
+  }
+  return API_URL;
+};
+
+const buildApiUrl = (path = "") => {
+  const normalizedPath = String(path || "").trim();
+  const baseUrl = getApiUrl();
+  if (!normalizedPath) {
+    return baseUrl;
+  }
+  return normalizedPath.startsWith("/") ? `${baseUrl}${normalizedPath}` : `${baseUrl}/${normalizedPath}`;
+};
 
 // UI limits used by room screens to bound in-memory chat history and sanitize
 // playback values before rendering or syncing them in the browser.
@@ -34,7 +51,9 @@ const ICE_CONFIG = {
 };
 
 export {
-  SERVER_URL,
+  API_URL,
+  getApiUrl,
+  buildApiUrl,
   MAX_MESSAGES,
   MAX_VIDEO_TIME,
   SESSION_KEY,

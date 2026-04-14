@@ -310,8 +310,7 @@ setInterval(() => {
 // on a fraction of the TTL, but never more often than once per minute.
 setInterval(() => {
   pruneExpiredDocumentUploads();
-}, Math.max(60000, Math.floor(DOCUMENT_UPLOAD_TTL_MS / 6))).unref?.();
-
+}, Math.max(60000, Math.floor(DOCUMENT_UPLOAD_TTL_MS / 6))).unref?.()
 // Socket auth verifies the Firebase token, rebuilds a trusted identity,
 // hydrates/creates the profile, and opportunistically claims a username if the
 // client asked for one and the account does not already have one.

@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { SERVER_URL } from "../config/constants";
+import { buildApiUrl } from "../config/constants";
 import { formatDurationLabel } from "../utils/media";
 
 /**
@@ -28,7 +28,7 @@ export function useLobbyStats({ addToast }) {
    * @returns {Promise<any[]>} Array of recent watch-session rows.
    */
   const fetchWatchSessionsSnapshot=useCallback(async(token,limit=120)=>{
-    const res=await fetch(`${SERVER_URL}/api/watch-sessions?limit=${Math.max(1,Math.min(400,limit))}`,{
+    const res=await fetch(buildApiUrl(`/api/watch-sessions?limit=${Math.max(1,Math.min(400,limit))}`),{
       headers:{Authorization:`Bearer ${token}`},
     });
     const data=await res.json().catch(()=>({}));

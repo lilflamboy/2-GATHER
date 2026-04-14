@@ -9,7 +9,7 @@
 
 // Server config centralizes process-level settings so startup, CORS, and
 // database bootstrap all read from one stable source of truth.
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 10000;
 const CLIENT_ORIGIN = process.env.CLIENT_URL || "http://localhost:5173";
 const NODE_ENV = process.env.NODE_ENV || "development";
 const MONGODB_URI = process.env.MONGODB_URI || "";
