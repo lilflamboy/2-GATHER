@@ -3517,19 +3517,21 @@ function RoomView({
                   {!isStudyStudent&&(
                     <div className="mx-auto mt-6 w-full max-w-xl space-y-3">
                       <div className="flex flex-col gap-3 sm:flex-row">
-                        <button
-                          onClick={()=>fileInputRef.current?.click()}
-                          disabled={!canChangeSource}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
-                            canChangeSource
-                              ?isReadingMode
-                                ?"bg-zinc-900 text-white hover:bg-zinc-700"
-                                :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.25)] hover:from-amber-300 hover:to-orange-200"
-                              :"cursor-not-allowed bg-zinc-800/70 text-zinc-500"
-                          }`}
-                        >
-                          <Upload size={15}/> {uploadButtonLabel}
-                        </button>
+	                        <button
+	                          onClick={()=>fileInputRef.current?.click()}
+	                          disabled={!canChangeSource}
+	                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
+	                            canChangeSource
+	                              ?isReadingMode
+	                                ?"bg-zinc-900 text-white hover:bg-zinc-700"
+	                                :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.25)] hover:from-amber-300 hover:to-orange-200"
+	                              :isReadingMode
+	                                ?"cursor-not-allowed bg-zinc-900 text-white/55 shadow-[0_16px_34px_rgba(24,24,27,0.14)]"
+	                                :"cursor-not-allowed bg-zinc-800/70 text-zinc-500"
+	                          }`}
+	                        >
+	                          <Upload size={15}/> {uploadButtonLabel}
+	                        </button>
                         <button
                           type="button"
                           onClick={openResourceInNewTab}
@@ -3557,20 +3559,22 @@ function RoomView({
                             isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"
                           } ${!canChangeSource?"cursor-not-allowed opacity-60":""}`}
                         />
-                        <button
-                          type="button"
-                          onClick={handleLoadResourceLink}
-                          disabled={!canChangeSource}
-                          className={`rounded-xl border px-3 py-2 text-[11px] ${
-                            canChangeSource
-                              ?isReadingMode
-                                ?"border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                                :"border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/[0.12]"
-                              :"cursor-not-allowed border-zinc-700 bg-zinc-800/60 text-zinc-500"
-                          }`}
-                        >
-                          {sessionMode==="watch"?"Load YouTube":"Load Link"}
-                        </button>
+	                        <button
+	                          type="button"
+	                          onClick={handleLoadResourceLink}
+	                          disabled={!canChangeSource}
+	                          className={`rounded-xl border px-3 py-2 text-[11px] ${
+	                            canChangeSource
+	                              ?isReadingMode
+	                                ?"border-zinc-300 bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+	                                :"border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/[0.12]"
+	                              :isReadingMode
+	                                ?"cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
+	                                :"cursor-not-allowed border-zinc-700 bg-zinc-800/60 text-zinc-500"
+	                          }`}
+	                        >
+	                          {sessionMode==="watch"?"Load YouTube":"Load Link"}
+	                        </button>
                       </div>
                       {!canChangeSource&&isReadingMode&&(
                         <p className={`text-[11px] ${isReadingMode?"text-amber-600":"text-amber-300"}`}>Only the host can change the document in co-reading.</p>
@@ -3722,20 +3726,22 @@ function RoomView({
                 </div>
                 {!isStudyStudent&&(
                   <>
-                    <button
-                      type="button"
-                      onClick={()=>fileInputRef.current?.click()}
-                      disabled={!canChangeSource}
-                      className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                        canChangeSource
-                          ?isReadingMode
-                            ?"bg-zinc-900 text-white hover:bg-zinc-700"
-                            :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 hover:from-amber-300 hover:to-orange-200"
-                          :"bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
-                      }`}
-                    >
-                      <Upload size={13}/> Choose file
-                    </button>
+	                    <button
+	                      type="button"
+	                      onClick={()=>fileInputRef.current?.click()}
+	                      disabled={!canChangeSource}
+	                      className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+	                        canChangeSource
+	                          ?isReadingMode
+	                            ?"bg-zinc-900 text-white hover:bg-zinc-700"
+	                            :"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 hover:from-amber-300 hover:to-orange-200"
+	                          :isReadingMode
+	                            ?"cursor-not-allowed bg-zinc-900 text-white/55 shadow-[0_12px_28px_rgba(24,24,27,0.12)]"
+	                            :"bg-zinc-800/60 text-zinc-500 cursor-not-allowed"
+	                      }`}
+	                    >
+	                      <Upload size={13}/> Choose file
+	                    </button>
                     <div className={`mt-2 flex items-center gap-2 rounded-xl border px-2 ${
                       isReadingMode?"border-zinc-200 bg-white":"border-white/8 bg-zinc-900/60"
                     }`}>
@@ -3746,20 +3752,22 @@ function RoomView({
                         placeholder={engineUi.resourcePlaceholder||"Paste link"}
                         className={`flex-1 bg-transparent py-2 text-xs focus:outline-none ${isReadingMode?"text-zinc-900 placeholder-zinc-500":"text-zinc-100 placeholder-zinc-600"}`}
                       />
-                      <button
-                        type="button"
-                        onClick={handleLoadResourceLink}
-                        disabled={!canChangeSource}
-                        className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${
-                          canChangeSource
-                            ?isReadingMode
-                              ?"bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
-                              :"bg-white/[0.06] border-white/10 text-zinc-200 hover:bg-white/[0.12]"
-                            :"bg-zinc-800/60 border-zinc-800 text-zinc-500 cursor-not-allowed"
-                        }`}
-                      >
-                        {sessionMode==="watch"?"YouTube":"Load"}
-                      </button>
+	                      <button
+	                        type="button"
+	                        onClick={handleLoadResourceLink}
+	                        disabled={!canChangeSource}
+	                        className={`text-[11px] px-2.5 py-1.5 rounded-lg border transition-colors ${
+	                          canChangeSource
+	                            ?isReadingMode
+	                              ?"bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
+	                              :"bg-white/[0.06] border-white/10 text-zinc-200 hover:bg-white/[0.12]"
+	                            :isReadingMode
+	                              ?"cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400"
+	                              :"bg-zinc-800/60 border-zinc-800 text-zinc-500 cursor-not-allowed"
+	                        }`}
+	                      >
+	                        {sessionMode==="watch"?"YouTube":"Load"}
+	                      </button>
                     </div>
                   </>
                 )}
@@ -3768,9 +3776,9 @@ function RoomView({
                     {sourcePanelError}
                   </p>
                 )}
-                {!canChangeSource&&(
-                  <p className="mt-2 text-[11px] text-amber-300">Only the host can change the document in co-reading.</p>
-                )}
+	                {!canChangeSource&&(
+	                  <p className={`mt-2 text-[11px] ${isReadingMode?"text-amber-600":"text-amber-300"}`}>Only the host can change the document in co-reading.</p>
+	                )}
               </div>
             )}
           </div>
