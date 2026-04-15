@@ -178,13 +178,23 @@ export function useAuthSession({
    */
   const handleUsernameSet=useCallback(async(uname)=>{
     try{
-      const res=await apiClient("/api/username/claim",{method:"POST",body:{username:uname}});
+      const currentUser=auth.currentUser;
+      if(!currentUser){
+        throw new Error("Please sign in first");
+      }
+      // Force a fresh Firebase token for first-time username claims so mobile
+      // devices do not reuse an expired cached token from the auth popup flow.
+      const freshToken=await currentUser.getIdToken(true);
+      const res=await apiClient("/api/username/claim",{
+        method:"POST",
+        body:{username:uname},
+        token:freshToken,
+      });
       const claimed=String(res?.profile?.username||uname).trim().toLowerCase();
       saveUsername(claimed);
       setUsername(claimed);
       setNeedUsername(false);
-      const token=await auth.currentUser?.getIdToken();
-      if(token)socketApiRef.current.connectSocket(token,claimed);
+      socketApiRef.current.connectSocket(freshToken,claimed);
       return { success:true };
     }catch(e){
       addToast(e.message||"Could not claim username","error");
