@@ -5,6 +5,8 @@
  */
 // React hooks used here only coordinate top-level lifecycle and cross-view wiring.
 import { useEffect, useRef } from "react";
+import "./App.css";
+import lumiereLogo from "/lumiere-sync-logo.png";
 // Firebase auth is read here so App can gate top-level views on the active session.
 import { auth } from "./firebase.js";
 // Views render the major application surfaces selected by the top-level state machine.
@@ -173,7 +175,11 @@ export default function App(){
   // The loading gate stays first so no intermediate auth view flashes before Firebase finishes restoring the session.
   if(authSession.authLoading)return(
     <div className="min-h-screen bg-screen flex items-center justify-center">
-      <div className="grain-overlay"/><div className="relative z-10 text-amber-400 animate-pulse text-3xl">L</div>
+      <div className="grain-overlay"/>
+      <div className="relative z-10 lumiere-loader">
+        <img src={lumiereLogo} alt="Lumiere logo" className="lumiere-loader-logo"/>
+        <p className="lumiere-loader-label">Connecting to the Light...</p>
+      </div>
     </div>
   );
 
@@ -199,10 +205,10 @@ export default function App(){
   }
 
   return(
-    <>
+      <>
       <Toasts toasts={toasts} removeToast={removeToast}/>
       {/* Signed-out users stay on the public landing/auth screen. */}
-      {!authSession.user&&<LandingView addToast={addToast}/>}
+      {!authSession.user&&<LandingView addToast={addToast} brandLogo={lumiereLogo}/>}
       {/* The lobby is the authenticated home screen and the only place rooms are created or joined. */}
       {authSession.user&&room.view==="lobby"&&(
         <LobbyView avatarUrl={authSession.avatarUrl} username={authSession.username} onCreateRoom={roomActions.handleCreateRoom}

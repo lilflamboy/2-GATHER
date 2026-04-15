@@ -11,15 +11,14 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { Film } from "lucide-react";
 import { auth, googleProvider } from "../firebase.js";
 
 /**
  * Renders the login and registration screen.
- * @param {{addToast?: (message: string, type?: string) => void}} props - Toast helper for surfacing auth feedback.
+ * @param {{addToast?: (message: string, type?: string) => void, brandLogo?: string}} props - Toast helper and branding asset for surfacing auth feedback.
  * @returns {JSX.Element} The public auth view.
  */
-function LandingView({addToast}){
+function LandingView({addToast,brandLogo}){
   // Local form state drives the login/register mode and the current input values.
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState("");
@@ -101,23 +100,24 @@ function LandingView({addToast}){
   return(
     <div className="min-h-screen bg-screen relative overflow-hidden px-6 py-10 sm:px-8 sm:py-12">
       <div className="grain-overlay"/>
-      <div className="absolute inset-x-0 top-[-24rem] h-[36rem] bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.22),transparent_55%)] pointer-events-none"/>
-      <div className="absolute right-[-8rem] top-24 h-[26rem] w-[26rem] rounded-full bg-violet-500/10 blur-3xl pointer-events-none"/>
-      <div className="absolute left-[-10rem] bottom-[-8rem] h-[24rem] w-[24rem] rounded-full bg-amber-500/10 blur-3xl pointer-events-none"/>
+      <div className="absolute inset-x-0 top-[-24rem] h-[36rem] bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.22),transparent_55%)] pointer-events-none"/>
+      <div className="absolute right-[-8rem] top-24 h-[26rem] w-[26rem] rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"/>
+      <div className="absolute left-[-10rem] bottom-[-8rem] h-[24rem] w-[24rem] rounded-full bg-amber-400/10 blur-3xl pointer-events-none"/>
+      <div className="absolute inset-x-[18%] top-[18%] h-56 rounded-full bg-white/6 blur-3xl pointer-events-none"/>
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-lg items-center justify-center">
         <div className="relative flex w-full flex-col gap-8">
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="feature-pill border-amber-500/20 bg-amber-500/10 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-amber-200/90">
-              Watch parties, reimagined
+              Syncing spotlights
             </div>
-            <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-violet-500/15 shadow-[0_24px_80px_rgba(245,158,11,0.16)]">
-              <Film size={34} className="text-amber-300"/>
+            <div className="lumiere-logo-frame">
+              <img src={brandLogo} alt="Lumiere Syncing Spotlights logo" className="lumiere-logo"/>
             </div>
             <div className="space-y-3">
               <h1 className="font-display text-[3.75rem] leading-none text-zinc-50 sm:text-[4.4rem]">Lumiere</h1>
-              <p className="mx-auto max-w-sm text-sm leading-7 text-zinc-400 sm:text-[0.98rem]">
-                Watch together, in perfect sync.<br/>
-                Friends, memories, and private watch spaces.
+              <p className="mx-auto max-w-md text-sm leading-7 text-zinc-400 sm:text-[0.98rem]">
+                A premium collaboration room for study sessions, synced watch parties,
+                and shared moments that feel seamless from the first click.
               </p>
             </div>
           </div>
@@ -133,7 +133,7 @@ function LandingView({addToast}){
               </button>
               <button onClick={()=>setMode("register")}
                 className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${mode==="register"?"bg-gradient-to-r from-amber-400 to-orange-300 text-zinc-950 shadow-[0_14px_36px_rgba(251,146,60,0.3)]":"bg-transparent text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100"}`}>
-                Register
+                Get Started
               </button>
             </div>
 
@@ -180,8 +180,12 @@ function LandingView({addToast}){
                 disabled={submitting}
                 className="w-full rounded-2xl bg-gradient-to-r from-amber-400 via-orange-300 to-amber-300 px-4 py-3.5 text-sm font-semibold text-zinc-950 shadow-[0_18px_40px_rgba(251,146,60,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:from-amber-300 hover:to-orange-200 disabled:opacity-60"
               >
-                {submitting ? "Please wait..." : mode==="register" ? "Create account" : "Login"}
+                {submitting ? "Please wait..." : mode==="register" ? "Get Started" : "Login"}
               </button>
+              <p className="wake-note">
+                Connecting to the Light...
+                <span>(Note: On the first load, the server may take ~50s to wake up from sleep mode.)</span>
+              </p>
               {mode==="login"&&(
                 <button
                   type="button"
@@ -202,7 +206,7 @@ function LandingView({addToast}){
 
           {/* Google auth is the alternate auth path for users who prefer one-tap sign-in. */}
             <button onClick={signInGoogle} disabled={googleLoading}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-medium text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-200 hover:border-violet-400/25 hover:bg-violet-500/10 hover:text-zinc-50 disabled:opacity-60">
+              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-medium text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-200 hover:border-cyan-400/25 hover:bg-cyan-400/10 hover:text-zinc-50 disabled:opacity-60">
               {googleLoading
                 ?<span className="h-4 w-4 rounded-full border-2 border-zinc-500/30 border-t-zinc-100 animate-spin"/>
                 :<><svg className="h-4 w-4" viewBox="0 0 24 24">

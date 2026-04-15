@@ -11,3 +11,10 @@ backend/.env.*
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
+
+# Secret-bearing credential JSON files
+serviceAccount*.json
+*service-account*.json
+firebase-admin*.json
+google-credentials*.json
+gcp-sa-key*.json

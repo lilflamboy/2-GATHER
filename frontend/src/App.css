@@ -7,6 +7,10 @@
   overflow-x: hidden;
   position: relative;
   isolation: isolate;
+  background:
+    radial-gradient(74rem 42rem at 18% -12%, rgba(250, 188, 54, 0.12), transparent 44%),
+    radial-gradient(68rem 40rem at 84% 0%, rgba(34, 211, 238, 0.1), transparent 40%),
+    linear-gradient(180deg, #020304 0%, #05070b 48%, #020305 100%);
 }
 
 #root::before,
@@ -26,7 +30,7 @@
   left: -10rem;
   width: 28rem;
   height: 28rem;
-  background: radial-gradient(circle, rgba(249, 115, 22, 0.24) 0%, rgba(249, 115, 22, 0.04) 60%, transparent 76%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.28) 0%, rgba(251, 191, 36, 0.05) 60%, transparent 76%);
 }
 
 #root::after {
@@ -34,5 +38,110 @@
   bottom: -16rem;
   width: 32rem;
   height: 32rem;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.03) 62%, transparent 78%);
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.22) 0%, rgba(34, 211, 238, 0.03) 62%, transparent 78%);
+}
+
+.lumiere-logo-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(19rem, 78vw);
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.2rem;
+  background: linear-gradient(180deg, rgba(14, 18, 24, 0.92) 0%, rgba(6, 8, 12, 0.78) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 90px rgba(0, 0, 0, 0.44);
+}
+
+.lumiere-logo-frame::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(2rem - 1px);
+  background:
+    radial-gradient(circle at 28% 30%, rgba(251, 191, 36, 0.18), transparent 32%),
+    radial-gradient(circle at 72% 30%, rgba(34, 211, 238, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.lumiere-logo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(15rem, 100%);
+  height: auto;
+  filter:
+    drop-shadow(0 0 18px rgba(251, 191, 36, 0.32))
+    drop-shadow(0 0 24px rgba(34, 211, 238, 0.28))
+    drop-shadow(0 14px 32px rgba(0, 0, 0, 0.45));
+  animation: lumiere-float 6s ease-in-out infinite;
+}
+
+.wake-note {
+  margin: 0.15rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.73rem;
+  line-height: 1.75;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.wake-note span {
+  display: block;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.lumiere-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lumiere-loader-logo {
+  display: block;
+  width: min(5.5rem, 28vw);
+  height: auto;
+  filter:
+    drop-shadow(0 0 18px rgba(251, 191, 36, 0.32))
+    drop-shadow(0 0 22px rgba(34, 211, 238, 0.26));
+  animation: lumiere-float 4.8s ease-in-out infinite;
+}
+
+.lumiere-loader-label {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.74);
+}
+
+@keyframes lumiere-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+
+@media (max-width: 640px) {
+  .lumiere-logo-frame {
+    width: min(17rem, 100%);
+    padding: 0.85rem 1rem;
+  }
+
+  .wake-note {
+    font-size: 0.69rem;
+    line-height: 1.65;
+  }
 }
