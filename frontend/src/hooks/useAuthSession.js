@@ -7,8 +7,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { onIdTokenChanged, signOut, sendEmailVerification } from "firebase/auth";
 import { auth } from "../firebase.js";
-import { buildApiUrl } from "../config/constants";
 import { loadSession, loadUsername, saveUsername, clearSession } from "../utils/storage";
+
+const BOOTSTRAP_WARMUP_DELAYS_MS = [1200, 1800, 2000];
+
+const normalizeKnownUsername = (value) => String(value || "").trim().toLowerCase();
 
 /**
  * Creates authenticated session state plus username and verification actions.
@@ -54,16 +57,18 @@ export function useAuthSession({
   /**
    * Fetches the authenticated user's backend profile from `/api/me`.
    * @param {string} token - Firebase ID token for the current user.
+   * @param {{ forceTokenRefresh?: boolean, retryDelaysMs?: number[] }} [options={}] - Auth refresh and cold-start retry behavior.
    * @returns {Promise<any | null>} Backend profile object or null.
    */
-  const fetchMyProfile=useCallback(async(token)=>{
-    const res=await fetch(buildApiUrl("/api/me"),{
-      headers:{Authorization:`Bearer ${token}`},
+  const fetchMyProfile=useCallback(async(token,{forceTokenRefresh=false,retryDelaysMs=BOOTSTRAP_WARMUP_DELAYS_MS}={})=>{
+    const data=await apiClient("/api/me",{
+      token,
+      forceTokenRefresh,
+      retryDelaysMs,
+      timeoutMs:5000,
     });
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok)throw new Error(data.error||data.message||`Request failed (${res.status})`);
     return data.profile||null;
-  },[]);
+  },[apiClient]);
 
   /**
    * Bootstraps the full authenticated frontend session from a Firebase user.
@@ -76,34 +81,51 @@ export function useAuthSession({
   const bootstrapAuthenticatedSession=useCallback(async(fbUser,{forceTokenRefresh=false,silentProfileErrors=false}={})=>{
     // Auth bootstrap keeps backend profile state authoritative: username/admin
     // flags/friend requests all come from the API before we open realtime state.
-    const token=await fbUser.getIdToken(forceTokenRefresh);
+    const initialToken=await fbUser.getIdToken(forceTokenRefresh);
+    let activeToken=initialToken;
     // Restore the same-tab room code so reconnect/rejoin logic knows which room to resume.
     const saved=loadSession();
     setSavedCode(saved);
 
-    let profile=null;
+    let nextProfile=null;
+    let profileLoadFailed=false;
     try{
-      profile=await fetchMyProfile(token);
+      nextProfile=await fetchMyProfile(initialToken,{
+        forceTokenRefresh,
+        retryDelaysMs:BOOTSTRAP_WARMUP_DELAYS_MS,
+      });
+      if(auth.currentUser){
+        activeToken=await auth.currentUser.getIdToken();
+      }
     }catch(error){
+      profileLoadFailed=true;
       if(!silentProfileErrors){
         addToast(error.message||"Could not load profile","error");
       }
     }
-    setProfile(profile);
+    if(nextProfile){
+      setProfile(nextProfile);
+      setIsAdmin(Boolean(nextProfile?.isAdmin));
+    }
 
-    const backendUsername=String(profile?.username||"").trim().toLowerCase();
-    const localUsername=loadUsername().trim().toLowerCase();
-    const resolvedUsername=backendUsername||localUsername;
+    const backendUsername=normalizeKnownUsername(nextProfile?.username);
+    const localUsername=normalizeKnownUsername(loadUsername());
+    const currentUsername=normalizeKnownUsername(username);
+    const resolvedUsername=backendUsername||currentUsername||localUsername;
 
     if(backendUsername){
       saveUsername(backendUsername);
     }
 
-    setIsAdmin(Boolean(profile?.isAdmin));
-    await syncIncomingFriendRequests(token,{silent:true});
-    await syncLobbyMemoryStats(token,{silent:true});
+    await syncIncomingFriendRequests(activeToken,{silent:true});
+    await syncLobbyMemoryStats(activeToken,{silent:true});
 
     if(!resolvedUsername){
+      if(profileLoadFailed){
+        setNeedUsername(false);
+        socketApiRef.current.cleanupSocket();
+        return;
+      }
       setNeedUsername(true);
       socketApiRef.current.cleanupSocket();
       return;
@@ -112,13 +134,14 @@ export function useAuthSession({
     setUsername(resolvedUsername);
     setNeedUsername(false);
     if(!socketApiRef.current.socketRef.current||!socketApiRef.current.socketRef.current.connected){
-      socketApiRef.current.connectSocket(token,resolvedUsername);
+      socketApiRef.current.connectSocket(activeToken,resolvedUsername);
     }
-  },[fetchMyProfile,syncIncomingFriendRequests,syncLobbyMemoryStats,addToast,socketApiRef]);
+  },[fetchMyProfile,syncIncomingFriendRequests,syncLobbyMemoryStats,addToast,socketApiRef,username]);
 
   // The ID-token listener is the root auth decision tree: signed out, unverified email, missing username, or fully bootstrapped session.
   useEffect(()=>{
     const unsub=onIdTokenChanged(auth,async fbUser=>{
+      setAuthLoading(true);
       try{
         if(fbUser){
           // Email/password users are gated on verification before room access;
@@ -184,6 +207,7 @@ export function useAuthSession({
       }
       // Force a fresh Firebase token for first-time username claims so mobile
       // devices do not reuse an expired cached token from the auth popup flow.
+      console.log("Attempting username claim with fresh token...");
       const freshToken=await currentUser.getIdToken(true);
       const res=await apiClient("/api/username/claim",{
         method:"POST",

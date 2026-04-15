@@ -388,6 +388,7 @@ export default function DashboardView({
   const [refreshTick, setRefreshTick] = useState(0);
   const headerNotifRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const initialLoadWarmupRef = useRef(true);
   const [showHeaderNotifications, setShowHeaderNotifications] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const photoInputRef = useRef(null);
@@ -533,18 +534,19 @@ export default function DashboardView({
   }, [apiClient, addToast]);
 
   // Bootstrap the dashboard's source data from the main profile/friends/memory endpoints.
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async ({ warmup = false } = {}) => {
     setLoading(true);
     try {
       // Hydrate the dashboard from a small set of source endpoints, then derive
       // the richer visual summaries locally from that normalized data.
-      const meRes = await apiClient("/api/me");
+      const warmupRequestOptions = warmup ? { retryDelaysMs: [1500, 3500], timeoutMs: 5000 } : {};
+      const meRes = await apiClient("/api/me", warmupRequestOptions);
       const [friendsRes, memoriesRes, sharedMemoriesRes, notificationsRes, relationshipsRes] = await Promise.all([
-        apiClient("/api/friends"),
-        apiClient("/api/memories"),
-        apiClient("/api/shared-memories"),
-        apiClient("/api/notifications?limit=80").catch(() => ({ items: [], unreadCount: 0 })),
-        apiClient("/api/relationships").catch(() => ({ relationships: [] })),
+        apiClient("/api/friends", warmupRequestOptions),
+        apiClient("/api/memories", warmupRequestOptions),
+        apiClient("/api/shared-memories", warmupRequestOptions),
+        apiClient("/api/notifications?limit=80", warmupRequestOptions).catch(() => ({ items: [], unreadCount: 0 })),
+        apiClient("/api/relationships", warmupRequestOptions).catch(() => ({ relationships: [] })),
       ]);
 
       let activityItems = [];
@@ -561,7 +563,7 @@ export default function DashboardView({
       let overviewRes = null;
       if (showMetadata) {
         try {
-          overviewRes = await apiClient("/api/project-overview");
+          overviewRes = await apiClient("/api/project-overview", warmupRequestOptions);
         } catch (error) {
           addToast(error.message || "Could not load metadata", "error");
         }
@@ -608,7 +610,9 @@ export default function DashboardView({
 
   // Reload when the component mounts or when child actions bump the refresh tick.
   useEffect(() => {
-    loadData();
+    const useWarmup = initialLoadWarmupRef.current;
+    loadData({ warmup: useWarmup });
+    initialLoadWarmupRef.current = false;
   }, [loadData, refreshTick]);
 
   useEffect(() => {

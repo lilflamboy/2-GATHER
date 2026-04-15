@@ -41,7 +41,9 @@ function UsernameSetup({displayName, onDone}){
         if(result.status===409){
           setError("That username is already taken.");
         }else if(result.status===401){
-          setError("Session expired. Please log in again.");
+          setError("Session expired. Refreshing...");
+          window.setTimeout(()=>window.location.reload(),150);
+          return;
         }else{
           setError("Server connection failed. Try again.");
         }
