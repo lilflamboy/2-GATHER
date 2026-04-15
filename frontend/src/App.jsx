@@ -5,8 +5,8 @@
  */
 // React hooks used here only coordinate top-level lifecycle and cross-view wiring.
 import { useEffect, useRef } from "react";
+import { Film } from "lucide-react";
 import "./App.css";
-import lumiereLogo from "/lumiere-sync-logo.png";
 // Firebase auth is read here so App can gate top-level views on the active session.
 import { auth } from "./firebase.js";
 // Views render the major application surfaces selected by the top-level state machine.
@@ -176,8 +176,8 @@ export default function App(){
   if(authSession.authLoading)return(
     <div className="min-h-screen bg-screen flex items-center justify-center">
       <div className="grain-overlay"/>
-      <div className="relative z-10 lumiere-loader">
-        <img src={lumiereLogo} alt="Lumiere logo" className="lumiere-loader-logo"/>
+      <div className="relative z-10 flex items-center justify-center rounded-[1.75rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-violet-500/15 p-5 shadow-[0_24px_80px_rgba(245,158,11,0.16)]">
+        <Film size={34} className="animate-pulse text-amber-300"/>
         <p className="lumiere-loader-label">Connecting to the Light...</p>
       </div>
     </div>

@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Film,
   Users,
   UserRound,
   ImagePlus,
@@ -29,7 +30,6 @@ import {
   Link2,
   Database,
 } from "lucide-react";
-import LumiereLogoMark from "../components/LumiereLogoMark.jsx";
 
 const TABS = [
   { key: "profile", label: "My Profile", icon: UserRound },
@@ -1173,7 +1173,7 @@ export default function DashboardView({
             </button>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-400/20 to-violet-500/15 text-amber-300 shadow-lg shadow-black/30">
-                <LumiereLogoMark size={18} alt="Lumiere logo" />
+                <Film size={18} className="text-amber-300" />
               </div>
               <div>
                 <p className="font-display text-[1.125rem] font-semibold tracking-tight text-white sm:text-[1.35rem]">Lumiere Settings</p>
