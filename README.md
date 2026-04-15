@@ -1,3 +1,4 @@
+<!-- vercel-redeploy-trigger -->
 # 🎬 Lumiere | Real-Time Collaborative Workspace
 
 **Lumiere** is a full-stack collaborative platform where users can **watch, listen, read, study, and interact together in real time** inside private synchronized rooms.
@@ -292,6 +293,46 @@ cd frontend
 npm run dev
 npm run build
 npm run preview
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Vercel still shows an old favicon or logo
+
+If the deployed site still shows the old Vite favicon even after the source code is fixed, the problem is usually cached deployment output or browser favicon caching rather than the current codebase.
+
+Try these steps:
+
+1. Confirm the latest build output is correct locally:
+
+```bash
+cd frontend
+npm run build
+```
+
+Then check that `frontend/dist/index.html` points to:
+
+```html
+<link rel="icon" type="image/png" href="/lumiere-sync-logo.png" />
+```
+
+2. Redeploy the frontend on Vercel and clear any previous build cache during redeploy if that option is available in the deployment flow.
+
+3. In the browser, do a hard refresh:
+
+- Windows/Linux: `Ctrl + Shift + R`
+- macOS: `Cmd + Shift + R`
+
+4. If the old favicon still appears, clear site data for the deployed domain or open the site in an incognito/private window.
+
+5. Verify that there is no `favicon.ico`, `vite.svg`, service worker, or other fallback asset left inside `frontend/public/`.
+
+In this project, the expected favicon source is:
+
+```html
+<link rel="icon" type="image/png" href="/lumiere-sync-logo.png" />
 ```
 
 ---
