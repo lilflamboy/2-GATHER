@@ -208,7 +208,7 @@ export default function App(){
       <>
       <Toasts toasts={toasts} removeToast={removeToast}/>
       {/* Signed-out users stay on the public landing/auth screen. */}
-      {!authSession.user&&<LandingView addToast={addToast} brandLogo={lumiereLogo}/>}
+      {!authSession.user&&<LandingView addToast={addToast}/>}
       {/* The lobby is the authenticated home screen and the only place rooms are created or joined. */}
       {authSession.user&&room.view==="lobby"&&(
         <LobbyView avatarUrl={authSession.avatarUrl} username={authSession.username} onCreateRoom={roomActions.handleCreateRoom}

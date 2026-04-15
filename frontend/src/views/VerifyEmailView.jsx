@@ -2,7 +2,7 @@
  * VerifyEmailView is shown after sign-up when a Firebase account exists but the
  * user has not yet confirmed their email address.
  */
-import { Film } from "lucide-react";
+import LumiereLogoMark from "../components/LumiereLogoMark.jsx";
 
 /**
  * Renders the email-verification holding screen.
@@ -20,7 +20,7 @@ function VerifyEmailView({user,onRefresh,onResend,onSignOut,loading}){
           <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"/>
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/15 to-violet-500/10">
-              <Film size={20} className="text-amber-300"/>
+              <LumiereLogoMark size={20} alt="Lumiere logo" />
             </div>
             <div>
               <p className="text-[0.68rem] uppercase tracking-[0.24em] text-zinc-500">Almost there</p>

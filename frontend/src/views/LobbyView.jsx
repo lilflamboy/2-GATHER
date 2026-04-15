@@ -5,9 +5,10 @@
  */
 import { useState, useEffect } from "react";
 import {
-  Film, LogOut, Users, ChevronRight,
+  LogOut, Users, ChevronRight,
   Menu, Lock, Library, Link2, FileText,
 } from "lucide-react";
+import LumiereLogoMark from "../components/LumiereLogoMark.jsx";
 import { getSessionEngine } from "../engines/index.js";
 import { extractYouTubeId } from "../engines/engineUtils.js";
 import { normalizeCode } from "../utils/url";
@@ -91,7 +92,7 @@ function LobbyView({
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/15 to-violet-500/10 shadow-[0_16px_40px_rgba(245,158,11,0.15)]">
-            <Film size={18} className="text-amber-300"/>
+            <LumiereLogoMark size={18} alt="Lumiere logo" />
           </div>
           <div className="flex flex-col">
             <span className="font-display text-[1.55rem] leading-none text-zinc-50">Lumiere</span>

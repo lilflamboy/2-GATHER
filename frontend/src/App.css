@@ -9,7 +9,7 @@
   isolation: isolate;
   background:
     radial-gradient(74rem 42rem at 18% -12%, rgba(250, 188, 54, 0.12), transparent 44%),
-    radial-gradient(68rem 40rem at 84% 0%, rgba(34, 211, 238, 0.1), transparent 40%),
+    radial-gradient(68rem 40rem at 84% 0%, rgba(255, 255, 255, 0.05), transparent 40%),
     linear-gradient(180deg, #020304 0%, #05070b 48%, #020305 100%);
 }
 
@@ -38,7 +38,7 @@
   bottom: -16rem;
   width: 32rem;
   height: 32rem;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.22) 0%, rgba(34, 211, 238, 0.03) 62%, transparent 78%);
+  background: radial-gradient(circle, rgba(255, 244, 214, 0.12) 0%, rgba(255, 244, 214, 0.02) 62%, transparent 78%);
 }
 
 .lumiere-logo-frame {
@@ -63,7 +63,7 @@
   border-radius: calc(2rem - 1px);
   background:
     radial-gradient(circle at 28% 30%, rgba(251, 191, 36, 0.18), transparent 32%),
-    radial-gradient(circle at 72% 30%, rgba(34, 211, 238, 0.18), transparent 34%),
+    radial-gradient(circle at 72% 30%, rgba(255, 244, 214, 0.08), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
   pointer-events: none;
 }
@@ -76,9 +76,16 @@
   height: auto;
   filter:
     drop-shadow(0 0 18px rgba(251, 191, 36, 0.32))
-    drop-shadow(0 0 24px rgba(34, 211, 238, 0.28))
+    drop-shadow(0 0 24px rgba(255, 244, 214, 0.08))
     drop-shadow(0 14px 32px rgba(0, 0, 0, 0.45));
   animation: lumiere-float 6s ease-in-out infinite;
+}
+
+.lumiere-icon-glow {
+  filter:
+    drop-shadow(0 0 10px rgba(251, 191, 36, 0.28))
+    drop-shadow(0 0 14px rgba(255, 244, 214, 0.08))
+    drop-shadow(0 8px 20px rgba(0, 0, 0, 0.22));
 }
 
 .wake-note {
@@ -112,7 +119,7 @@
   height: auto;
   filter:
     drop-shadow(0 0 18px rgba(251, 191, 36, 0.32))
-    drop-shadow(0 0 22px rgba(34, 211, 238, 0.26));
+    drop-shadow(0 0 22px rgba(255, 244, 214, 0.08));
   animation: lumiere-float 4.8s ease-in-out infinite;
 }
 

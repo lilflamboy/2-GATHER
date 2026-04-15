@@ -21,12 +21,13 @@ import DraggableCallWindow from "../components/DraggableCallWindow";
 import PresetPanel from "../components/PresetPanel";
 import useWebRTC from "../hooks/useWebRTC";
 import {
-  Film, MessageSquare, LogOut, Copy, Check,
+  MessageSquare, LogOut, Copy, Check,
   Play, Pause, SkipBack, SkipForward, Maximize, Minimize,
   Users, UserPlus, Wifi, WifiOff, Upload, Send, X,
   Menu, Phone, PhoneOff, Volume2, VolumeX, Bookmark,
   Headphones, Link2, FileText, Lock, GraduationCap,
 } from "lucide-react";
+import LumiereLogoMark from "../components/LumiereLogoMark.jsx";
 
 const YOUTUBE_REMOTE_GUARD_MS = 1400;
 const YOUTUBE_LOCAL_CONTROL_DEBOUNCE_MS = 900;
@@ -2786,7 +2787,7 @@ function RoomView({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-400/18 bg-gradient-to-br from-amber-500/16 to-violet-500/10 shadow-[0_16px_40px_rgba(245,158,11,0.14)]">
-                <Film size={16} className="text-amber-300"/>
+                <LumiereLogoMark size={16} alt="Lumiere logo" />
               </div>
               <span className="font-display text-lg text-zinc-100 hidden sm:block">Lumiere</span>
               <div className="flex items-center gap-1.5 rounded-full border border-amber-400/18 bg-amber-500/10 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">

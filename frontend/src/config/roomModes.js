@@ -5,9 +5,10 @@
  */
 
 import {
-  Film, Heart, Users, Headphones,
+  Heart, Users, Headphones,
   BookOpen, GraduationCap,
 } from "lucide-react";
+import LumiereLogoMark from "../components/LumiereLogoMark.jsx";
 
 // Private room modes describe the social shape of a room. `roomType` maps to
 // the backend room model, while `maxParticipants` controls how many members the
@@ -49,7 +50,7 @@ const PRIVATE_ROOM_MODES = [
 // for video sync, music/podcast for shared audio, reading for PDFs, and study
 // for host-led focus sessions.
 const SESSION_MODES = [
-  { key: "watch", label: "Watch", icon: Film, blurb: "Movies, shows, and videos in sync.", hoverHint: "Classic watch-party mode with reactions and timestamps." },
+  { key: "watch", label: "Watch", icon: LumiereLogoMark, blurb: "Movies, shows, and videos in sync.", hoverHint: "Classic watch-party mode with reactions and timestamps." },
   { key: "music", label: "Music mode", icon: Headphones, blurb: "Turn devices into synchronized speakers.", hoverHint: "Schedule playback across local audio, YouTube, and podcast links." },
   { key: "podcast", label: "Podcast sync", icon: Headphones, blurb: "Listen together with synced playback.", hoverHint: "Paste YouTube or audio links and discuss in real time." },
   { key: "reading", label: "Co-reading", icon: BookOpen, blurb: "Read and discuss page-by-page moments.", hoverHint: "Paste a PDF/doc link and annotate key moments together." },
