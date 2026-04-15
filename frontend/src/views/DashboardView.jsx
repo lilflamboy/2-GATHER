@@ -55,6 +55,8 @@ const RELATIONSHIP_TAG_OPTIONS = [
   { key: "couple", label: "Couple" },
   { key: "family", label: "Family" },
 ];
+const INITIAL_SERVER_TOAST = "Connecting to server...";
+const INITIAL_SERVER_DELAY_MESSAGE = "Server is taking longer than usual, please refresh";
 const GENRE_HINTS = [
   { genre: "Romance", terms: ["romance", "romantic", "love", "date"] },
   { genre: "Thriller", terms: ["thriller", "mystery", "suspense", "crime"] },
@@ -386,9 +388,13 @@ export default function DashboardView({
   const [tab, setTab] = useState(initialTab || "profile");
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [dashboardReady, setDashboardReady] = useState(false);
+  const [initialLoadError, setInitialLoadError] = useState("");
   const headerNotifRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const initialLoadWarmupRef = useRef(true);
+  const initialWarmupToastShownRef = useRef(false);
+  const initialWarmupDelayToastShownRef = useRef(false);
   const [showHeaderNotifications, setShowHeaderNotifications] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const photoInputRef = useRef(null);
@@ -536,17 +542,30 @@ export default function DashboardView({
   // Bootstrap the dashboard's source data from the main profile/friends/memory endpoints.
   const loadData = useCallback(async ({ warmup = false } = {}) => {
     setLoading(true);
+    if (warmup) {
+      setInitialLoadError("");
+      if (!initialWarmupToastShownRef.current) {
+        addToast(INITIAL_SERVER_TOAST, "info");
+        initialWarmupToastShownRef.current = true;
+      }
+    }
     try {
       // Hydrate the dashboard from a small set of source endpoints, then derive
       // the richer visual summaries locally from that normalized data.
-      const warmupRequestOptions = warmup ? { retryDelaysMs: [1500, 3500], timeoutMs: 5000 } : {};
-      const meRes = await apiClient("/api/me", warmupRequestOptions);
+      const meRes = await apiClient("/api/me", warmup ? {
+        timeoutMs: 60000,
+        timeoutMessage: INITIAL_SERVER_DELAY_MESSAGE,
+      } : {});
+      const followupRequestOptions = warmup ? {
+        timeoutMs: 15000,
+        timeoutMessage: "Failed to finish loading dashboard",
+      } : {};
       const [friendsRes, memoriesRes, sharedMemoriesRes, notificationsRes, relationshipsRes] = await Promise.all([
-        apiClient("/api/friends", warmupRequestOptions),
-        apiClient("/api/memories", warmupRequestOptions),
-        apiClient("/api/shared-memories", warmupRequestOptions),
-        apiClient("/api/notifications?limit=80", warmupRequestOptions).catch(() => ({ items: [], unreadCount: 0 })),
-        apiClient("/api/relationships", warmupRequestOptions).catch(() => ({ relationships: [] })),
+        apiClient("/api/friends", followupRequestOptions),
+        apiClient("/api/memories", followupRequestOptions),
+        apiClient("/api/shared-memories", followupRequestOptions),
+        apiClient("/api/notifications?limit=80", followupRequestOptions).catch(() => ({ items: [], unreadCount: 0 })),
+        apiClient("/api/relationships", followupRequestOptions).catch(() => ({ relationships: [] })),
       ]);
 
       let activityItems = [];
@@ -563,7 +582,7 @@ export default function DashboardView({
       let overviewRes = null;
       if (showMetadata) {
         try {
-          overviewRes = await apiClient("/api/project-overview", warmupRequestOptions);
+          overviewRes = await apiClient("/api/project-overview", followupRequestOptions);
         } catch (error) {
           addToast(error.message || "Could not load metadata", "error");
         }
@@ -601,7 +620,22 @@ export default function DashboardView({
       if (overviewRes) {
         setProjectOverview(overviewRes);
       }
+      setInitialLoadError("");
+      setDashboardReady(true);
     } catch (error) {
+      if (warmup) {
+        const finalMessage = error?.isTimeout ? INITIAL_SERVER_DELAY_MESSAGE : (error.message || "Failed to load settings");
+        setInitialLoadError(finalMessage);
+        if (error?.isTimeout) {
+          if (!initialWarmupDelayToastShownRef.current) {
+            addToast(INITIAL_SERVER_DELAY_MESSAGE, "error");
+            initialWarmupDelayToastShownRef.current = true;
+          }
+        } else {
+          addToast(finalMessage, "error");
+        }
+        return;
+      }
       addToast(error.message || "Failed to load settings", "error");
     } finally {
       setLoading(false);
@@ -1159,6 +1193,32 @@ export default function DashboardView({
     setTab(nextTab);
     setShowMobileSidebar(false);
   };
+
+  if (!dashboardReady) {
+    return (
+      <div className="min-h-screen bg-screen flex items-center justify-center px-6 py-10">
+        <div className="grain-overlay" />
+        <div className="lumiere-loader relative z-10 rounded-[2rem] border border-amber-400/20 bg-gradient-to-br from-zinc-950/90 via-zinc-950/82 to-black/80 px-7 py-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.6rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-violet-500/14 shadow-[0_22px_60px_rgba(245,158,11,0.16)]">
+            <Film size={28} className="animate-pulse text-amber-300" />
+          </div>
+          <p className="lumiere-loader-label">Connecting to the Light...</p>
+          <p className="wake-note">
+            {initialLoadError || "Waking the Render server for your dashboard. This first request can take up to 60 seconds."}
+          </p>
+          {initialLoadError && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-1 inline-flex items-center justify-center rounded-full border border-amber-300/20 bg-amber-400/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-100 transition-all duration-200 hover:border-amber-200/30 hover:bg-amber-300/16"
+            >
+              Refresh Page
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-screen">

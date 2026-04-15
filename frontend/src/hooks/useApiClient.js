@@ -26,7 +26,7 @@ function isRetryableApiError(error) {
  * serializes JSON bodies when present, and throws on non-OK responses so
  * callers can handle errors with normal `try/catch` flow.
  * `useCallback` keeps the helper stable for hooks/components that depend on it.
- * @returns {{ apiClient: (path: string, options?: { method?: string, body?: any, token?: string, forceTokenRefresh?: boolean, retryDelaysMs?: number[], timeoutMs?: number }) => Promise<any> }} Memoized API client wrapper.
+ * @returns {{ apiClient: (path: string, options?: { method?: string, body?: any, token?: string, forceTokenRefresh?: boolean, retryDelaysMs?: number[], timeoutMs?: number, timeoutMessage?: string }) => Promise<any> }} Memoized API client wrapper.
  */
 export function useApiClient() {
   const performRequest = useCallback(async(path,{
@@ -34,6 +34,7 @@ export function useApiClient() {
     body,
     token,
     timeoutMs = 0,
+    timeoutMessage = "",
     allow401Retry = true,
   })=>{
     const controller = timeoutMs > 0 ? new AbortController() : null;
@@ -58,6 +59,7 @@ export function useApiClient() {
           body,
           token:freshToken,
           timeoutMs,
+          timeoutMessage,
           allow401Retry:false,
         });
       }
@@ -65,15 +67,17 @@ export function useApiClient() {
       if(!res.ok){
         const error = new Error(data.error||data.message||`Request failed (${res.status})`);
         error.status = res.status;
+        error.isTimeout = res.status === 408;
         throw error;
       }
 
       return data;
     }catch(error){
       if(error?.name==="AbortError"){
-        const timeoutError = new Error("Request timed out while waking up the server");
+        const timeoutError = new Error(timeoutMessage||"Request timed out while waking up the server");
         timeoutError.status = 408;
         timeoutError.code = "REQUEST_TIMEOUT";
+        timeoutError.isTimeout = true;
         throw timeoutError;
       }
       throw error;
@@ -87,7 +91,7 @@ export function useApiClient() {
   /**
    * Performs one authenticated JSON request against the Lumiere backend.
    * @param {string} path - API path relative to the configured backend base URL.
-   * @param {{ method?: string, body?: any, token?: string, forceTokenRefresh?: boolean, retryDelaysMs?: number[], timeoutMs?: number }} [options={}] - Request method, optional JSON body, optional auth-token overrides, and retry/timeout controls for cold-start handling.
+   * @param {{ method?: string, body?: any, token?: string, forceTokenRefresh?: boolean, retryDelaysMs?: number[], timeoutMs?: number, timeoutMessage?: string }} [options={}] - Request method, optional JSON body, optional auth-token overrides, and retry/timeout controls for cold-start handling.
    * @returns {Promise<any>} Parsed JSON response payload.
    */
   const apiClient = useCallback(async(path,{
@@ -97,6 +101,7 @@ export function useApiClient() {
     forceTokenRefresh=false,
     retryDelaysMs=[],
     timeoutMs=0,
+    timeoutMessage="",
   }={})=>{
     // Centralized authenticated JSON fetch helper used by lobby/dashboard flows.
     const currentUser=auth.currentUser;
@@ -106,7 +111,7 @@ export function useApiClient() {
 
     for(;;){
       try{
-        return await performRequest(path,{method,body,token,timeoutMs});
+        return await performRequest(path,{method,body,token,timeoutMs,timeoutMessage});
       }catch(error){
         if(retryIndex>=retryDelaysMs.length||!isRetryableApiError(error)){
           throw error;
