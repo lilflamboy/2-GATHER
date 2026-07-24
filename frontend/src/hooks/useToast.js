@@ -1,5 +1,5 @@
 /**
- * Toast state management for Lumiere's lightweight in-app notifications.
+ * Toast state management for 2-GATHER's lightweight in-app notifications.
  * Toasts auto-dismiss after a short timeout so transient success/error/info
  * messages can appear without requiring manual cleanup every time.
  */

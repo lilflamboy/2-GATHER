@@ -27,8 +27,8 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
   const avatarInitial=(msg.senderName||msg.senderUsername||"U").trim()[0]?.toUpperCase()||"U";
   const hasAvatar=!!msg.photoURL&&!avatarFailed;
   const avatarEl=hasAvatar
-    ?<img src={msg.photoURL} alt={senderLabel} onError={()=>setAvatarFailed(true)} className="h-8 w-8 rounded-full border border-white/10 object-cover shadow-[0_8px_20px_rgba(0,0,0,0.3)]"/>
-    :<div className="flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/18 bg-gradient-to-br from-amber-500/18 to-violet-500/12 text-[11px] font-semibold text-amber-200 shadow-[0_8px_20px_rgba(0,0,0,0.24)]">
+    ?<img src={msg.photoURL} alt={senderLabel} onError={()=>setAvatarFailed(true)} className="h-8 w-8 rounded-full border border-pink-300 object-cover shadow-[0_8px_20px_rgba(0,0,0,0.3)]"/>
+    :<div className="flex h-8 w-8 items-center justify-center rounded-full border border-pink-400/18 bg-gradient-to-br from-purple-400/18 to-purple-500/12 text-[11px] font-semibold text-purple-600 shadow-[0_8px_20px_rgba(0,0,0,0.24)]">
       {avatarInitial}
     </div>;
 
@@ -47,10 +47,10 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
     const variant = msg.meta?.variant;
     const variantClass =
       variant === "offline"
-        ? "border-red-500/20 bg-red-500/10 text-red-200"
+        ? "border-red-500/20 bg-red-500/10 text-red-600"
         : variant === "waiting"
-          ? "border-amber-400/20 bg-amber-500/10 text-amber-200"
-          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
+          ? "border-pink-400/20 bg-purple-400/10 text-purple-600"
+          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600";
     return(
       <div className="flex items-center gap-2 my-1">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-white/16"/>
@@ -93,7 +93,7 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
         <div className={`flex flex-col ${isMe?"items-end":"items-start"}`}>
           {/* Sender username — always show for others */}
           {!isMe&&(
-            <span className="mb-1 ml-1 text-[11px] font-mono text-zinc-500">
+            <span className="mb-1 ml-1 text-[11px] font-mono text-zinc-800">
               @{senderLabel}
             </span>
           )}
@@ -102,7 +102,7 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
             {/* React button left of others' bubbles */}
             {!isMe&&canReact&&(
               <button onClick={openPicker}
-                className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] p-2 text-lg leading-none text-zinc-400 transition-all duration-200 hover:border-amber-400/18 hover:bg-amber-500/10 hover:text-amber-200">
+                className="shrink-0 rounded-full border border-pink-300 bg-white/80 p-2 text-lg leading-none text-zinc-800 transition-all duration-200 hover:border-pink-400/18 hover:bg-purple-400/10 hover:text-purple-600">
                 😊
               </button>
             )}
@@ -112,19 +112,19 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
               onClick={isBookmark?()=>onBookmarkSeek(msg.meta?.seekTime):undefined}
               className={`max-w-[85%] break-words rounded-2xl border px-3.5 py-2.5 text-sm leading-7 shadow-[0_16px_42px_rgba(0,0,0,0.2)]
                 ${isBookmark
-                  ?"cursor-pointer border-amber-400/20 bg-amber-500/10 text-amber-100 transition-all duration-200 hover:border-amber-300/28 hover:bg-amber-500/16"
+                  ?"cursor-pointer border-pink-400/20 bg-purple-400/10 text-purple-700 transition-all duration-200 hover:border-pink-300/28 hover:bg-purple-400/16"
                   :isMe
-                    ?"rounded-br-md border-amber-400/18 bg-gradient-to-br from-amber-500/18 to-orange-400/10 text-amber-50"
-                    :"rounded-bl-md border-white/8 bg-white/[0.04] text-zinc-200"}`}>
+                    ?"rounded-br-md border-pink-400/18 bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md border-transparent"
+                    :"rounded-bl-md border-pink-300 bg-white text-zinc-800 shadow-md border-pink-100"}`}>
               {isBookmark&&<span className="mr-1">📍</span>}
               {msg.text}
-              {isBookmark&&<span className="ml-1.5 text-[10px] text-amber-200/55">↩ seek all</span>}
+              {isBookmark&&<span className="ml-1.5 text-[10px] text-purple-600/55">↩ seek all</span>}
             </div>
 
             {/* React button right of my bubbles */}
             {isMe&&canReact&&(
               <button onClick={openPicker}
-                className="shrink-0 rounded-full border border-white/8 bg-white/[0.03] p-2 text-lg leading-none text-zinc-400 transition-all duration-200 hover:border-amber-400/18 hover:bg-amber-500/10 hover:text-amber-200">
+                className="shrink-0 rounded-full border border-pink-300 bg-white/50 p-2 text-lg leading-none text-zinc-800 transition-all duration-200 hover:border-pink-400/18 hover:bg-purple-400/10 hover:text-purple-600">
                 😊
               </button>
             )}
@@ -138,8 +138,8 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
                 <button key={emoji} onClick={()=>onReact(msg.id,emoji)}
                   className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-all active:scale-95
                     ${uids.includes(myUid)
-                      ?"border-amber-400/22 bg-amber-500/10 text-amber-100"
-                      :"border-white/8 bg-white/[0.03] text-zinc-400 hover:border-white/16"}`}>
+                      ?"border-pink-400/22 bg-purple-400/10 text-purple-700"
+                      :"border-pink-300 bg-white/50 text-zinc-800 hover:border-pink-300"}`}>
                   <span>{emoji}</span>
                   <span className="font-medium">{uids.length}</span>
                 </button>
@@ -147,7 +147,7 @@ function ChatMessage({msg,myUid,onReact,onBookmarkSeek,closePickerSignal}){
             </div>
           )}
 
-          <span className="mt-1 text-[10px] text-zinc-600">
+          <span className="mt-1 text-[10px] text-zinc-800">
             {new Date(msg.timestamp).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
           </span>
         </div>

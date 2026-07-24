@@ -1,5 +1,5 @@
 /**
- * Tracks live and completed session data for the Lumiere backend.
+ * Tracks live and completed session data for the 2-GATHER backend.
  * Live video-session metadata, completed watch sessions, activity events,
  * and archived chat are stored separately because they serve different
  * lifecycles, query patterns, and retention needs.

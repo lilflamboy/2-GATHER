@@ -129,33 +129,33 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
     <div ref={winRef} style={{left:pos.x,top:pos.y,width:minimized?200:size.w,zIndex:500}}
       className={`absolute select-none overflow-hidden rounded-[1.6rem] border shadow-[0_30px_90px_rgba(0,0,0,0.5)] transition-[transform,opacity,box-shadow] duration-200 ${
         isConnecting
-          ?"border-amber-400/24 bg-zinc-950/95 shadow-[0_28px_80px_rgba(251,146,60,0.16)] ring-1 ring-amber-400/14"
-          :"border-white/10 bg-zinc-950/95 shadow-[0_28px_80px_rgba(0,0,0,0.48)] ring-1 ring-black/20"
+          ?"border-pink-400/24 bg-white/95 shadow-[0_28px_80px_rgba(251,146,60,0.16)] ring-1 ring-pink-400/14"
+          :"border-pink-200 bg-white/95 shadow-[0_28px_80px_rgba(0,0,0,0.48)] ring-1 ring-black/20"
       }`}>
       <div onMouseDown={onDragStart} onTouchStart={onDragStart}
         className={`flex cursor-grab items-center justify-between border-b px-3.5 py-2.5 active:cursor-grabbing ${
           isConnecting
-            ?"border-amber-400/14 bg-zinc-950/95"
-            :"border-white/8 bg-zinc-900/92"
+            ?"border-pink-400/14 bg-white/95"
+            :"border-pink-200 bg-pink-50/92"
         }`}>
         <div className="flex items-center gap-2">
-          <GripHorizontal size={13} className="text-zinc-500"/>
+          <GripHorizontal size={13} className="text-zinc-600"/>
           {isConnecting
-            ?<LoaderCircle size={13} className="text-amber-300 animate-spin"/>
+            ?<LoaderCircle size={13} className="text-pink-600 animate-spin"/>
             :<span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse"/>
           }
-          <span className={`text-xs font-medium ${isConnecting?"text-amber-100":"text-zinc-200"}`}>
+          <span className={`text-xs font-medium ${isConnecting?"text-purple-700":"text-zinc-700"}`}>
             {isConnecting?"Starting Call":"Live Call"}
           </span>
-          <span className="text-xs text-zinc-500">{totalTiles}p</span>
+          <span className="text-xs text-zinc-600">{totalTiles}p</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={toggleMaximize}
-            className="call-btn flex h-7 w-7 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-[10px] text-zinc-300 transition-all duration-200 hover:border-white/16 hover:bg-white/[0.08]">
+            className="call-btn flex h-7 w-7 items-center justify-center rounded-full border border-pink-200 bg-white/[0.04] text-[10px] text-zinc-600 transition-all duration-200 hover:border-pink-300 hover:bg-white/[0.08]">
             {maximized?<Minimize size={12}/>:<Maximize size={12}/>}
           </button>
           <button onClick={()=>setMinimized(m=>!m)}
-            className="call-btn flex h-6 w-6 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-[10px] text-zinc-400 transition-all duration-200 hover:border-white/16 hover:bg-white/[0.08]">
+            className="call-btn flex h-6 w-6 items-center justify-center rounded-full border border-pink-200 bg-white/[0.04] text-[10px] text-zinc-600 transition-all duration-200 hover:border-pink-300 hover:bg-white/[0.08]">
             {minimized?"▲":"▼"}
           </button>
         </div>
@@ -163,18 +163,18 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
       {!minimized&&isConnecting&&(
         <div style={{height:size.h}} className="flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.16),_transparent_42%),linear-gradient(180deg,_rgba(12,10,9,0.98),_rgba(9,9,11,0.96))] px-5">
           <div className="max-w-xs text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-400/20 bg-amber-300/10 shadow-[0_18px_40px_rgba(251,146,60,0.14)]">
-              <LoaderCircle size={22} className="animate-spin text-amber-300"/>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-pink-400/20 bg-pink-300/10 shadow-[0_18px_40px_rgba(251,146,60,0.14)]">
+              <LoaderCircle size={22} className="animate-spin text-pink-600"/>
             </div>
-            <p className="text-sm font-semibold text-amber-100">Allow mic and camera to continue</p>
-            <p className="mt-2 text-xs leading-6 text-zinc-400">
+            <p className="text-sm font-semibold text-purple-700">Allow mic and camera to continue</p>
+            <p className="mt-2 text-xs leading-6 text-zinc-600">
               Your floating call window opens here first, then your preview appears as soon as the browser grants access.
             </p>
           </div>
         </div>
       )}
       {!minimized&&!isConnecting&&(
-        <div style={{height:size.h,gridTemplateColumns:`repeat(${cols},1fr)`}} className="grid gap-1.5 bg-zinc-950 p-1.5">
+        <div style={{height:size.h,gridTemplateColumns:`repeat(${cols},1fr)`}} className="grid gap-1.5 bg-white p-1.5">
           {/* Always render the local stream first so mic/cam toggles feel anchored to "you". */}
           <VideoTile stream={localStreamRef.current} name={myName} muted/>
           {remoteEntries.map(([uid,stream])=>{
@@ -183,16 +183,16 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
           })}
           {/* An empty remote state keeps the call window useful before anyone else joins. */}
           {remoteEntries.length===0&&(
-            <div className="flex items-center justify-center rounded-[1.35rem] border border-white/8 bg-white/[0.03]">
-              <span className="px-3 text-center text-xs leading-6 text-zinc-500">Waiting for others<br/>to join…</span>
+            <div className="flex items-center justify-center rounded-[1.35rem] border border-pink-200 bg-white/[0.03]">
+              <span className="px-3 text-center text-xs leading-6 text-zinc-600">Waiting for others<br/>to join…</span>
             </div>
           )}
         </div>
       )}
-      <div className={`call-btn flex items-center justify-center gap-2 border-t px-3.5 py-2.5 ${isConnecting?"border-amber-400/10 bg-zinc-950/95":"border-white/8 bg-zinc-900/92"}`}>
+      <div className={`call-btn flex items-center justify-center gap-2 border-t px-3.5 py-2.5 ${isConnecting?"border-pink-400/10 bg-white/95":"border-pink-200 bg-pink-50/92"}`}>
         {isConnecting?(
           <>
-            <span className="mr-auto text-[11px] text-zinc-400">Waiting for browser permission</span>
+            <span className="mr-auto text-[11px] text-zinc-600">Waiting for browser permission</span>
             <button onClick={onLeave}
               className="call-btn flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-500">
               <PhoneOff size={15}/>
@@ -202,12 +202,12 @@ function DraggableCallWindow({inCall,isConnecting=false,micOn,camOn,localStreamR
           <>
             <button onClick={onToggleMic}
               className={`call-btn flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200
-                ${micOn?"border border-white/10 bg-white/[0.05] text-zinc-200 hover:border-white/18 hover:bg-white/[0.08]":"bg-red-600 text-white hover:bg-red-500"}`}>
+                ${micOn?"border border-pink-200 bg-white/[0.05] text-zinc-700 hover:border-white/18 hover:bg-white/[0.08]":"bg-red-600 text-white hover:bg-red-500"}`}>
               {micOn?<Mic size={15}/>:<MicOff size={15}/>}
             </button>
             <button onClick={onToggleCam}
               className={`call-btn flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200
-                ${camOn?"bg-violet-500 text-white hover:bg-violet-400":"border border-white/10 bg-white/[0.05] text-zinc-400 hover:border-white/18 hover:bg-white/[0.08]"}`}>
+                ${camOn?"bg-purple-500 text-white hover:bg-pink-400":"border border-pink-200 bg-white/[0.05] text-zinc-600 hover:border-white/18 hover:bg-white/[0.08]"}`}>
               {camOn?<Video size={15}/>:<VideoOff size={15}/>}
             </button>
             <button onClick={onLeave}

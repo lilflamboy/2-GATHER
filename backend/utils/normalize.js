@@ -1,5 +1,5 @@
 /**
- * Normalization helpers for Lumiere backend inputs. Sanitization removes
+ * Normalization helpers for 2-GATHER backend inputs. Sanitization removes
  * dangerous content, while normalization coerces values into the application's
  * expected shape: lowercasing identifiers, selecting valid enum members,
  * clamping numeric ranges, and building canonical payload structures.

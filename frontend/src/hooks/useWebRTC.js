@@ -1,5 +1,5 @@
 /**
- * WebRTC call-state manager for Lumiere rooms. Calls use a mesh topology where
+ * WebRTC call-state manager for 2-GATHER rooms. Calls use a mesh topology where
  * each participant connects to every other participant, while signaling flows
  * through the backend socket server and media itself remains peer-to-peer.
  */

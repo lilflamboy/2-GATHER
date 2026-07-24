@@ -1,5 +1,5 @@
 /**
- * Socket bootstrap for the Lumiere backend. This file centralizes connection
+ * Socket bootstrap for the 2-GATHER backend. This file centralizes connection
  * lifecycle setup, shared dependency wiring, and delegation into focused socket
  * handler modules so auth, room state, and disconnect cleanup stay consistent.
  * The `roomRuntime` and `roomService` objects are passed in as dependency bags
@@ -33,7 +33,7 @@ const { log, error } =
   require('../utils/logger.js')
 
 /**
- * Registers Lumiere's Socket.IO connection lifecycle and delegates feature
+ * Registers 2-GATHER's Socket.IO connection lifecycle and delegates feature
  * handlers into room, video, chat, and WebRTC modules. By the time the
  * `connection` handler runs, the upstream socket auth middleware has already
  * verified the client's Firebase token and hydrated `socket.user` with the

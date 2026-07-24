@@ -1,5 +1,5 @@
 /**
- * DashboardView is Lumiere's authenticated control center. It bundles profile
+ * DashboardView is 2-GATHER's authenticated control center. It bundles profile
  * editing, friends, couple-space watchlists, shared memories, relationship
  * intelligence, notifications, activity, metadata, and settings into one place.
  */
@@ -305,14 +305,14 @@ function Toggle({ checked, onChange, label, help }) {
     <button
       type="button"
       onClick={onChange}
-      className="group flex w-full items-start justify-between gap-4 rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.05] to-white/[0.02] p-4 text-left shadow-lg shadow-black/30 transition-all duration-200 hover:border-white/15 hover:from-white/[0.11] hover:via-white/[0.06] hover:to-white/[0.03]"
+      className="group flex w-full items-start justify-between gap-4 rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.05] to-white/[0.02] p-4 text-left shadow-lg shadow-black/30 transition-all duration-200 hover:border-white/15 hover:from-white/[0.11] hover:via-white/[0.06] hover:to-white/[0.03]"
     >
       <div>
-        <p className="text-sm font-semibold text-zinc-100">{label}</p>
-        <p className="mt-1 text-xs leading-6 text-zinc-400">{help}</p>
+        <p className="text-sm font-semibold text-zinc-800">{label}</p>
+        <p className="mt-1 text-xs leading-6 text-zinc-600">{help}</p>
       </div>
       <span
-        className={`relative h-7 w-12 shrink-0 rounded-full border border-white/10 shadow-inner shadow-black/40 transition-all duration-200 ${checked ? "bg-gradient-to-r from-amber-400 via-orange-400 to-violet-500" : "bg-zinc-800/90"}`}
+        className={`relative h-7 w-12 shrink-0 rounded-full border border-pink-200 shadow-inner shadow-black/40 transition-all duration-200 ${checked ? "bg-gradient-to-r from-pink-400 via-fuchsia-500 to-purple-500" : "bg-zinc-800/90"}`}
       >
         <span
           className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-lg shadow-black/40 transition-transform duration-200 ${checked ? "translate-x-5" : "translate-x-0"}`}
@@ -329,8 +329,8 @@ function Toggle({ checked, onChange, label, help }) {
  */
 function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCode, className = "" }) {
   return (
-    <aside className={`glass-panel h-fit overflow-hidden rounded-[30px] border border-white/10 bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent p-4 shadow-[0_30px_90px_-55px_rgba(0,0,0,0.95)] backdrop-blur-xl ${className}`.trim()}>
-      <div className="mb-4 px-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-zinc-500">Account</div>
+    <aside className={`glass-panel h-fit overflow-hidden rounded-[30px] border border-pink-200 bg-gradient-to-b from-white/[0.07] via-white/[0.03] to-transparent p-4 shadow-[0_30px_90px_-55px_rgba(0,0,0,0.95)] backdrop-blur-xl ${className}`.trim()}>
+      <div className="mb-4 px-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-zinc-600">Account</div>
       <div className="space-y-1.5">
         {tabs.map((item) => {
           const Icon = item.icon;
@@ -340,8 +340,8 @@ function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCod
               key={item.key}
               onClick={() => onSelectTab(item.key)}
               className={`flex w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm transition-all duration-200 ${active
-                ? "border-amber-300/25 bg-gradient-to-r from-amber-400/20 via-orange-400/10 to-violet-500/15 text-amber-100 shadow-lg shadow-amber-950/20"
-                : "border-transparent text-zinc-300 hover:border-white/10 hover:bg-white/[0.05] hover:text-zinc-100"
+                ? "border-pink-300/25 bg-gradient-to-r from-pink-400/20 via-fuchsia-500/10 to-purple-500/15 text-purple-700 shadow-lg shadow-amber-950/20"
+                : "border-transparent text-zinc-600 hover:border-pink-200 hover:bg-white/[0.05] hover:text-zinc-800"
               }`}
             >
               <Icon size={14} />
@@ -351,11 +351,11 @@ function DashboardSidebar({ tabs, tab, onSelectTab, onlineFriends, activeRoomCod
         })}
       </div>
 
-      <div className="mt-5 border-t border-white/10 pt-5 text-xs text-zinc-500">
+      <div className="mt-5 border-t border-pink-200 pt-5 text-xs text-zinc-600">
         <p className="mb-1 uppercase tracking-[0.2em] text-[10px]">Live friends online</p>
-        <p className="text-xl font-semibold text-zinc-100">{onlineFriends.length}</p>
+        <p className="text-xl font-semibold text-zinc-800">{onlineFriends.length}</p>
         <p className="mb-1 mt-4 uppercase tracking-[0.2em] text-[10px]">Active room</p>
-        <p className="font-mono text-zinc-300">{activeRoomCode || "None"}</p>
+        <p className="font-mono text-zinc-600">{activeRoomCode || "None"}</p>
       </div>
     </aside>
   );
@@ -1198,11 +1198,11 @@ export default function DashboardView({
     return (
       <div className="min-h-screen bg-screen flex items-center justify-center px-6 py-10">
         <div className="grain-overlay" />
-        <div className="lumiere-loader relative z-10 rounded-[2rem] border border-amber-400/20 bg-gradient-to-br from-zinc-950/90 via-zinc-950/82 to-black/80 px-7 py-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.6rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-violet-500/14 shadow-[0_22px_60px_rgba(245,158,11,0.16)]">
-            <Film size={28} className="animate-pulse text-amber-300" />
+        <div className="2-gather-loader relative z-10 rounded-[2rem] border border-pink-400/20 bg-gradient-to-br from-zinc-950/90 via-zinc-950/82 to-black/80 px-7 py-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.6rem] border border-pink-400/25 bg-gradient-to-br from-purple-400/20 via-pink-400/10 to-purple-500/14 shadow-[0_22px_60px_rgba(245,158,11,0.16)]">
+            <Film size={28} className="animate-pulse text-pink-600" />
           </div>
-          <p className="lumiere-loader-label">Connecting to the Light...</p>
+          <p className="2-gather-loader-label">Connecting to the Light...</p>
           <p className="wake-note">
             {initialLoadError || "Waking the Render server for your dashboard. This first request can take up to 60 seconds."}
           </p>
@@ -1210,7 +1210,7 @@ export default function DashboardView({
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-1 inline-flex items-center justify-center rounded-full border border-amber-300/20 bg-amber-400/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-100 transition-all duration-200 hover:border-amber-200/30 hover:bg-amber-300/16"
+              className="mt-1 inline-flex items-center justify-center rounded-full border border-pink-300/20 bg-pink-400/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-purple-700 transition-all duration-200 hover:border-purple-300/30 hover:bg-pink-300/16"
             >
               Refresh Page
             </button>
@@ -1225,29 +1225,29 @@ export default function DashboardView({
       <div className="grain-overlay" />
 
       {/* Header keeps global navigation, compact notifications, and sign-out in one consistent place. */}
-      <header className="relative z-40 border-b border-white/10 bg-zinc-950/75 px-4 py-5 backdrop-blur-2xl sm:px-6">
+      <header className="relative z-40 border-b border-pink-200 bg-white/75 px-4 py-5 backdrop-blur-2xl sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-pink-200 bg-white/[0.04] text-zinc-600 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
               title="Back"
             >
               <ArrowLeft size={15} />
             </button>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-300/20 bg-gradient-to-br from-amber-400/20 to-violet-500/15 text-amber-300 shadow-lg shadow-black/30">
-                <Film size={18} className="text-amber-300" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-pink-300/20 bg-gradient-to-br from-pink-400/20 to-purple-500/15 text-pink-600 shadow-lg shadow-black/30">
+                <Film size={18} className="text-pink-600" />
               </div>
               <div>
-                <p className="font-display text-[1.125rem] font-semibold tracking-tight text-white sm:text-[1.35rem]">Lumiere Settings</p>
-                <p className="hidden text-[11px] uppercase tracking-[0.3em] text-zinc-500 sm:block">Streaming profile hub</p>
+                <p className="font-display text-[1.125rem] font-semibold tracking-tight text-zinc-800 sm:text-[1.35rem]">2-GATHER Settings</p>
+                <p className="hidden text-[11px] uppercase tracking-[0.3em] text-zinc-600 sm:block">Streaming profile hub</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="hidden font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-500 sm:inline">@{username}</span>
+            <span className="hidden font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-600 sm:inline">@{username}</span>
             <button
               type="button"
               onClick={() => {
@@ -1257,7 +1257,7 @@ export default function DashboardView({
                   return next;
                 });
               }}
-              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white lg:hidden"
+              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-pink-200 bg-white/[0.04] text-zinc-600 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white lg:hidden"
               title="Menu"
             >
               <Menu size={14} />
@@ -1272,47 +1272,47 @@ export default function DashboardView({
                     return next;
                   });
                 }}
-                className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-pink-200 bg-white/[0.04] text-zinc-600 shadow-sm shadow-black/30 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
                 title="Notifications"
               >
                 <Bell size={14} />
                 {unreadHeaderNotifications > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-400 px-1 text-[10px] font-bold text-zinc-950 shadow-lg shadow-amber-950/30">
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-500 px-1 text-[10px] font-bold text-white shadow-lg shadow-amber-950/30">
                     {unreadHeaderNotifications > 9 ? "9+" : unreadHeaderNotifications}
                   </span>
                 )}
               </button>
               {showHeaderNotifications && (
-                <div className="fixed left-2 right-2 top-[4.7rem] z-[90] rounded-[28px] border border-white/10 bg-zinc-950/92 p-3 shadow-[0_40px_120px_-55px_rgba(0,0,0,1)] backdrop-blur-2xl sm:left-auto sm:right-6 sm:w-80">
-                  <div className="flex items-center justify-between px-2 py-1.5 text-[11px] uppercase tracking-[0.24em] text-zinc-500">
+                <div className="fixed left-2 right-2 top-[4.7rem] z-[90] rounded-[28px] border border-pink-200 bg-white/92 p-3 shadow-[0_40px_120px_-55px_rgba(0,0,0,1)] backdrop-blur-2xl sm:left-auto sm:right-6 sm:w-80">
+                  <div className="flex items-center justify-between px-2 py-1.5 text-[11px] uppercase tracking-[0.24em] text-zinc-600">
                     <span>Notifications</span>
                     <button
                       type="button"
                       disabled={notificationBusy || notificationsUnread === 0}
                       onClick={onMarkAllNotificationsRead}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-full border border-pink-200 bg-white/[0.03] px-2.5 py-1 text-[10px] text-zinc-600 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Mark all read
                     </button>
                   </div>
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                     {incomingRequests.map((item) => (
-                      <div key={`incoming-${item.uid}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
-                        <p className="text-xs leading-6 text-zinc-200">
+                      <div key={`incoming-${item.uid}`} className="rounded-2xl border border-pink-200 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
+                        <p className="text-xs leading-6 text-zinc-700">
                           <span className="font-semibold">@{item.username || "user"}</span> sent you a friend request
                         </p>
                         <div className="mt-3 flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => onRespondRequest(item.uid, "accept")}
-                            className="rounded-full bg-emerald-500 px-3.5 py-2 text-[11px] font-semibold text-zinc-950 transition-all duration-200 hover:bg-emerald-400"
+                            className="rounded-full bg-emerald-500 px-3.5 py-2 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-emerald-400"
                           >
                             Accept
                           </button>
                           <button
                             type="button"
                             onClick={() => onRespondRequest(item.uid, "reject")}
-                            className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[11px] text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
+                            className="rounded-full border border-pink-200 bg-white/[0.03] px-3.5 py-2 text-[11px] text-zinc-800 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                           >
                             Decline
                           </button>
@@ -1320,33 +1320,33 @@ export default function DashboardView({
                       </div>
                     ))}
                     {(invites || []).map((invite) => (
-                      <div key={`invite-${invite.id}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
-                        <p className="text-xs leading-6 text-zinc-200">
+                      <div key={`invite-${invite.id}`} className="rounded-2xl border border-pink-200 bg-white/[0.04] p-3 shadow-sm shadow-black/20">
+                        <p className="text-xs leading-6 text-zinc-700">
                           <span className="font-semibold">{invite.fromUsername ? `@${invite.fromUsername}` : invite.fromName}</span> invited you
                         </p>
-                        <p className="mt-1 font-mono text-[11px] text-zinc-500">{invite.roomCode}</p>
+                        <p className="mt-1 font-mono text-[11px] text-zinc-600">{invite.roomCode}</p>
                         <button
                           type="button"
                           onClick={() => onAcceptInvite?.(invite)}
-                          className="mt-3 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-[11px] font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
+                          className="mt-3 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-3.5 py-2 text-[11px] font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300"
                         >
                           Join room
                         </button>
                       </div>
                     ))}
                     {passiveNotifications.slice(0, 6).map((item) => (
-                      <div key={`persisted-${item.id}`} className={`rounded-2xl border p-3 ${item.isRead ? "border-white/5 bg-white/[0.02]" : "border-white/10 bg-white/[0.05]"}`}>
-                        <p className={`text-xs ${item.isRead ? "text-zinc-400" : "text-zinc-200"}`}>
+                      <div key={`persisted-${item.id}`} className={`rounded-2xl border p-3 ${item.isRead ? "border-pink-100 bg-white/[0.02]" : "border-pink-200 bg-white/[0.05]"}`}>
+                        <p className={`text-xs ${item.isRead ? "text-zinc-600" : "text-zinc-700"}`}>
                           {notificationLabel(item)}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <p className="text-[11px] text-zinc-500">{fmtRelativeTime(item.createdAt)}</p>
+                          <p className="text-[11px] text-zinc-600">{fmtRelativeTime(item.createdAt)}</p>
                           {!item.isRead && (
                             <button
                               type="button"
                               onClick={() => onMarkNotificationRead(item.id)}
                               disabled={notificationBusy}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-full border border-pink-200 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-600 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Mark read
                             </button>
@@ -1355,7 +1355,7 @@ export default function DashboardView({
                       </div>
                     ))}
                     {incomingRequests.length === 0 && (invites?.length || 0) === 0 && passiveNotifications.length === 0 && (
-                      <p className="text-xs text-zinc-500 px-2 py-3">No new notifications</p>
+                      <p className="text-xs text-zinc-600 px-2 py-3">No new notifications</p>
                     )}
                   </div>
                 </div>
@@ -1363,7 +1363,7 @@ export default function DashboardView({
             </div>
             <button
               onClick={onSignOut}
-              className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-zinc-300 shadow-sm shadow-black/30 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-100 sm:px-4"
+              className="flex items-center gap-2 rounded-2xl border border-pink-200 bg-white/[0.04] px-3 py-2.5 text-zinc-600 shadow-sm shadow-black/30 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-100 sm:px-4"
             >
               <LogOut size={13} />
               <span className="hidden sm:inline">Sign out</span>
@@ -1382,31 +1382,31 @@ export default function DashboardView({
           className="hidden lg:block"
         />
 
-        <section className="glass-panel min-h-[32rem] overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-5 shadow-[0_40px_120px_-60px_rgba(0,0,0,1)] sm:p-7">
+        <section className="glass-panel min-h-[32rem] overflow-hidden rounded-[32px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-5 shadow-[0_40px_120px_-60px_rgba(0,0,0,1)] sm:p-7">
           {loading ? (
-            <div className="flex h-64 items-center justify-center text-sm text-zinc-500">Loading settings...</div>
+            <div className="flex h-64 items-center justify-center text-sm text-zinc-600">Loading settings...</div>
           ) : (
             <>
               {/* Profile tab handles editable identity fields and photo updates. */}
               {tab === "profile" && (
                 <div className="space-y-6">
-                  <div className="mb-0 flex flex-col items-start gap-4 rounded-[28px] border border-white/10 bg-gradient-to-br from-amber-400/12 via-white/[0.05] to-violet-500/12 p-5 shadow-lg shadow-black/30 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div className="mb-0 flex flex-col items-start gap-4 rounded-[28px] border border-pink-200 bg-gradient-to-br from-pink-400/12 via-white/[0.05] to-purple-500/12 p-5 shadow-lg shadow-black/30 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                     {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt="" className="h-16 w-16 rounded-[22px] border border-white/10 object-cover shadow-lg shadow-black/40 sm:h-20 sm:w-20" />
+                      <img src={profilePhotoPreview} alt="" className="h-16 w-16 rounded-[22px] border border-pink-200 object-cover shadow-lg shadow-black/40 sm:h-20 sm:w-20" />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-amber-300/20 bg-gradient-to-br from-amber-400/20 to-violet-500/15 text-amber-300 shadow-lg shadow-black/40 sm:h-20 sm:w-20">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-pink-300/20 bg-gradient-to-br from-pink-400/20 to-purple-500/15 text-pink-600 shadow-lg shadow-black/40 sm:h-20 sm:w-20">
                         <UserRound size={20} />
                       </div>
                     )}
                     <div className="flex-1">
-                      <p className="text-xl font-semibold text-zinc-100">{profile?.displayName || "Profile"}</p>
-                      <p className="mt-1 font-mono text-sm text-zinc-400">@{profile?.username || username}</p>
+                      <p className="text-xl font-semibold text-zinc-800">{profile?.displayName || "Profile"}</p>
+                      <p className="mt-1 font-mono text-sm text-zinc-600">@{profile?.username || username}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => photoInputRef.current?.click()}
                           disabled={photoProcessing}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-2 text-xs font-semibold text-zinc-950 shadow-lg shadow-amber-950/25 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-amber-950/25 transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:opacity-60"
                         >
                           <ImagePlus size={12} />
                           {photoProcessing ? "Processing..." : "Change photo"}
@@ -1415,7 +1415,7 @@ export default function DashboardView({
                           <button
                             type="button"
                             onClick={onRemoveProfilePhoto}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-pink-200 bg-white/[0.04] px-4 py-2 text-xs text-zinc-600 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-800"
                           >
                             Remove
                           </button>
@@ -1431,23 +1431,23 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <form onSubmit={onSaveProfile} className="space-y-5 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-inner shadow-black/20 sm:p-6">
+                  <form onSubmit={onSaveProfile} className="space-y-5 rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-inner shadow-black/20 sm:p-6">
                     <div>
-                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Display name</label>
+                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-600">Display name</label>
                       <input
                         value={profileForm.displayName}
                         onChange={(e) => setProfileForm((prev) => ({ ...prev, displayName: e.target.value }))}
-                        className="mt-2 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:bg-black/40 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="mt-2 w-full rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 placeholder:text-zinc-600 focus:border-pink-400/60 focus:bg-purple-100/50 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                         maxLength={60}
                         required
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-500">Bio</label>
+                      <label className="text-[11px] uppercase tracking-[0.24em] text-zinc-600">Bio</label>
                       <textarea
                         value={profileForm.bio}
                         onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
-                        className="mt-2 min-h-28 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:bg-black/40 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="mt-2 min-h-28 w-full rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm leading-7 text-zinc-800 transition-all duration-200 placeholder:text-zinc-600 focus:border-pink-400/60 focus:bg-purple-100/50 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                         maxLength={240}
                         placeholder="Write something about your movie taste..."
                       />
@@ -1455,7 +1455,7 @@ export default function DashboardView({
                     <button
                       type="submit"
                       disabled={savingProfile}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-5 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-amber-950/30 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-950/30 transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:opacity-60"
                     >
                       <Check size={14} />
                       {savingProfile ? "Saving..." : "Save profile"}
@@ -1467,38 +1467,38 @@ export default function DashboardView({
               {/* Friends tab covers search, incoming requests, accepted friends, and invite actions. */}
               {tab === "friends" && (
                 <div className="space-y-6">
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Find friends</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-700">Find friends</p>
                     <div className="mt-2 flex gap-2">
-                      <div className="flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4">
-                        <Search size={14} className="text-zinc-500" />
+                      <div className="flex flex-1 items-center gap-3 rounded-2xl border border-pink-200 bg-pink-100/50 px-4">
+                        <Search size={14} className="text-zinc-600" />
                         <input
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          className="flex-1 bg-transparent py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+                          className="flex-1 bg-transparent py-3 text-sm text-zinc-800 placeholder:text-zinc-600 focus:outline-none"
                           placeholder="Search username or name"
                         />
                       </div>
                     </div>
-                    {searching && <p className="mt-3 text-xs text-zinc-500">Searching...</p>}
+                    {searching && <p className="mt-3 text-xs text-zinc-600">Searching...</p>}
                     {searchResults.length > 0 && (
                       <div className="mt-4 space-y-2">
                         {searchResults.map((item) => (
-                          <div key={item.uid} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 shadow-sm shadow-black/20">
+                          <div key={item.uid} className="flex items-center justify-between gap-3 rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3 shadow-sm shadow-black/20">
                             <div>
-                              <p className="text-sm text-zinc-100">{item.displayName}</p>
-                              <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
+                              <p className="text-sm text-zinc-800">{item.displayName}</p>
+                              <p className="font-mono text-xs text-zinc-600">@{item.username || "user"}</p>
                             </div>
                             {item.relationship === "none" && (
                               <button
                                 onClick={() => onSendRequest(item.uid)}
-                                className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
+                                className="rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300"
                               >
                                 <span className="inline-flex items-center gap-1"><UserPlus size={12} /> Add</span>
                               </button>
                             )}
                             {item.relationship !== "none" && (
-                              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs capitalize text-zinc-400">{item.relationship}</span>
+                              <span className="rounded-full border border-pink-200 bg-white/[0.03] px-3 py-1.5 text-xs capitalize text-zinc-600">{item.relationship}</span>
                             )}
                           </div>
                         ))}
@@ -1506,15 +1506,15 @@ export default function DashboardView({
                     )}
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Incoming requests</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-700">Incoming requests</p>
                     {incomingRequests.length === 0 && <p className="text-xs text-zinc-600">No pending requests</p>}
                     <div className="space-y-2">
                       {incomingRequests.map((item) => (
-                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
                           <div>
-                            <p className="text-sm text-zinc-100">{item.displayName}</p>
-                            <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
+                            <p className="text-sm text-zinc-800">{item.displayName}</p>
+                            <p className="font-mono text-xs text-zinc-600">@{item.username || "user"}</p>
                           </div>
                           <div className="flex gap-2">
                             <button
@@ -1525,7 +1525,7 @@ export default function DashboardView({
                             </button>
                             <button
                               onClick={() => onRespondRequest(item.uid, "reject")}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
+                              className="rounded-full border border-pink-200 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-800 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                             >
                               Decline
                             </button>
@@ -1535,17 +1535,17 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-200">Your friends</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-700">Your friends</p>
                     {friends.length === 0 && <p className="text-xs text-zinc-600">No friends yet</p>}
                     <div className="space-y-2">
                       {friends.map((item) => (
-                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <div key={item.uid} className="flex items-center justify-between rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
                           <div className="flex items-center gap-3">
                             <span className={`w-2 h-2 rounded-full ${item.online ? "bg-emerald-400" : "bg-zinc-600"}`} />
                             <div>
-                              <p className="text-sm text-zinc-100">{item.displayName}</p>
-                              <p className="font-mono text-xs text-zinc-500">@{item.username || "user"}</p>
+                              <p className="text-sm text-zinc-800">{item.displayName}</p>
+                              <p className="font-mono text-xs text-zinc-600">@{item.username || "user"}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1553,7 +1553,7 @@ export default function DashboardView({
                               value={relationshipByPartnerUid[item.uid]?.relationshipType || "friends"}
                               onChange={(e) => onUpdateRelationshipTag(item.uid, e.target.value)}
                               disabled={tagUpdatingUid === item.uid}
-                              className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-xs text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+                              className="rounded-full border border-pink-200 bg-pink-100/50 px-3 py-2 text-xs text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20 disabled:opacity-60"
                               title="Tag relationship"
                             >
                               {RELATIONSHIP_TAG_OPTIONS.map((option) => (
@@ -1565,7 +1565,7 @@ export default function DashboardView({
                             <button
                               onClick={() => onInvite(item.uid)}
                               disabled={!item.online}
-                              className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:cursor-not-allowed disabled:opacity-45"
+                              className="rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:cursor-not-allowed disabled:opacity-45"
                               title={item.online ? "Invite to watch" : "Friend is offline"}
                             >
                               <span className="inline-flex items-center gap-1"><Radio size={12} /> Invite</span>
@@ -1576,7 +1576,7 @@ export default function DashboardView({
                     </div>
 
                     {friends.length > 0 && (
-                      <p className="mt-3 text-xs text-zinc-500">
+                      <p className="mt-3 text-xs text-zinc-600">
                         Invite works instantly for online friends.
                       </p>
                     )}
@@ -1588,20 +1588,20 @@ export default function DashboardView({
               {tab === "couple" && (
                 <div className="space-y-4">
                   {friends.length === 0 && (
-                    <div className="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
+                    <div className="rounded-[28px] border border-pink-200 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 text-sm text-zinc-600 shadow-lg shadow-black/25">
                       Add at least one friend to unlock private Couple Space.
                     </div>
                   )}
 
                   {friends.length > 0 && (
                     <>
-                      <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/10 via-white/[0.05] to-amber-400/10 p-5 shadow-lg shadow-black/25">
-                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Private Couple Space</p>
+                      <div className="rounded-[28px] border border-pink-200 bg-gradient-to-br from-purple-500/10 via-white/[0.05] to-pink-400/10 p-5 shadow-lg shadow-black/25">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Private Couple Space</p>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                           <select
                             value={couplePartnerUid}
                             onChange={(e) => setCouplePartnerUid(e.target.value)}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           >
                             {friends.map((friend) => (
                               <option key={friend.uid} value={friend.uid}>
@@ -1612,36 +1612,36 @@ export default function DashboardView({
                           <button
                             onClick={() => onInvite(couplePartnerUid)}
                             disabled={!couplePartnerProfile?.online}
-                            className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:cursor-not-allowed disabled:opacity-45"
+                            className="rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-4 py-3 text-xs font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:cursor-not-allowed disabled:opacity-45"
                           >
                             <span className="inline-flex items-center gap-1"><Radio size={12} /> Invite Partner</span>
                           </button>
                           {couplePartnerProfile && (
-                            <span className={`rounded-full border px-3 py-1.5 text-xs ${couplePartnerProfile.online ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200" : "border-white/10 bg-white/[0.03] text-zinc-400"}`}>
+                            <span className={`rounded-full border px-3 py-1.5 text-xs ${couplePartnerProfile.online ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-600" : "border-pink-200 bg-white/[0.03] text-zinc-600"}`}>
                               {couplePartnerProfile.online ? "Partner online" : "Partner offline"}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <form onSubmit={onAddWatchlistItem} className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared Watchlist</p>
+                      <form onSubmit={onAddWatchlistItem} className="space-y-3 rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Shared Watchlist</p>
                         <input
                           value={watchTitle}
                           onChange={(e) => setWatchTitle(e.target.value)}
                           placeholder="Movie title (required)"
                           maxLength={120}
-                          className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                          className="w-full rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 placeholder:text-zinc-600 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           required
                         />
-                        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4">
-                          <Link2 size={13} className="text-zinc-500" />
+                        <div className="flex items-center gap-3 rounded-2xl border border-pink-200 bg-pink-100/50 px-4">
+                          <Link2 size={13} className="text-zinc-600" />
                           <input
                             value={watchUrl}
                             onChange={(e) => setWatchUrl(e.target.value)}
                             placeholder="Trailer / OTT link (optional)"
                             maxLength={500}
-                            className="flex-1 bg-transparent py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
+                            className="flex-1 bg-transparent py-3 text-sm text-zinc-800 placeholder:text-zinc-600 focus:outline-none"
                           />
                         </div>
                         <textarea
@@ -1649,51 +1649,51 @@ export default function DashboardView({
                           onChange={(e) => setWatchNotes(e.target.value)}
                           placeholder="Memory note (optional)"
                           maxLength={260}
-                          className="min-h-24 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 placeholder:text-zinc-500 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                          className="min-h-24 w-full rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm leading-7 text-zinc-800 transition-all duration-200 placeholder:text-zinc-600 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                         />
                         <button
                           type="submit"
                           disabled={coupleBusy}
-                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-sm font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:opacity-60"
                         >
                           <Plus size={14} />
                           Add to watchlist
                         </button>
                       </form>
 
-                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Watchlist items</p>
-                        {coupleLoading && <p className="text-xs text-zinc-500">Loading couple space...</p>}
+                      <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Watchlist items</p>
+                        {coupleLoading && <p className="text-xs text-zinc-600">Loading couple space...</p>}
                         {!coupleLoading && (coupleSpace.watchlist?.length || 0) === 0 && (
                           <p className="text-xs text-zinc-600">No items yet. Add your next movie date idea.</p>
                         )}
                         <div className="space-y-2">
                           {(coupleSpace.watchlist || []).map((item) => (
-                            <div key={item.id} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                            <div key={item.id} className="rounded-2xl border border-pink-200 bg-pink-50/50 px-4 py-3">
                               <div className="flex items-start justify-between gap-2">
                                 <button
                                   type="button"
                                   onClick={() => onUpdateWatchlistItem(item.id, "toggle_done", !item.done)}
                                   className="inline-flex items-start gap-3 text-left"
                                 >
-                                  {item.done ? <CheckSquare size={15} className="text-emerald-400" /> : <Square size={15} className="text-zinc-500" />}
-                                  <span className={`text-sm ${item.done ? "text-zinc-500 line-through" : "text-zinc-100"}`}>{item.title}</span>
+                                  {item.done ? <CheckSquare size={15} className="text-emerald-400" /> : <Square size={15} className="text-zinc-600" />}
+                                  <span className={`text-sm ${item.done ? "text-zinc-600 line-through" : "text-zinc-800"}`}>{item.title}</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => onUpdateWatchlistItem(item.id, "remove")}
-                                  className="rounded-full border border-white/10 bg-white/[0.03] p-2 text-zinc-500 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-200"
+                                  className="rounded-full border border-pink-200 bg-white/[0.03] p-2 text-zinc-600 transition-all duration-200 hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-600"
                                 >
                                   <Trash2 size={13} />
                                 </button>
                               </div>
-                              {!!item.notes && <p className="ml-7 mt-2 text-xs text-zinc-400">{item.notes}</p>}
+                              {!!item.notes && <p className="ml-7 mt-2 text-xs text-zinc-600">{item.notes}</p>}
                               {!!item.url && (
                                 <a
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="ml-7 mt-2 inline-flex text-xs text-amber-300 transition-colors duration-200 hover:text-amber-200"
+                                  className="ml-7 mt-2 inline-flex text-xs text-pink-600 transition-colors duration-200 hover:text-purple-600"
                                 >
                                   Open link
                                 </a>
@@ -1711,37 +1711,37 @@ export default function DashboardView({
               {tab === "memories" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This week</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.weekSeconds)}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-pink-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">This week</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{fmtDuration(memories.summary?.weekSeconds)}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This month</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.monthSeconds)}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">This month</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{fmtDuration(memories.summary?.monthSeconds)}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">This year</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.yearSeconds)}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">This year</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{fmtDuration(memories.summary?.yearSeconds)}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">All time</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{fmtDuration(memories.summary?.allSeconds)}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-purple-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">All time</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{fmtDuration(memories.summary?.allSeconds)}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100"><Heart size={14} className="text-amber-300" /> Emotional moments</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800"><Heart size={14} className="text-pink-600" /> Emotional moments</p>
                     {memories.byFriend?.length === 0 && (
-                      <p className="mt-3 text-sm text-zinc-500">Watch sessions with friends will appear here automatically.</p>
+                      <p className="mt-3 text-sm text-zinc-600">Watch sessions with friends will appear here automatically.</p>
                     )}
 
                     <div className="mt-3 space-y-2">
                       {memories.byFriend?.map((item) => (
-                        <div key={item.uid} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                          <p className="text-sm text-zinc-100">
-                            You watched <span className="text-amber-300 font-semibold">{fmtDuration(item.allSeconds)}</span> with @{item.username || item.displayName}
+                        <div key={item.uid} className="rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
+                          <p className="text-sm text-zinc-800">
+                            You watched <span className="text-pink-600 font-semibold">{fmtDuration(item.allSeconds)}</span> with @{item.username || item.displayName}
                           </p>
-                          <p className="mt-2 text-xs text-zinc-500">
+                          <p className="mt-2 text-xs text-zinc-600">
                             Week: {fmtDuration(item.weekSeconds)} · Month: {fmtDuration(item.monthSeconds)} · Year: {fmtDuration(item.yearSeconds)}
                           </p>
                         </div>
@@ -1749,17 +1749,17 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <form onSubmit={onAddSharedMemory} className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared memory note</p>
+                  <form onSubmit={onAddSharedMemory} className="space-y-3 rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Shared memory note</p>
                     {friends.length === 0 ? (
-                      <p className="text-xs text-zinc-500">Add friends to create shared memories.</p>
+                      <p className="text-xs text-zinc-600">Add friends to create shared memories.</p>
                     ) : (
                       <>
                         <div className="grid sm:grid-cols-2 gap-2">
                           <select
                             value={memoryPartnerUid}
                             onChange={(e) => setMemoryPartnerUid(e.target.value)}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           >
                             {friends.map((friend) => (
                               <option key={friend.uid} value={friend.uid}>
@@ -1772,7 +1772,7 @@ export default function DashboardView({
                             onChange={(e) => setMemoryRoomCode(e.target.value.toUpperCase())}
                             placeholder="Room code (optional)"
                             maxLength={8}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 font-mono text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           />
                         </div>
                         <textarea
@@ -1780,14 +1780,14 @@ export default function DashboardView({
                           onChange={(e) => setMemoryNote(e.target.value)}
                           placeholder="Write something meaningful, like: We watched this after 3 months apart."
                           maxLength={600}
-                          className="min-h-28 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-7 text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                          className="min-h-28 w-full rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm leading-7 text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           required
                         />
                         <div className="grid sm:grid-cols-2 gap-2">
                           <select
                             value={memorySessionMode}
                             onChange={(e) => setMemorySessionMode(e.target.value)}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           >
                             <option value="watch">Watch session</option>
                             <option value="podcast">Podcast sync</option>
@@ -1799,7 +1799,7 @@ export default function DashboardView({
                             onChange={(e) => setMemoryGenre(e.target.value)}
                             placeholder="Genre (optional)"
                             maxLength={48}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           />
                         </div>
                         <div className="grid sm:grid-cols-3 gap-2">
@@ -1808,21 +1808,21 @@ export default function DashboardView({
                             onChange={(e) => setMemoryMoodTag(e.target.value)}
                             placeholder="Mood tag (optional)"
                             maxLength={48}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           />
                           <input
                             value={memoryHighlightTimestamp}
                             onChange={(e) => setMemoryHighlightTimestamp(e.target.value)}
                             placeholder="Highlight HH:MM:SS"
                             maxLength={12}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 font-mono text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           />
                           <input
                             value={memorySessionMinutes}
                             onChange={(e) => setMemorySessionMinutes(e.target.value.replace(/[^0-9]/g, ""))}
                             placeholder="Session mins"
                             maxLength={4}
-                            className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                            className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                           />
                         </div>
                         <input
@@ -1830,12 +1830,12 @@ export default function DashboardView({
                           onChange={(e) => setMemoryReactionCount(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="Reaction count (optional)"
                           maxLength={4}
-                          className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-100 transition-all duration-200 focus:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                          className="rounded-2xl border border-pink-200 bg-pink-100/50 px-4 py-3 text-sm text-zinc-800 transition-all duration-200 focus:border-pink-400/60 focus:outline-none focus:ring-2 focus:ring-purple-400/20"
                         />
                         <button
                           type="submit"
                           disabled={savingMemory}
-                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-4 py-3 text-sm font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300 disabled:opacity-60"
                         >
                           <Plus size={14} />
                           {savingMemory ? "Saving..." : "Save memory note"}
@@ -1844,16 +1844,16 @@ export default function DashboardView({
                     )}
                   </form>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Shared memory archive</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Shared memory archive</p>
                     {sharedMemories.length === 0 && (
-                      <p className="mt-3 text-xs text-zinc-500">No shared memory notes yet.</p>
+                      <p className="mt-3 text-xs text-zinc-600">No shared memory notes yet.</p>
                     )}
                     <div className="mt-2 space-y-2">
                       {sharedMemories.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                          <p className="text-sm text-zinc-100">{item.memoryNote}</p>
-                          <p className="mt-2 text-xs text-zinc-500">
+                        <div key={item.id} className="rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
+                          <p className="text-sm text-zinc-800">{item.memoryNote}</p>
+                          <p className="mt-2 text-xs text-zinc-600">
                             With @{item.partner?.username || item.partner?.displayName || "friend"}
                             {item.roomCode ? ` · Room ${item.roomCode}` : ""}
                             {item.date ? ` · ${new Date(item.date).toLocaleDateString()}` : ""}
@@ -1874,65 +1874,65 @@ export default function DashboardView({
               {/* Intelligence tab derives story cards, compatibility, milestones, and timeline views from saved memories. */}
               {tab === "intelligence" && (
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-violet-500/12 via-white/[0.05] to-amber-400/10 p-5 shadow-lg shadow-black/25">
-                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
-                      <Sparkles size={14} className="text-amber-300" />
+                  <div className="rounded-[28px] border border-pink-200 bg-gradient-to-br from-purple-500/12 via-white/[0.05] to-pink-400/10 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">
+                      <Sparkles size={14} className="text-pink-600" />
                       Relationship Intelligence
                     </p>
-                    <p className="mt-2 text-xs text-zinc-400">
+                    <p className="mt-2 text-xs text-zinc-600">
                       Experience-layer analytics from your shared sessions and memory notes.
                     </p>
                   </div>
 
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Hours together</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.totalSharedHours.toFixed(1)}h</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-pink-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Hours together</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{relationshipIntel.totalSharedHours.toFixed(1)}h</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Shared streak</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.streakDays} day{relationshipIntel.streakDays === 1 ? "" : "s"}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Shared streak</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{relationshipIntel.streakDays} day{relationshipIntel.streakDays === 1 ? "" : "s"}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Longest session</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Longest session</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">
                         {relationshipIntel.longestSessionMinutes > 0 ? `${relationshipIntel.longestSessionMinutes}m` : "Not set"}
                       </p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Dominant genre</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{relationshipIntel.topGenre}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-purple-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Dominant genre</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{relationshipIntel.topGenre}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">AI-generated story</p>
-                    <p className="text-sm leading-7 text-zinc-300">{relationshipIntel.yearStory}</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">AI-generated story</p>
+                    <p className="text-sm leading-7 text-zinc-600">{relationshipIntel.yearStory}</p>
                     <div className="mt-3 space-y-1.5">
                       {relationshipIntel.relationshipInsights.map((line, idx) => (
-                        <p key={`insight-${idx}`} className="text-xs leading-6 text-zinc-500">
+                        <p key={`insight-${idx}`} className="text-xs leading-6 text-zinc-600">
                           {line}
                         </p>
                       ))}
                     </div>
-                    <p className="mt-4 text-xs text-amber-300">{relationshipIntel.anniversaryText}</p>
+                    <p className="mt-4 text-xs text-pink-600">{relationshipIntel.anniversaryText}</p>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Compatibility index</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Compatibility index</p>
                     {relationshipIntel.compatibilityCards.length === 0 && (
-                      <p className="text-xs text-zinc-500">Add friends and save shared memories to unlock compatibility scoring.</p>
+                      <p className="text-xs text-zinc-600">Add friends and save shared memories to unlock compatibility scoring.</p>
                     )}
                     <div className="space-y-2">
                       {relationshipIntel.compatibilityCards.slice(0, 6).map((item) => (
-                        <div key={item.uid} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <div key={item.uid} className="rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-zinc-100">{item.label}</p>
+                            <p className="text-sm text-zinc-800">{item.label}</p>
                             <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-100">
                               {item.compatibilityIndex}%
                             </span>
                           </div>
-                          <p className="mt-2 text-xs text-zinc-500">
+                          <p className="mt-2 text-xs text-zinc-600">
                             {item.hours.toFixed(1)}h together · {item.streakDays}d streak · Genre: {item.favoriteGenre} · Mood: {item.favoriteMood}
                           </p>
                         </div>
@@ -1940,16 +1940,16 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Emotional timeline</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Emotional timeline</p>
                     {relationshipIntel.timeline.length === 0 && (
-                      <p className="text-xs text-zinc-500">No timeline yet. Save a shared memory with mood, timestamp, and reactions.</p>
+                      <p className="text-xs text-zinc-600">No timeline yet. Save a shared memory with mood, timestamp, and reactions.</p>
                     )}
                     <div className="space-y-2">
                       {relationshipIntel.timeline.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                          <p className="text-sm text-zinc-100">{item.note}</p>
-                          <p className="mt-2 text-xs text-zinc-500">
+                        <div key={item.id} className="rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
+                          <p className="text-sm text-zinc-800">{item.note}</p>
+                          <p className="mt-2 text-xs text-zinc-600">
                             {item.label} · {new Date(item.date).toLocaleDateString()} · {item.sessionMode}
                             {item.genre ? ` · ${item.genre}` : ""}
                             {item.highlightTimestamp ? ` · Highlight ${item.highlightTimestamp}` : ""}
@@ -1963,15 +1963,15 @@ export default function DashboardView({
                   </div>
 
                   <div className="grid lg:grid-cols-2 gap-4">
-                    <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Milestone badges</p>
+                    <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Milestone badges</p>
                       <div className="flex flex-wrap gap-2">
                         {relationshipIntel.milestones.map((badge) => (
                           <span
                             key={badge.key}
                             className={`rounded-full border px-3 py-1.5 text-xs ${badge.achieved
-                              ? "border-amber-400/25 bg-amber-400/10 text-amber-100"
-                              : "border-white/10 bg-white/[0.03] text-zinc-500"
+                              ? "border-pink-400/25 bg-pink-400/10 text-purple-700"
+                              : "border-pink-200 bg-white/[0.03] text-zinc-600"
                             }`}
                           >
                             {badge.achieved ? "Unlocked" : "Locked"} · {badge.label}
@@ -1980,14 +1980,14 @@ export default function DashboardView({
                       </div>
                     </div>
 
-                    <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Mode expansion tracker</p>
-                      <p className="text-xs text-zinc-500">Podcast sync, co-reading, and study sessions are now tracked alongside watch sessions.</p>
+                    <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                      <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Mode expansion tracker</p>
+                      <p className="text-xs text-zinc-600">Podcast sync, co-reading, and study sessions are now tracked alongside watch sessions.</p>
                       <div className="mt-3 space-y-2">
                         {relationshipIntel.modeUsage.map((mode) => (
-                          <div key={mode.mode} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                            <span className="text-sm text-zinc-200">{mode.label}</span>
-                            <span className="text-xs text-zinc-400">{mode.count} memories</span>
+                          <div key={mode.mode} className="flex items-center justify-between rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
+                            <span className="text-sm text-zinc-700">{mode.label}</span>
+                            <span className="text-xs text-zinc-600">{mode.count} memories</span>
                           </div>
                         ))}
                       </div>
@@ -1999,46 +1999,46 @@ export default function DashboardView({
               {/* Notifications tab expands the compact header feed into a full inbox with room-join actions. */}
               {tab === "notifications" && (
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-amber-400/10 via-white/[0.04] to-violet-500/10 p-5 shadow-lg shadow-black/25">
+                  <div className="rounded-[28px] border border-pink-200 bg-gradient-to-br from-pink-400/10 via-white/[0.04] to-purple-500/10 p-5 shadow-lg shadow-black/25">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
-                        <Bell size={14} className="text-amber-300" />
+                      <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">
+                        <Bell size={14} className="text-pink-600" />
                         Notifications
                       </p>
                       <button
                         type="button"
                         onClick={onMarkAllNotificationsRead}
                         disabled={notificationBusy || notificationsUnread === 0}
-                        className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-full border border-pink-200 bg-white/[0.03] px-3 py-2 text-xs text-zinc-600 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Mark all read
                       </button>
                     </div>
-                    <p className="mt-2 text-xs text-zinc-400">
+                    <p className="mt-2 text-xs text-zinc-600">
                       Friend requests, room invites, and social updates.
                     </p>
                   </div>
 
                   {(incomingRequests.length > 0 || (invites?.length || 0) > 0) && (
-                    <div className="space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Action required</p>
+                    <div className="space-y-3 rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Action required</p>
                       {incomingRequests.map((item) => (
-                        <div key={`notif-incoming-${item.uid}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                          <p className="text-sm text-zinc-100">
+                        <div key={`notif-incoming-${item.uid}`} className="rounded-2xl border border-pink-200 bg-white/[0.03] p-4">
+                          <p className="text-sm text-zinc-800">
                             @{item.username || "user"} sent you a friend request
                           </p>
                           <div className="mt-3 flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => onRespondRequest(item.uid, "accept")}
-                              className="rounded-full bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:bg-emerald-400"
+                              className="rounded-full bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:bg-emerald-400"
                             >
                               Accept
                             </button>
                             <button
                               type="button"
                               onClick={() => onRespondRequest(item.uid, "reject")}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
+                              className="rounded-full border border-pink-200 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-800 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08]"
                             >
                               Decline
                             </button>
@@ -2046,15 +2046,15 @@ export default function DashboardView({
                         </div>
                       ))}
                       {(invites || []).map((invite) => (
-                        <div key={`notif-invite-${invite.id}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                          <p className="text-sm text-zinc-100">
+                        <div key={`notif-invite-${invite.id}`} className="rounded-2xl border border-pink-200 bg-white/[0.03] p-4">
+                          <p className="text-sm text-zinc-800">
                             {invite.fromUsername ? `@${invite.fromUsername}` : invite.fromName} invited you
                           </p>
-                          <p className="mt-2 font-mono text-xs text-zinc-500">{invite.roomCode}</p>
+                          <p className="mt-2 font-mono text-xs text-zinc-600">{invite.roomCode}</p>
                           <button
                             type="button"
                             onClick={() => onAcceptInvite?.(invite)}
-                            className="mt-3 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
+                            className="mt-3 rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300"
                           >
                             Join room
                           </button>
@@ -2065,23 +2065,23 @@ export default function DashboardView({
 
                   <div className="space-y-2">
                     {notifications.length === 0 && (
-                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-500 shadow-lg shadow-black/25">
+                      <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 text-sm text-zinc-600 shadow-lg shadow-black/25">
                         No notifications yet.
                       </div>
                     )}
                     {notifications.map((item) => (
-                      <div key={`notif-${item.id}`} className={`rounded-[24px] border p-4 shadow-lg shadow-black/20 ${item.isRead ? "border-white/5 bg-white/[0.02]" : "border-white/10 bg-white/[0.05]"}`}>
-                        <p className={`text-sm ${item.isRead ? "text-zinc-400" : "text-zinc-100"}`}>
+                      <div key={`notif-${item.id}`} className={`rounded-[24px] border p-4 shadow-lg shadow-black/20 ${item.isRead ? "border-pink-100 bg-white/[0.02]" : "border-pink-200 bg-white/[0.05]"}`}>
+                        <p className={`text-sm ${item.isRead ? "text-zinc-600" : "text-zinc-800"}`}>
                           {notificationLabel(item)}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <p className="text-xs text-zinc-500">{fmtRelativeTime(item.createdAt)}</p>
+                          <p className="text-xs text-zinc-600">{fmtRelativeTime(item.createdAt)}</p>
                           <div className="flex items-center gap-2">
                             {item.type === "room_invite" && item.roomCode && (
                               <button
                                 type="button"
                                 onClick={() => onJoinRoomFromNotification(item)}
-                                className="rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 px-3.5 py-2 text-xs font-semibold text-zinc-950 transition-all duration-200 hover:from-amber-300 hover:via-orange-300 hover:to-amber-200"
+                                className="rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-500 to-pink-300 px-3.5 py-2 text-xs font-semibold text-white transition-all duration-200 hover:from-pink-300 hover:via-fuchsia-400 hover:to-purple-300"
                               >
                                 Join
                               </button>
@@ -2091,7 +2091,7 @@ export default function DashboardView({
                                 type="button"
                                 onClick={() => onMarkNotificationRead(item.id)}
                                 disabled={notificationBusy}
-                                className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-100 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="rounded-full border border-pink-200 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-800 transition-all duration-200 hover:border-white/15 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
                               >
                                 Mark read
                               </button>
@@ -2107,26 +2107,26 @@ export default function DashboardView({
               {/* Activity tab is the user's personal audit/history feed. */}
               {tab === "activity" && (
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-violet-500/10 p-5 shadow-lg shadow-black/25">
-                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
-                      <Bell size={14} className="text-amber-300" />
+                  <div className="rounded-[28px] border border-pink-200 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-purple-500/10 p-5 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">
+                      <Bell size={14} className="text-pink-600" />
                       Your activity
                     </p>
-                    <p className="mt-2 text-xs text-zinc-400">
+                    <p className="mt-2 text-xs text-zinc-600">
                       Recent account actions, invites, and room activity.
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     {activityFeed.length === 0 && (
-                      <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-500 shadow-lg shadow-black/25">
+                      <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 text-sm text-zinc-600 shadow-lg shadow-black/25">
                         No activity yet.
                       </div>
                     )}
                     {activityFeed.map((item, idx) => (
-                      <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 shadow-lg shadow-black/20">
-                        <p className="text-sm text-zinc-100 capitalize">{activityLabel(item)}</p>
-                        <p className="mt-2 text-xs text-zinc-500">
+                      <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-[24px] border border-pink-200 bg-white/[0.03] p-4 shadow-lg shadow-black/20">
+                        <p className="text-sm text-zinc-800 capitalize">{activityLabel(item)}</p>
+                        <p className="mt-2 text-xs text-zinc-600">
                           {item.roomCode ? `Room ${item.roomCode} · ` : ""}
                           {fmtRelativeTime(item.occurredAt)}
                         </p>
@@ -2140,40 +2140,40 @@ export default function DashboardView({
               {tab === "metadata" && (
                 <div className="space-y-4">
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Users</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.users ?? 0}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Users</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{projectOverview.counts?.users ?? 0}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-amber-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Rooms / Active</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-pink-400/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Rooms / Active</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">
                         {(projectOverview.counts?.rooms ?? 0)} / {(projectOverview.counts?.activeRooms ?? 0)}
                       </p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Relationships</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.relationships ?? 0}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Relationships</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{projectOverview.counts?.relationships ?? 0}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-violet-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Shared Memories</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.sharedMemories ?? 0}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-purple-500/10 via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Shared Memories</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{projectOverview.counts?.sharedMemories ?? 0}</p>
                     </div>
-                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
-                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Unread notifications</p>
-                      <p className="mt-2 text-lg font-semibold text-zinc-100">{projectOverview.counts?.notifications ?? 0}</p>
+                    <div className="rounded-[24px] border border-pink-200 bg-gradient-to-b from-white/[0.08] via-white/[0.04] to-white/[0.02] p-4 shadow-lg shadow-black/25">
+                      <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">Unread notifications</p>
+                      <p className="mt-2 text-lg font-semibold text-zinc-800">{projectOverview.counts?.notifications ?? 0}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-lg shadow-black/25">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Recent activity (you)</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 shadow-lg shadow-black/25">
+                    <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Recent activity (you)</p>
                     {(projectOverview.recentActivity || []).length === 0 && (
-                      <p className="text-sm text-zinc-500">No activity yet.</p>
+                      <p className="text-sm text-zinc-600">No activity yet.</p>
                     )}
                     <div className="space-y-2">
                       {(projectOverview.recentActivity || []).map((item, idx) => (
-                        <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                          <p className="text-sm text-zinc-100">{item.type}</p>
-                          <p className="mt-2 text-xs text-zinc-500">
+                        <div key={`${item.type}-${item.occurredAt}-${idx}`} className="rounded-2xl border border-pink-200 bg-white/[0.03] px-4 py-3">
+                          <p className="text-sm text-zinc-800">{item.type}</p>
+                          <p className="mt-2 text-xs text-zinc-600">
                             {item.roomCode ? `Room ${item.roomCode} · ` : ""}
                             {item.occurredAt ? new Date(item.occurredAt).toLocaleString() : ""}
                           </p>
@@ -2182,9 +2182,9 @@ export default function DashboardView({
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 shadow-lg shadow-black/25">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">Architecture note</p>
-                    <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  <div className="rounded-[28px] border border-pink-200 bg-gradient-to-b from-white/[0.06] to-white/[0.03] p-5 shadow-lg shadow-black/25">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">Architecture note</p>
+                    <p className="mt-3 text-sm leading-7 text-zinc-600">
                       Sync state remains in live server memory for low-latency control. Long-term entities are stored in MongoDB:
                       users, rooms, participants, relationships, invites, activity, video metadata, and shared memories.
                     </p>
@@ -2195,12 +2195,12 @@ export default function DashboardView({
               {/* Settings tab exposes privacy toggles, browser push preference, and sign-out. */}
               {tab === "settings" && (
                 <div className="space-y-4">
-                  <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-violet-500/10 p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
-                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100">
-                      <Ghost size={14} className="text-amber-300" />
+                  <div className="rounded-[28px] border border-pink-200 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-purple-500/10 p-5 text-sm text-zinc-600 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800">
+                      <Ghost size={14} className="text-pink-600" />
                       Privacy and alerts
                     </p>
-                    <p className="mt-2 text-xs text-zinc-400">Tune notifications and visibility the way you like.</p>
+                    <p className="mt-2 text-xs text-zinc-600">Tune notifications and visibility the way you like.</p>
                   </div>
                   <Toggle
                     checked={!!profile?.settings?.inviteNotifications}
@@ -2227,8 +2227,8 @@ export default function DashboardView({
                     help="Get browser alerts for invites and friend requests"
                   />
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/20 p-5 text-sm text-zinc-400 shadow-lg shadow-black/25">
-                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-100"><Sparkles size={14} className="text-amber-300" /> Suggested next upgrades</p>
+                  <div className="rounded-[28px] border border-pink-200 bg-pink-50/50 p-5 text-sm text-zinc-600 shadow-lg shadow-black/25">
+                    <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-800"><Sparkles size={14} className="text-pink-600" /> Suggested next upgrades</p>
                     <p className="mt-3 leading-7">1. Add mobile app with FCM push for true background notifications.</p>
                     <p className="leading-7">2. Add couple anniversaries + relationship timeline highlights.</p>
                     <p className="leading-7">3. Add AI picks based on your shared watchlist taste.</p>

@@ -1,5 +1,5 @@
 /**
- * Browser push-notification preference management for Lumiere. This hook keeps
+ * Browser push-notification preference management for 2-GATHER. This hook keeps
  * the browser permission flow and the locally stored opt-in preference in one
  * place so room, invite, and social toasts can optionally surface as system
  * notifications too.
@@ -32,7 +32,7 @@ export function usePushNotifications({ addToast, avatarUrl }) {
       new Notification(title,{
         body,
         icon:avatarUrl||undefined,
-        tag:"lumiere-social",
+        tag:"2-gather-social",
       });
     }catch(_){}
   },[browserPushEnabled,avatarUrl]);

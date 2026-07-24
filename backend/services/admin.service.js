@@ -1,6 +1,6 @@
 /**
  * Provides administrator-facing project summary data.
- * The service aggregates counts and recent activity across the main Lumiere
+ * The service aggregates counts and recent activity across the main 2-GATHER
  * domains and is intended for routes guarded by the admin authorization check.
  */
 'use strict'

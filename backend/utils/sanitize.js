@@ -1,5 +1,5 @@
 /**
- * Central sanitization helpers for the Lumiere backend. This file keeps the
+ * Central sanitization helpers for the 2-GATHER backend. This file keeps the
  * app's input-cleaning rules in one place so routes, services, and sockets all
  * strip dangerous characters, normalize whitespace, and enforce field-specific
  * length limits consistently before storing or broadcasting user input.

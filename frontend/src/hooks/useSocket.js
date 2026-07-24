@@ -1,5 +1,5 @@
 /**
- * Shared Socket.IO connection manager for the frontend. Lumiere keeps one live
+ * Shared Socket.IO connection manager for the frontend. 2-GATHER keeps one live
  * socket client across screens, so this hook owns the singleton socket ref,
  * connection state, and the first layer of room/social event listeners.
  */
@@ -170,7 +170,7 @@ export function useSocket({
         return [{id,...invite},...prev].slice(0,8);
       });
       addToast(`Invite from ${invite.fromUsername?`@${invite.fromUsername}`:invite.fromName}`,"info");
-      pushNotifyRef.current("Lumiere invite",`${invite.fromUsername?`@${invite.fromUsername}`:invite.fromName} invited you to room ${invite.roomCode}`);
+      pushNotifyRef.current("2-GATHER invite",`${invite.fromUsername?`@${invite.fromUsername}`:invite.fromName} invited you to room ${invite.roomCode}`);
     });
     // `friend_request_received` inserts a newly received friend request into local state.
     socket.on("friend_request_received",({from})=>{
@@ -196,7 +196,7 @@ export function useSocket({
         setIncomingFriendRequests(prev=>prev.filter(item=>item.uid!==friend.uid));
       }
       addToast(`${label} is now your friend`,"success");
-      pushNotifyRef.current("New friend",`${label} is now your friend on Lumiere`);
+      pushNotifyRef.current("New friend",`${label} is now your friend on 2-GATHER`);
     });
     // `couple_space_updated` announces shared watchlist changes made by the partner.
     socket.on("couple_space_updated",({partnerUsername,partnerName,itemTitle,action})=>{

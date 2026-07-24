@@ -1,5 +1,5 @@
 /**
- * Shared runtime helpers for Lumiere socket rooms. This file collects room
+ * Shared runtime helpers for 2-GATHER socket rooms. This file collects room
  * lifecycle helpers, user-management utilities, disconnect grace handling,
  * playback/read-state synchronization logic, and emit helpers used across the
  * room, video, and connection socket modules.

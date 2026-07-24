@@ -1,5 +1,5 @@
 /**
- * server.js is the thin Lumiere backend bootstrap after the refactor. It wires
+ * server.js is the thin 2-GATHER backend bootstrap after the refactor. It wires
  * together config, utilities, models, services, middleware, routers, and the
  * socket layer, but intentionally leaves business logic inside the extracted
  * services/routes/sockets modules.
@@ -190,7 +190,7 @@ const {
   finalizeVideoSession,
 } = require("./services/room.service.js");
 // Middleware handles request auth and last-resort error serialization.
-const admin = require("./config/firebase.js");
+const jwt = require("jsonwebtoken");
 const { requireHttpAuth } = require("./middleware/auth.js");
 const { errorHandler } = require("./middleware/errorHandler.js");
 // Socket imports provide shared runtime maps, utility helpers, the shared io
@@ -229,6 +229,7 @@ const roomsRouter = require("./routes/rooms.routes.js");
 const notificationsRouter = require("./routes/notifications.routes.js");
 const insightsRouter = require("./routes/insights.routes.js");
 const adminRouter = require("./routes/admin.routes.js");
+const authRouter = require("./routes/auth.routes.js");
 
 const express = require("express");
 const http = require("http");
@@ -275,6 +276,7 @@ app.use("/api", roomsRouter);
 app.use("/api", notificationsRouter);
 app.use("/api", insightsRouter);
 app.use("/api", adminRouter);
+app.use("/api/auth", authRouter);
 app.use(errorHandler);
 
 // http.createServer wraps Express so Socket.IO can share the same HTTP server.
@@ -313,13 +315,14 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error("Authentication token missing"));
 
-    const decoded = await admin.auth().verifyIdToken(token);
+    const JWT_SECRET = process.env.JWT_SECRET || '2-gather-super-secret-key-for-dev';
+    const decoded = jwt.verify(token, JWT_SECRET);
     const identity = {
       uid: decoded.uid,
       name: decoded.name || decoded.email || "Anonymous",
       email: decoded.email || "",
-      phoneNumber: decoded.phone_number || "",
-      photoURL: decoded.picture || "",
+      phoneNumber: "",
+      photoURL: "",
     };
 
     let profile = await ensureProfile(identity);
@@ -429,7 +432,7 @@ async function start() {
   await initMongo();
 
   httpServer.listen(PORT, () => {
-    log(`Lumiere server running on port ${PORT}`);
+    log(`2-GATHER server running on port ${PORT}`);
     log(`Client origin: ${CLIENT_ORIGIN}`);
     if (CLIENT_ORIGINS.length > 1) {
       log(`Allowed origins: ${CLIENT_ORIGINS.join(", ")}`);

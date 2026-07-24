@@ -1,5 +1,5 @@
 /**
- * MongoDB bootstrap and model registry for the Lumiere backend. This file owns
+ * MongoDB bootstrap and model registry for the 2-GATHER backend. This file owns
  * the mongoose connection lifecycle, exposes a live connection-state getter,
  * and re-exports every model so the rest of the codebase can depend on one
  * stable import path even when MongoDB is unavailable.
@@ -15,7 +15,7 @@ let mongoose = null
 try {
   mongoose = require('mongoose')
 } catch {
-  console.warn('[lumiere] [db] mongoose not installed. Running with in-memory fallback.')
+  console.warn('[2-gather] [db] mongoose not installed. Running with in-memory fallback.')
 }
 
 // This flag changes after startup, so it must stay mutable. Callers read it
@@ -103,7 +103,7 @@ async function initMongo() {
   if (!mongoose) return
   // If no URI is configured, skip connection attempts and stay in memory mode.
   if (!MONGODB_URI) {
-    console.warn('[lumiere] [db] MONGODB_URI missing. Using in-memory fallback for social features.')
+    console.warn('[2-gather] [db] MONGODB_URI missing. Using in-memory fallback for social features.')
     return
   }
 
@@ -114,12 +114,12 @@ async function initMongo() {
       serverSelectionTimeoutMS: 6000,
     })
     mongoConnected = true
-    console.log('[lumiere] [db] MongoDB connected')
+    console.log('[2-gather] [db] MongoDB connected')
   } catch (err) {
     // The backend intentionally degrades to the volatile memory store so local
     // development or partial outages do not stop the whole server from booting.
     mongoConnected = false
-    console.error('[lumiere] [db] MongoDB connection failed. Using in-memory fallback:', err.message)
+    console.error('[2-gather] [db] MongoDB connection failed. Using in-memory fallback:', err.message)
   }
 }
 

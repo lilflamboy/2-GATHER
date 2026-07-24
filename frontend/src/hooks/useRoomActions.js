@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from "react";
-import { auth } from "../firebase.js";
+
 import { normalizeCode } from "../utils/url";
 import { clearSession } from "../utils/storage";
 
@@ -193,7 +193,8 @@ export function useRoomActions({
     setRoomContentUrl("");setRoomContentType("unknown");setRoomCreatedBy("");
     setRoomMaxParticipants(6);setInitialVideoMetadata(null);setInitialAudioState(null);setInitialDocument(null);setInitialReadingState(null);setInitialReadingPage(1);
     setRoomPending(false);
-    auth.currentUser?.getIdToken().then(token=>connectSocket(token,username));
+    const token = localStorage.getItem("2-gather_token");
+    if (token) connectSocket(token, username);
   },[cleanupSocket,connectSocket,username]);
 
   return {

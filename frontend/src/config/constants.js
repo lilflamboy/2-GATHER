@@ -1,5 +1,5 @@
 /**
- * Central frontend constants for Lumiere. Keeping connection settings, storage
+ * Central frontend constants for 2-GATHER. Keeping connection settings, storage
  * keys, UI limits, WebRTC config, and quick-reaction defaults here avoids
  * scattering shared values across hooks and components.
  */
@@ -33,9 +33,9 @@ const MAX_VIDEO_TIME = 86400;
 // Storage keys for room/session bootstrap. Session storage keeps the active
 // room code scoped to one tab, while local storage preserves username and push
 // preferences across browser restarts.
-const SESSION_KEY = "lumiere_room";
-const USERNAME_KEY = "lumiere_username";
-const PUSH_PREF_KEY = "lumiere_push_notifications";
+const SESSION_KEY = "2-gather_room";
+const USERNAME_KEY = "2-gather_username";
+const PUSH_PREF_KEY = "2-gather_push_notifications";
 
 // Quick-reaction emoji shortcuts shown in the chat UI for one-tap responses.
 const QUICK_EMOJIS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];

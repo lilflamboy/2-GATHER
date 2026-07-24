@@ -4,7 +4,7 @@
     "react-router-dom": "^7.13.0",
     "socket.io-client": "^4.8.3"
   },
-  "name": "lumiere-project-4.04.47-pm",
+  "name": "2-gather-project-4.04.47-pm",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

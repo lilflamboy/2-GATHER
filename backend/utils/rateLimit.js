@@ -1,5 +1,5 @@
 /**
- * Sliding-window rate limiting helpers for the Lumiere backend. These guards
+ * Sliding-window rate limiting helpers for the 2-GATHER backend. These guards
  * protect normal HTTP traffic, auth-related HTTP traffic, and noisy realtime
  * socket events with separate in-memory stores so bursts in one area do not
  * starve unrelated traffic.

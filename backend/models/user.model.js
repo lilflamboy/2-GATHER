@@ -1,7 +1,7 @@
 /**
  * UserProfile documents store the backend-facing social identity for each
  * Firebase account. Firebase Auth proves who the user is, while this document
- * stores Lumiere-specific profile fields, friend graph state, preferences, and
+ * stores 2-GATHER-specific profile fields, friend graph state, preferences, and
  * aggregate watch statistics.
  */
 
@@ -23,6 +23,7 @@ try {
       displayName: { type: String, default: "" }, // Human-readable name shown throughout the app.
       photoURL: { type: String, default: "" }, // Avatar URL or data URI chosen by the user.
       email: { type: String, default: "" }, // Contact email mirrored from Firebase or later profile updates.
+      passwordHash: { type: String, default: "" }, // Hashed password for custom JWT authentication
       phoneNumber: { type: String, default: "" }, // Optional phone number mirrored from Firebase when available.
       bio: { type: String, default: "" }, // Short profile bio shown in dashboards and profile views.
       friends: { type: [String], default: [] }, // Accepted friend uid list for the user's side of the friend graph.

@@ -1,7 +1,7 @@
 'use strict'
 
 /**
- * CORS configuration helpers for the Lumiere backend. This file decides which
+ * CORS configuration helpers for the 2-GATHER backend. This file decides which
  * browser origins are allowed to call the API so cross-origin requests are
  * explicit, predictable, and easy to audit.
  */

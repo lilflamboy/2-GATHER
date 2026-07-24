@@ -7,8 +7,7 @@
 import { useEffect, useRef } from "react";
 import { Film } from "lucide-react";
 import "./App.css";
-// Firebase auth is read here so App can gate top-level views on the active session.
-import { auth } from "./firebase.js";
+// Firebase was removed; using custom JWT auth now.
 // Views render the major application surfaces selected by the top-level state machine.
 import DashboardView from "./views/DashboardView.jsx";
 import LandingView from "./views/LandingView";
@@ -163,22 +162,19 @@ export default function App(){
   // Refresh friend requests and lobby stats when an authenticated user lands back in the lobby.
   useEffect(()=>{
     if(!authSession.user||room.view!=="lobby")return;
-    auth.currentUser?.getIdToken()
-      .then(token=>{
-        if(!token)return;
-        friends.syncIncomingFriendRequests(token,{silent:true});
-        lobbyStats.syncLobbyMemoryStats(token,{silent:true});
-      })
-      .catch(()=>{});
+    const token = localStorage.getItem("2-gather_token");
+    if(!token)return;
+    friends.syncIncomingFriendRequests(token,{silent:true});
+    lobbyStats.syncLobbyMemoryStats(token,{silent:true});
   },[authSession.user,room.view,friends.syncIncomingFriendRequests,lobbyStats.syncLobbyMemoryStats]);
 
   // The loading gate stays first so no intermediate auth view flashes before Firebase finishes restoring the session.
   if(authSession.authLoading)return(
     <div className="min-h-screen bg-screen flex items-center justify-center">
       <div className="grain-overlay"/>
-      <div className="relative z-10 flex items-center justify-center rounded-[1.75rem] border border-amber-400/25 bg-gradient-to-br from-amber-500/20 via-amber-400/10 to-violet-500/15 p-5 shadow-[0_24px_80px_rgba(245,158,11,0.16)]">
-        <Film size={34} className="animate-pulse text-amber-300"/>
-        <p className="lumiere-loader-label">Connecting to the Light...</p>
+      <div className="relative z-10 flex items-center justify-center rounded-[1.75rem] border border-pink-400/25 bg-gradient-to-br from-purple-400/20 via-pink-400/10 to-purple-500/15 p-5 shadow-[0_24px_80px_rgba(245,158,11,0.16)]">
+        <Film size={34} className="animate-pulse text-pink-600"/>
+        <p className="2-gather-loader-label">Connecting to the Light...</p>
       </div>
     </div>
   );
@@ -208,7 +204,7 @@ export default function App(){
       <>
       <Toasts toasts={toasts} removeToast={removeToast}/>
       {/* Signed-out users stay on the public landing/auth screen. */}
-      {!authSession.user&&<LandingView addToast={addToast}/>}
+      {!authSession.user&&<LandingView addToast={addToast} onLoginSuccess={authSession.handleLoginSuccess} />}
       {/* The lobby is the authenticated home screen and the only place rooms are created or joined. */}
       {authSession.user&&room.view==="lobby"&&(
         <LobbyView avatarUrl={authSession.avatarUrl} username={authSession.username} onCreateRoom={roomActions.handleCreateRoom}

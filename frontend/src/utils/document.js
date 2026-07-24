@@ -1,5 +1,5 @@
 /**
- * Helpers for Lumiere's co-reading document flow. Shared documents in Lumiere
+ * Helpers for 2-GATHER's co-reading document flow. Shared documents in 2-GATHER
  * are usually PDFs that room members load together, so these helpers normalize
  * names, generate signatures, and recognize backend upload URLs.
  */
@@ -29,7 +29,7 @@ const guessDocumentFileName = (value) => {
 const buildDocumentSignature = (fileName, fileSize) => `${String(fileName || "shared-document.pdf").trim()}:${Math.max(0, Math.floor(Number(fileSize) || 0))}`;
 
 /**
- * Tests whether a URL points at Lumiere's temporary shared-upload endpoint.
+ * Tests whether a URL points at 2-GATHER's temporary shared-upload endpoint.
  * Shared upload URLs use the `/api/uploads/document/:documentId` backend path.
  * @param {string} value - Candidate URL string.
  * @returns {boolean} True when the URL matches the shared upload route pattern.

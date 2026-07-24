@@ -49,18 +49,18 @@ function EmojiPickerPortal({pos,onReact,onClose,messageId}){
       style={{position:"fixed",top:pos.top,left:pos.left,zIndex:99999,pointerEvents:"all"}}
       className="flex flex-col items-start gap-2.5"
     >
-      <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-zinc-950/95 px-2 py-1.5 shadow-[0_28px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+      <div className="flex items-center gap-1.5 rounded-full border border-pink-200 bg-white/95 px-2 py-1.5 shadow-[0_28px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl">
         {/* Quick emojis keep the most common reactions one tap away. */}
         {QUICK_EMOJIS.map(e=>(
           <button key={e}
             onClick={()=>handlePick(e)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-xl transition-all duration-200 hover:border-amber-400/15 hover:bg-amber-500/10 active:scale-90">
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-xl transition-all duration-200 hover:border-pink-400/15 hover:bg-purple-400/10 active:scale-90">
             {e}
           </button>
         ))}
         <button
           onClick={()=>setShowFull(v=>!v)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-lg text-zinc-200 transition-all duration-200 hover:border-violet-400/20 hover:bg-violet-500/10"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-pink-200 bg-white/[0.03] text-lg text-zinc-700 transition-all duration-200 hover:border-pink-400/20 hover:bg-purple-500/10"
           title="More reactions"
         >
           +
@@ -68,7 +68,7 @@ function EmojiPickerPortal({pos,onReact,onClose,messageId}){
       </div>
       {/* The full picker is only mounted when requested to keep the chat UI light. */}
       {showFull&&(
-        <div className="rounded-[1.4rem] border border-white/10 bg-zinc-950/95 p-2 shadow-[0_32px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+        <div className="rounded-[1.4rem] border border-pink-200 bg-white/95 p-2 shadow-[0_32px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl">
           <Picker
             data={data}
             theme="dark"

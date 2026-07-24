@@ -1,5 +1,5 @@
 /**
- * Manages user profiles for the Lumiere backend.
+ * Manages user profiles for the 2-GATHER backend.
  * Every operation follows the same dual-path pattern: use MongoDB when
  * `getMongoConnected()` is true, otherwise read and write the mirrored
  * in-memory store so the app can continue operating in degraded mode.

@@ -6,7 +6,7 @@
  */
 'use strict'
 
-const admin = require('../config/firebase.js')
+const jwt = require('jsonwebtoken')
 const { ensureProfile } =
   require('../services/profile.service.js')
 const {
@@ -26,7 +26,7 @@ const {
  * is called so every authenticated request has a synchronized profile record,
  * and then `req.authUser` and `req.profile` are attached for downstream routes.
  * `req.authUser` contains the trusted Firebase identity fields, while
- * `req.profile` contains the app-level Lumiere profile document.
+ * `req.profile` contains the app-level 2-GATHER profile document.
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
  * @param {Function} next - The next middleware in the Express chain.
@@ -51,18 +51,19 @@ async function requireHttpAuth(req, res, next) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
 
-    // Verify the Firebase ID token and rebuild the app-level identity shape from the decoded claims.
+    // Verify the JWT token and extract the trusted identity fields.
     const token = header.slice(7).trim()
-    const decoded = await admin.auth().verifyIdToken(token)
+    const JWT_SECRET = process.env.JWT_SECRET || '2-gather-super-secret-key-for-dev'
+    const decoded = jwt.verify(token, JWT_SECRET)
     const identity = {
       uid: decoded.uid,
       name: decoded.name || decoded.email || 'Anonymous',
       email: decoded.email || '',
-      phoneNumber: decoded.phone_number || '',
-      photoURL: decoded.picture || '',
+      phoneNumber: '',
+      photoURL: '',
     }
 
-    // Ensure every authenticated request has a synchronized Lumiere profile document.
+    // Ensure every authenticated request has a synchronized 2-GATHER profile document.
     const profile = await ensureProfile(identity)
     req.authUser = identity
     req.profile = profile

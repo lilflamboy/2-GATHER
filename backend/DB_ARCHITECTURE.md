@@ -1,6 +1,6 @@
-# Lumiere MongoDB Architecture
+# FLAMBOYS- STUDIO-SCREEN MongoDB Architecture
 
-Lumiere stores relationship intelligence and memory analytics in MongoDB.
+FLAMBOYS- STUDIO-SCREEN stores relationship intelligence and memory analytics in MongoDB.
 It does not store copyrighted media files or stream payloads.
 
 ## Core collections

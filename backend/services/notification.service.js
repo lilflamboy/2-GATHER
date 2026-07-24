@@ -1,5 +1,5 @@
 /**
- * Manages persistent notification records for the Lumiere backend.
+ * Manages persistent notification records for the 2-GATHER backend.
  * Notifications are the durable counterpart to real-time socket pushes and
  * let clients list, count, and mark message-like events as read later.
  */

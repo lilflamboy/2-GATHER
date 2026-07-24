@@ -1,25 +1,9 @@
-/**
- * Authentication/session bootstrap for the frontend. This hook manages the
- * Firebase identity listener, backend profile hydration, email-verification
- * gating, username setup flow, and the bridge into socket/session startup.
- */
-
 import { useState, useEffect, useCallback } from "react";
-import { onIdTokenChanged, signOut, sendEmailVerification } from "firebase/auth";
-import { auth } from "../firebase.js";
 import { loadSession, loadUsername, saveUsername, clearSession } from "../utils/storage";
 
 const BOOTSTRAP_WARMUP_DELAYS_MS = [1200, 1800, 2000];
-
 const normalizeKnownUsername = (value) => String(value || "").trim().toLowerCase();
 
-/**
- * Creates authenticated session state plus username and verification actions.
- * `onIdTokenChanged` is used instead of `onAuthStateChanged` so token refreshes
- * also run through the same bootstrap logic when backend auth needs a fresh ID token.
- * @param {object} deps - Hook dependencies including API helpers, socket helpers, and state setters.
- * @returns {object} Auth state, derived profile info, and auth-related action helpers.
- */
 export function useAuthSession({
   addToast,
   apiClient,
@@ -45,83 +29,52 @@ export function useAuthSession({
   setIncomingInvites,
   setSavedCode,
 }) {
-  const [user,setUser]=useState(null);
-  const [profile,setProfile]=useState(null);
-  const [username,setUsername]=useState(loadUsername());
-  const [isAdmin,setIsAdmin]=useState(false);
-  const [needUsername,setNeedUsername]=useState(false);
-  const [emailVerificationRequired,setEmailVerificationRequired]=useState(false);
-  const [verificationActionLoading,setVerificationActionLoading]=useState(false);
-  const [authLoading,setAuthLoading]=useState(true);
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [username, setUsername] = useState(loadUsername());
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [needUsername, setNeedUsername] = useState(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
+  const [verificationActionLoading, setVerificationActionLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  /**
-   * Fetches the authenticated user's backend profile from `/api/me`.
-   * @param {string} token - Firebase ID token for the current user.
-   * @param {{ forceTokenRefresh?: boolean, retryDelaysMs?: number[] }} [options={}] - Auth refresh and cold-start retry behavior.
-   * @returns {Promise<any | null>} Backend profile object or null.
-   */
-  const fetchMyProfile=useCallback(async(token,{forceTokenRefresh=false,retryDelaysMs=BOOTSTRAP_WARMUP_DELAYS_MS}={})=>{
-    const data=await apiClient("/api/me",{
-      token,
-      forceTokenRefresh,
-      retryDelaysMs,
-      timeoutMs:5000,
-    });
-    return data.profile||null;
-  },[apiClient]);
+  const fetchMyProfile = useCallback(async (token) => {
+    const data = await apiClient("/api/me", { token, timeoutMs: 5000 });
+    return data.profile || null;
+  }, [apiClient]);
 
-  /**
-   * Bootstraps the full authenticated frontend session from a Firebase user.
-   * This restores the saved room code, loads the backend profile, refreshes
-   * friend/lobby data, and opens the socket connection once a username exists.
-   * @param {import('firebase/auth').User} fbUser - Authenticated Firebase user.
-   * @param {{ forceTokenRefresh?: boolean, silentProfileErrors?: boolean }} [options={}] - Bootstrap behavior flags.
-   * @returns {Promise<void>} Resolves after session state has been hydrated.
-   */
-  const bootstrapAuthenticatedSession=useCallback(async(fbUser,{forceTokenRefresh=false,silentProfileErrors=false}={})=>{
-    // Auth bootstrap keeps backend profile state authoritative: username/admin
-    // flags/friend requests all come from the API before we open realtime state.
-    const initialToken=await fbUser.getIdToken(forceTokenRefresh);
-    let activeToken=initialToken;
-    // Restore the same-tab room code so reconnect/rejoin logic knows which room to resume.
-    const saved=loadSession();
+  const bootstrapAuthenticatedSession = useCallback(async (token, activeUser) => {
+    const saved = loadSession();
     setSavedCode(saved);
 
-    let nextProfile=null;
-    let profileLoadFailed=false;
-    try{
-      nextProfile=await fetchMyProfile(initialToken,{
-        forceTokenRefresh,
-        retryDelaysMs:BOOTSTRAP_WARMUP_DELAYS_MS,
-      });
-      if(auth.currentUser){
-        activeToken=await auth.currentUser.getIdToken();
-      }
-    }catch(error){
-      profileLoadFailed=true;
-      if(!silentProfileErrors){
-        addToast(error.message||"Could not load profile","error");
-      }
+    let nextProfile = null;
+    let profileLoadFailed = false;
+    try {
+      nextProfile = await fetchMyProfile(token);
+    } catch (error) {
+      profileLoadFailed = true;
+      addToast(error.message || "Could not load profile", "error");
     }
-    if(nextProfile){
+
+    if (nextProfile) {
       setProfile(nextProfile);
       setIsAdmin(Boolean(nextProfile?.isAdmin));
     }
 
-    const backendUsername=normalizeKnownUsername(nextProfile?.username);
-    const localUsername=normalizeKnownUsername(loadUsername());
-    const currentUsername=normalizeKnownUsername(username);
-    const resolvedUsername=backendUsername||currentUsername||localUsername;
+    const backendUsername = normalizeKnownUsername(nextProfile?.username);
+    const localUsername = normalizeKnownUsername(loadUsername());
+    const currentUsername = normalizeKnownUsername(username);
+    const resolvedUsername = backendUsername || currentUsername || localUsername;
 
-    if(backendUsername){
+    if (backendUsername) {
       saveUsername(backendUsername);
     }
 
-    await syncIncomingFriendRequests(activeToken,{silent:true});
-    await syncLobbyMemoryStats(activeToken,{silent:true});
+    await syncIncomingFriendRequests(token, { silent: true });
+    await syncLobbyMemoryStats(token, { silent: true });
 
-    if(!resolvedUsername){
-      if(profileLoadFailed){
+    if (!resolvedUsername) {
+      if (profileLoadFailed) {
         setNeedUsername(false);
         socketApiRef.current.cleanupSocket();
         return;
@@ -133,186 +86,111 @@ export function useAuthSession({
 
     setUsername(resolvedUsername);
     setNeedUsername(false);
-    if(!socketApiRef.current.socketRef.current||!socketApiRef.current.socketRef.current.connected){
-      socketApiRef.current.connectSocket(activeToken,resolvedUsername);
+    if (!socketApiRef.current.socketRef.current || !socketApiRef.current.socketRef.current.connected) {
+      socketApiRef.current.connectSocket(token, resolvedUsername);
     }
-  },[fetchMyProfile,syncIncomingFriendRequests,syncLobbyMemoryStats,addToast,socketApiRef,username]);
+  }, [fetchMyProfile, syncIncomingFriendRequests, syncLobbyMemoryStats, addToast, socketApiRef, username]);
 
-  // The ID-token listener is the root auth decision tree: signed out, unverified email, missing username, or fully bootstrapped session.
-  useEffect(()=>{
-    const unsub=onIdTokenChanged(auth,async fbUser=>{
+  // Initial load
+  useEffect(() => {
+    const init = async () => {
       setAuthLoading(true);
-      try{
-        if(fbUser){
-          // Email/password users are gated on verification before room access;
-          // social providers skip this branch and go straight to bootstrap.
-          const isPasswordProvider=fbUser.providerData?.some(p=>p.providerId==="password");
-          if(isPasswordProvider&&!fbUser.emailVerified){
-            setUser(fbUser);
-            setEmailVerificationRequired(true);
-            setNeedUsername(false);
-            setIsAdmin(false);
-            setProfile(null);
-            socketApiRef.current.cleanupSocket();
-            setAuthLoading(false);
-            return;
-          }
-
-          setEmailVerificationRequired(false);
-          setUser(fbUser);
-          await bootstrapAuthenticatedSession(fbUser);
-        }else{
-          // Signing out must clear every room-scoped state bucket so a later
-          // login never inherits stale playback/chat/session data.
-          setUser(null);socketApiRef.current.cleanupSocket();clearSession();setView("lobby");setRoomCode(null);
-          setSavedCode(null);
-          setProfile(null);
-          setRoomType("friends");
-          setSessionMode("watch");
-          setRoomMoodTag("");
-          setRoomContentUrl("");
-          setRoomContentType("unknown");
-          setRoomCreatedBy("");
-          setRoomMaxParticipants(6);
-          setInitialVideoMetadata(null);
-          setInitialAudioState(null);
-          setInitialDocument(null);
-          setInitialReadingState(null);
-          setInitialReadingPage(1);
-          setEmailVerificationRequired(false);
-          setIncomingInvites([]);
-          resetFriendsState();
-          resetLobbyMemoryStats();
-          setIsAdmin(false);
+      const token = localStorage.getItem("2-gather_token");
+      const savedUserStr = localStorage.getItem("2-gather_user");
+      
+      if (token && savedUserStr) {
+        try {
+          const savedUser = JSON.parse(savedUserStr);
+          setUser(savedUser);
+          await bootstrapAuthenticatedSession(token, savedUser);
+        } catch (error) {
+          console.error("Auth init error:", error);
+          handleSignOut();
         }
-      }catch(error){
-        socketApiRef.current.cleanupSocket();
-        addToast(error.message||"Authentication setup failed","error");
+      } else {
+        handleSignOut(false);
       }
       setAuthLoading(false);
-    });
-    return()=>{unsub();socketApiRef.current.cleanupSocket();};
-  },[bootstrapAuthenticatedSession,addToast,socketApiRef]);
+    };
+    init();
+  }, [bootstrapAuthenticatedSession]);
 
-  /**
-   * Claims a username through the backend and reconnects sockets with that username.
-   * @param {string} uname - Desired username entered by the user.
-   * @returns {Promise<{ success: true } | { success: false, status: number | null, message: string }>} Claim outcome for UI-specific error handling.
-   */
-  const handleUsernameSet=useCallback(async(uname)=>{
-    try{
-      const currentUser=auth.currentUser;
-      if(!currentUser){
-        throw new Error("Please sign in first");
-      }
-      // Force a fresh Firebase token for first-time username claims so mobile
-      // devices do not reuse an expired cached token from the auth popup flow.
-      console.log("Attempting username claim with fresh token...");
-      const freshToken=await currentUser.getIdToken(true);
-      const res=await apiClient("/api/username/claim",{
-        method:"POST",
-        body:{username:uname},
-        token:freshToken,
+  const handleLoginSuccess = async (token, loggedInUser) => {
+    setAuthLoading(true);
+    localStorage.setItem("2-gather_token", token);
+    localStorage.setItem("2-gather_user", JSON.stringify(loggedInUser));
+    setUser(loggedInUser);
+    await bootstrapAuthenticatedSession(token, loggedInUser);
+    setAuthLoading(false);
+  };
+
+  const handleUsernameSet = useCallback(async (uname) => {
+    try {
+      const token = localStorage.getItem("2-gather_token");
+      if (!token) throw new Error("Please sign in first");
+      
+      const res = await apiClient("/api/username/claim", {
+        method: "POST",
+        body: { username: uname },
+        token,
       });
-      const claimed=String(res?.profile?.username||uname).trim().toLowerCase();
+      const claimed = String(res?.profile?.username || uname).trim().toLowerCase();
       saveUsername(claimed);
       setUsername(claimed);
       setNeedUsername(false);
-      socketApiRef.current.connectSocket(freshToken,claimed);
-      return { success:true };
-    }catch(e){
-      addToast(e.message||"Could not claim username","error");
+      socketApiRef.current.connectSocket(token, claimed);
+      return { success: true };
+    } catch (e) {
+      addToast(e.message || "Could not claim username", "error");
       return {
-        success:false,
-        status:e?.status ?? e?.response?.status ?? null,
-        message:e?.message||"Could not claim username",
+        success: false,
+        status: e?.status ?? e?.response?.status ?? null,
+        message: e?.message || "Could not claim username",
       };
     }
-  },[apiClient,addToast,socketApiRef]);
+  }, [apiClient, addToast, socketApiRef]);
 
-  /**
-   * Sends another email verification message for the current Firebase user.
-   * @returns {Promise<void>} Resolves after the resend attempt completes.
-   */
-  const handleResendVerification=useCallback(async()=>{
-    const current=auth.currentUser;
-    if(!current){
-      addToast("No authenticated user","error");
-      return;
-    }
-    setVerificationActionLoading(true);
-    try{
-      await sendEmailVerification(current);
-      addToast("Verification email sent again","success");
-    }catch(e){
-      addToast(e.message||"Could not resend verification email","error");
-    }finally{
-      setVerificationActionLoading(false);
-    }
-  },[addToast]);
+  const handleResendVerification = useCallback(async () => {}, []);
+  const handleRefreshVerification = useCallback(async () => {}, []);
 
-  /**
-   * Reloads the current Firebase user and continues bootstrap once verification succeeds.
-   * @returns {Promise<void>} Resolves after verification refresh handling completes.
-   */
-  const handleRefreshVerification=useCallback(async()=>{
-    const current=auth.currentUser;
-    if(!current){
-      addToast("No authenticated user","error");
-      return;
+  const handleSignOut = useCallback((clearStorage = true) => {
+    if (clearStorage) {
+      localStorage.removeItem("2-gather_token");
+      localStorage.removeItem("2-gather_user");
     }
-    setVerificationActionLoading(true);
-    try{
-      await current.reload();
-      const refreshed=auth.currentUser;
-      if(!refreshed?.emailVerified){
-        addToast("Email is still not verified","info");
-        return;
-      }
-      setEmailVerificationRequired(false);
-      setUser(refreshed);
-      await bootstrapAuthenticatedSession(refreshed,{forceTokenRefresh:true});
-      setView("lobby");
-      addToast("Email verified successfully","success");
-    }catch(e){
-      addToast(e.message||"Could not refresh verification status","error");
-    }finally{
-      setVerificationActionLoading(false);
-    }
-  },[bootstrapAuthenticatedSession,addToast]);
-
-  /**
-   * Signs the user out and clears saved room/invite/friend state first.
-   * The saved-room clear prevents a future login from inheriting stale `savedCode`.
-   * @returns {void}
-   */
-  const handleSignOut=useCallback(()=>{
     clearSession();
     setSavedCode(null);
     setIncomingInvites([]);
     resetFriendsState();
     socketApiRef.current.cleanupSocket();
-    signOut(auth);
-  },[resetFriendsState,setSavedCode,socketApiRef]);
+    setUser(null);
+    setView("lobby");
+    setRoomCode(null);
+    setProfile(null);
+    setRoomType("friends");
+    setSessionMode("watch");
+    setRoomMoodTag("");
+    setRoomContentUrl("");
+    setRoomContentType("unknown");
+    setRoomCreatedBy("");
+    setRoomMaxParticipants(6);
+    setInitialVideoMetadata(null);
+    setInitialAudioState(null);
+    setInitialDocument(null);
+    setInitialReadingState(null);
+    setInitialReadingPage(1);
+    setEmailVerificationRequired(false);
+    resetFriendsState();
+    resetLobbyMemoryStats();
+    setIsAdmin(false);
+  }, [resetFriendsState, setSavedCode, socketApiRef]);
 
-  const avatarUrl=profile?.photoURL||user?.photoURL||"";
+  const avatarUrl = profile?.photoURL || user?.photoURL || "";
 
   return {
-    user,
-    setUser,
-    profile,
-    setProfile,
-    username,
-    setUsername,
-    isAdmin,
-    needUsername,
-    emailVerificationRequired,
-    verificationActionLoading,
-    authLoading,
-    avatarUrl,
-    handleUsernameSet,
-    handleResendVerification,
-    handleRefreshVerification,
-    handleSignOut,
-  }
+    user, setUser, profile, setProfile, username, setUsername, isAdmin, needUsername,
+    emailVerificationRequired, verificationActionLoading, authLoading, avatarUrl,
+    handleUsernameSet, handleResendVerification, handleRefreshVerification, handleSignOut,
+    handleLoginSuccess
+  };
 }

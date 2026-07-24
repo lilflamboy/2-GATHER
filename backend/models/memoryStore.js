@@ -1,5 +1,5 @@
 /**
- * In-memory fallback collections for the Lumiere backend. This store is used
+ * In-memory fallback collections for the 2-GATHER backend. This store is used
  * when MongoDB is unavailable so the app can still run basic social and room
  * flows, but every entry is volatile and will be lost on restart. It mirrors
  * the Mongo-backed domains for profiles, relationships, rooms, notifications,

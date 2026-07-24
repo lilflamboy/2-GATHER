@@ -1,5 +1,5 @@
 /**
- * Canonical Socket.IO event names shared across Lumiere's realtime features.
+ * Canonical Socket.IO event names shared across 2-GATHER's realtime features.
  * Centralizing these strings reduces typo bugs between emitters and listeners
  * and gives new events one obvious place to be added in the future.
  */

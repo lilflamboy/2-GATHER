@@ -1,7 +1,7 @@
 <!-- vercel-redeploy-trigger -->
-# 🎬 Lumiere | Real-Time Collaborative Workspace
+# 🎬 FLAMBOYS- STUDIO-SCREEN | Real-Time Collaborative Workspace
 
-**Lumiere** is a full-stack collaborative platform where users can **watch, listen, read, study, and interact together in real time** inside private synchronized rooms.
+**FLAMBOYS- STUDIO-SCREEN** is a full-stack collaborative platform where users can **watch, listen, read, study, and interact together in real time** inside private synchronized rooms.
 
 It combines **Firebase Authentication**, **Socket.IO-powered live collaboration**, **MongoDB-backed social data**, and a polished React frontend to create a premium shared digital space for couples, friends, and families.
 
@@ -9,9 +9,9 @@ It combines **Firebase Authentication**, **Socket.IO-powered live collaboration*
 
 ## 🌐 Live Links
 
-- **Frontend (Vercel):** [https://lumiere-sync.vercel.app](https://lumiere-sync.vercel.app)
-- **Backend (Render):** [https://lumiere-sha4.onrender.com](https://lumiere-sha4.onrender.com)
-- **Backend Health Check:** [https://lumiere-sha4.onrender.com/health](https://lumiere-sha4.onrender.com/health)
+- **Frontend (Vercel):** [https://flamboys-studio-screen-sync.vercel.app](https://flamboys-studio-screen-sync.vercel.app)
+- **Backend (Render):** [https://flamboys-studio-screen-sha4.onrender.com](https://flamboys-studio-screen-sha4.onrender.com)
+- **Backend Health Check:** [https://flamboys-studio-screen-sha4.onrender.com/health](https://flamboys-studio-screen-sha4.onrender.com/health)
 
 ---
 
@@ -53,7 +53,7 @@ It combines **Firebase Authentication**, **Socket.IO-powered live collaboration*
 
 ### 1. Clock Skew in Real-Time Sync
 
-One of the hardest engineering problems in Lumiere was keeping media synchronized across **different devices, browsers, and network conditions**.
+One of the hardest engineering problems in FLAMBOYS- STUDIO-SCREEN was keeping media synchronized across **different devices, browsers, and network conditions**.
 
 To solve this, the room sync flow uses a **shared server clock approach** instead of trusting each device's local playback clock. In the room layer:
 
@@ -162,7 +162,7 @@ This prevented stale-token issues on mobile devices and ensured that both the **
 ## 📁 Project Structure
 
 ```text
-Lumiere/
+FLAMBOYS- STUDIO-SCREEN/
 ├── backend/
 │   ├── config/
 │   ├── middleware/
@@ -193,8 +193,8 @@ Lumiere/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/vishalchauhan-code/lumiere.git lumiere-project
-cd lumiere-project
+git clone https://github.com/vishalchauhan-code/flamboys-studio-screen.git flamboys-studio-screen-project
+cd flamboys-studio-screen-project
 ```
 
 ### 2. Install dependencies
@@ -248,7 +248,7 @@ The current repository keeps the Firebase web-app config inside:
 
 - `frontend/src/firebase.js`
 
-If you want to run Lumiere with your own Firebase project, update that file with your project's client config.
+If you want to run FLAMBOYS- STUDIO-SCREEN with your own Firebase project, update that file with your project's client config.
 
 ### 6. Start the project
 
@@ -315,7 +315,7 @@ npm run build
 Then check that `frontend/dist/index.html` points to:
 
 ```html
-<link rel="icon" type="image/png" href="/lumiere-sync-logo.png" />
+<link rel="icon" type="image/png" href="/flamboys-studio-screen-sync-logo.png" />
 ```
 
 2. Redeploy the frontend on Vercel and clear any previous build cache during redeploy if that option is available in the deployment flow.
@@ -332,14 +332,14 @@ Then check that `frontend/dist/index.html` points to:
 In this project, the expected favicon source is:
 
 ```html
-<link rel="icon" type="image/png" href="/lumiere-sync-logo.png" />
+<link rel="icon" type="image/png" href="/flamboys-studio-screen-sync-logo.png" />
 ```
 
 ---
 
 ## 📌 Project Summary
 
-Lumiere is more than a watch-party app. It is a **real-time collaborative workspace** designed around synchronized shared experiences, social connection, memory-building, and full-stack engineering concepts such as:
+FLAMBOYS- STUDIO-SCREEN is more than a watch-party app. It is a **real-time collaborative workspace** designed around synchronized shared experiences, social connection, memory-building, and full-stack engineering concepts such as:
 
 - distributed state synchronization
 - token-based authentication

@@ -1,5 +1,5 @@
 /**
- * WebRTC signaling handlers for Lumiere room calls. The server forwards offers,
+ * WebRTC signaling handlers for 2-GATHER room calls. The server forwards offers,
  * answers, and ICE candidates so peers can find each other, but the actual
  * media stream still flows directly between clients.
  */

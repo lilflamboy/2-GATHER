@@ -1,5 +1,5 @@
 /**
- * Relationship persistence models for Lumiere's social graph. A Relationship
+ * Relationship persistence models for 2-GATHER's social graph. A Relationship
  * document represents the durable state between two users, while a CoupleSpace
  * document stores their shared watchlist. Both are keyed by pairKey, which is
  * built from the two user ids sorted into a stable `uidA__uidB` format.

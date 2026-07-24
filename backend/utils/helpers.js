@@ -1,5 +1,5 @@
 /**
- * Shared helper functions for the Lumiere backend. This file groups reusable
+ * Shared helper functions for the 2-GATHER backend. This file groups reusable
  * helpers across several categories: time clamping, document utilities, room
  * state serialization, collection utilities, and safe in-memory object copying.
  */

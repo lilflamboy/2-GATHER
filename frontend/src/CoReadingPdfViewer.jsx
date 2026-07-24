@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { auth } from "./firebase.js";
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -78,7 +78,7 @@ export default function CoReadingPdfViewer({
 
     (async () => {
       try {
-        const token = await auth.currentUser?.getIdToken();
+        const token = localStorage.getItem("2-gather_token");
         if (!token) {
           throw new Error("Authentication required to open the shared PDF");
         }
@@ -119,7 +119,7 @@ export default function CoReadingPdfViewer({
       {(isPreparingDocument || isRenderingPage) && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
           <div className="flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs text-zinc-600 shadow-lg">
-            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-400" />
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-pink-400" />
             {isPreparingDocument ? "Loading shared PDF" : `Rendering page ${page}`}
           </div>
         </div>

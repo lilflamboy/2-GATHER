@@ -8,9 +8,10 @@
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(74rem 42rem at 18% -12%, rgba(250, 188, 54, 0.12), transparent 44%),
-    radial-gradient(68rem 40rem at 84% 0%, rgba(139, 92, 246, 0.08), transparent 40%),
-    linear-gradient(180deg, #020304 0%, #05070b 48%, #020305 100%);
+    radial-gradient(74rem 42rem at 18% -12%, rgba(255, 215, 0, 0.4), transparent 44%),
+    radial-gradient(68rem 40rem at 84% 0%, rgba(218, 112, 214, 0.4), transparent 40%),
+    linear-gradient(180deg, #ffe4e1 0%, #ffb6c1 48%, #e6e6fa 100%);
+  color: #3f3f46;
 }
 
 #root::before,
@@ -22,7 +23,7 @@
   z-index: -1;
   border-radius: 999px;
   filter: blur(90px);
-  opacity: 0.55;
+  opacity: 0.8;
 }
 
 #root::before {
@@ -30,7 +31,7 @@
   left: -10rem;
   width: 28rem;
   height: 28rem;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.28) 0%, rgba(251, 191, 36, 0.05) 60%, transparent 76%);
+  background: radial-gradient(circle, rgba(255, 105, 180, 0.3) 0%, rgba(255, 105, 180, 0.05) 60%, transparent 76%);
 }
 
 #root::after {
@@ -38,7 +39,7 @@
   bottom: -16rem;
   width: 32rem;
   height: 32rem;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.16) 0%, rgba(139, 92, 246, 0.03) 62%, transparent 78%);
+  background: radial-gradient(circle, rgba(147, 112, 219, 0.3) 0%, rgba(147, 112, 219, 0.05) 62%, transparent 78%);
 }
 
 .wake-note {
@@ -59,14 +60,14 @@
   color: rgba(148, 163, 184, 0.9);
 }
 
-.lumiere-loader {
+.2-gather-loader {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
 }
 
-.lumiere-loader-label {
+.2-gather-loader-label {
   margin: 0;
   font-size: 0.82rem;
   letter-spacing: 0.18em;
@@ -74,7 +75,7 @@
   color: rgba(226, 232, 240, 0.74);
 }
 
-@keyframes lumiere-float {
+@keyframes 2-gather-float {
   0%,
   100% {
     transform: translateY(0) scale(1);

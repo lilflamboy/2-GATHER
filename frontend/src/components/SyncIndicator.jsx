@@ -24,7 +24,7 @@ function SyncIndicator({memberTimes,myUid,videoLoaded}){
 
   return(
     <div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-[0_12px_30px_rgba(0,0,0,0.18)]
-      ${inSync?"border-emerald-400/20 bg-emerald-500/10 text-emerald-200":"border-red-500/20 bg-red-500/10 text-red-200"}`}>
+      ${inSync?"border-emerald-400/20 bg-emerald-500/10 text-emerald-600":"border-red-500/20 bg-red-500/10 text-red-600"}`}>
       <Clock size={11}/>
       <span className="font-mono">
         {inSync

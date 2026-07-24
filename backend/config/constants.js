@@ -2,7 +2,7 @@
 
 /**
  * Central constants and configuration values for the
- * Lumiere backend. All environment variables are read
+ * 2-GATHER backend. All environment variables are read
  * here so the rest of the codebase never touches
  * process.env directly.
  */
